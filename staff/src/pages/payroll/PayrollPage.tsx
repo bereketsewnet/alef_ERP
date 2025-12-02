@@ -8,10 +8,10 @@ export function PayrollPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+                    <h1 className="text-3xl font-bold text-neutral-900">
                         Payroll
                     </h1>
-                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+                    <p className="text-neutral-600 mt-1">
                         Process payroll and generate payslips
                     </p>
                 </div>
@@ -26,10 +26,10 @@ export function PayrollPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                                <p className="text-sm font-medium text-neutral-600">
                                     Total Gross (This Month)
                                 </p>
-                                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                                <p className="text-2xl font-bold text-neutral-900">
                                     1,245,000 ETB
                                 </p>
                             </div>
@@ -39,20 +39,20 @@ export function PayrollPage() {
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Total Deductions
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             187,500 ETB
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Net Payable
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             1,057,500 ETB
                         </p>
                     </CardContent>
@@ -72,10 +72,10 @@ export function PayrollPage() {
                         ].map((record, index) => (
                             <div
                                 key={index}
-                                className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-800 rounded-lg"
+                                className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg"
                             >
                                 <div className="flex-1">
-                                    <p className="font-medium text-neutral-900 dark:text-neutral-50">
+                                    <p className="font-medium text-neutral-900">
                                         {record.month}
                                     </p>
                                     <p className="text-sm text-neutral-500">

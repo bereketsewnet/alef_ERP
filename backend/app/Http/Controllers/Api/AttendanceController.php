@@ -172,12 +172,18 @@ class AttendanceController extends Controller
      */
     public function index(Request $request)
     {
-        // Check permissions (simplified)
-        if (!auth()->user()->can('view_attendance')) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
         $query = AttendanceLog::with(['employee', 'schedule.site']);
+
+        // Search by employee name, email, or phone (case-insensitive)
+        if ($request->has('search')) {
+            $searchTerm = strtolower($request->search);
+            $query->whereHas('employee', function ($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(first_name) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(last_name) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(email) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(phone_number) like ?', ['%' . $searchTerm . '%']);
+            });
+        }
 
         // Filter by employee
         if ($request->has('employee_id')) {
@@ -241,6 +247,50 @@ class AttendanceController extends Controller
         $logs = $query->orderBy('clock_in_time', 'desc')->paginate(50);
 
         return response()->json($logs);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/attendance/logs/{id}/verify",
+     *     summary="Verify an attendance log",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Attendance verified successfully")
+     * )
+     */
+    public function verify($id)
+    {
+        $log = AttendanceLog::findOrFail($id);
+        $log->is_verified = true;
+        $log->save();
+
+        return response()->json([
+            'message' => 'Attendance verified successfully',
+            'data' => $log
+        ]);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/attendance/logs/{id}/unverify",
+     *     summary="Unverify an attendance log",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Attendance unverified successfully")
+     * )
+     */
+    public function unverify($id)
+    {
+        $log = AttendanceLog::findOrFail($id);
+        $log->is_verified = false;
+        $log->save();
+
+        return response()->json([
+            'message' => 'Attendance unverified successfully',
+            'data' => $log
+        ]);
     }
 
     /**

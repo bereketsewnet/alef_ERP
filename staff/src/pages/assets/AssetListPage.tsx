@@ -106,10 +106,10 @@ export function AssetListPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+                    <h1 className="text-3xl font-bold text-neutral-900">
                         Assets
                     </h1>
-                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+                    <p className="text-neutral-600 mt-1">
                         Manage company assets and assignments
                     </p>
                 </div>
@@ -123,10 +123,10 @@ export function AssetListPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                                <p className="text-sm font-medium text-neutral-600">
                                     Total Assets
                                 </p>
-                                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                                <p className="text-2xl font-bold text-neutral-900">
                                     {mockAssets.length}
                                 </p>
                             </div>
@@ -136,30 +136,30 @@ export function AssetListPage() {
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Assigned
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             {mockAssets.filter(a => a.status === "assigned").length}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Available
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             {mockAssets.filter(a => a.status === "available").length}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Total Value
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             {mockAssets.reduce((acc, a) => acc + a.value, 0)} ETB
                         </p>
                     </CardContent>

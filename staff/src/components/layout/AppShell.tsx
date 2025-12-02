@@ -8,7 +8,7 @@ export function AppShell() {
     const [collapsed, setCollapsed] = useState(false)
 
     return (
-        <div className="flex h-screen overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+        <div className="flex h-screen overflow-hidden bg-neutral-50">
             <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
             <div className="flex flex-1 flex-col overflow-hidden">

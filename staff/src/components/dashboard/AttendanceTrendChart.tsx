@@ -30,12 +30,12 @@ export function AttendanceTrendChart() {
             <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={mockData}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-800" />
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200" />
                         <XAxis
                             dataKey="date"
-                            className="text-xs text-neutral-600 dark:text-neutral-400"
+                            className="text-xs text-neutral-600"
                         />
-                        <YAxis className="text-xs text-neutral-600 dark:text-neutral-400" />
+                        <YAxis className="text-xs text-neutral-600" />
                         <Tooltip
                             contentStyle={{
                                 backgroundColor: "hsl(var(--background))",

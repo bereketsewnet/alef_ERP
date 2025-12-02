@@ -123,7 +123,7 @@ export function LoginPage() {
                     </form>
                 </Form>
 
-                <div className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400">
+                <div className="mt-6 text-center text-sm text-neutral-600">
                     <p>© 2024 ALEF DELTA. All rights reserved.</p>
                 </div>
             </div>

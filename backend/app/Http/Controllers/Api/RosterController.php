@@ -101,14 +101,19 @@ class RosterController extends Controller
      */
     public function index(Request $request)
     {
-        $query = \App\Models\ShiftSchedule::with(['employee', 'site']);
+        $query = \App\Models\ShiftSchedule::with(['employee', 'site', 'attendanceLogs']);
 
         if ($request->has('site_id')) {
             $query->where('site_id', $request->site_id);
         }
 
         if ($request->has('date')) {
-            $query->where('date', $request->date);
+            // Use whereBetween for proper timezone handling
+            $date = \Carbon\Carbon::parse($request->date)->startOfDay();
+            $query->whereBetween('shift_start', [
+                $date->copy()->startOfDay(),
+                $date->copy()->endOfDay()
+            ]);
         }
 
         return response()->json($query->paginate(50));

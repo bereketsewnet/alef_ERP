@@ -34,7 +34,7 @@ export function UserManagementPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">User Management</h1>
-                    <p className="text-neutral-600 dark:text-neutral-400">
+                    <p className="text-neutral-600">
                         Manage system users and their permissions
                     </p>
                 </div>

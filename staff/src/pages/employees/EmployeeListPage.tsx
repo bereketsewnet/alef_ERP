@@ -1,150 +1,196 @@
-import { DataTable } from "@/components/ui/data-table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Eye, MoreHorizontal } from "lucide-react"
+import { useState } from 'react'
+import { Plus, Search, Pencil, Trash2, Eye } from 'lucide-react'
+import { useEmployees, useDeleteEmployee } from '@/services/useEmployees'
+import type { Employee } from '@/api/endpoints/employees'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-// Mock employee data - replace with actual API data
-const mockEmployees = [
-    {
-        id: 1,
-        name: "John Doe",
-        email: "john.doe@email.com",
-        role: "Security Guard",
-        status: "active" as const,
-        hire_date: "2023-01-15",
-        phone: "+251912345678",
-    },
-    {
-        id: 2,
-        name: "Jane Smith",
-        email: "jane.smith@email.com",
-        role: "Security Supervisor",
-        status: "active" as const,
-        hire_date: "2022-06-20",
-        phone: "+251923456789",
-    },
-    {
-        id: 3,
-        name: "Mike Johnson",
-        email: "mike.j@email.com",
-        role: "Security Guard",
-        status: "probation" as const,
-        hire_date: "2024-11-01",
-        phone: "+251934567890",
-    },
-]
-
-const columns: ColumnDef<typeof mockEmployees[0]>[] = [
-    {
-        accessorKey: "name",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-    },
-    {
-        accessorKey: "email",
-        header: "Email",
-    },
-    {
-        accessorKey: "role",
-        header: "Role",
-    },
-    {
-        accessorKey: "phone",
-        header: "Phone",
-    },
-    {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => {
-            const status = row.getValue("status") as string
-            return (
-                <Badge
-                    variant={
-                        status === "active"
-                            ? "success"
-                            : status === "probation"
-                                ? "warning"
-                                : "destructive"
-                    }
-                >
-                    {status}
-                </Badge>
-            )
-        },
-    },
-    {
-        accessorKey: "hire_date",
-        header: "Hire Date",
-        cell: ({ row }) => {
-            return new Date(row.getValue("hire_date")).toLocaleDateString()
-        },
-    },
-    {
-        id: "actions",
-        cell: ({ row }) => {
-            const employee = row.original
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Link Telegram</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                            Terminate
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        },
-    },
-]
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
+import { EmployeeFormModal } from '@/components/employees/EmployeeFormModal'
 
 export function EmployeeListPage() {
+    const [search, setSearch] = useState('')
+    const [page, setPage] = useState(1)
+    const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null)
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+    const { data, isLoading } = useEmployees({ page, search: search || undefined })
+    const { mutate: deleteEmployee } = useDeleteEmployee()
+
+    const handleDelete = (employee: Employee) => {
+        if (window.confirm(`Are you sure you want to delete employee "${employee.first_name} ${employee.last_name}"?`)) {
+            deleteEmployee(employee.id)
+        }
+    }
+
+    const getStatusVariant = (status: string) => {
+        switch (status) {
+            case 'active':
+                return 'success'
+            case 'probation':
+                return 'warning'
+            case 'inactive':
+            case 'terminated':
+                return 'destructive'
+            default:
+                return 'default'
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
-                        Employees
-                    </h1>
-                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+                    <h1 className="text-3xl font-bold">Employees</h1>
+                    <p className="text-neutral-600 mt-1">
                         Manage your workforce and employee information
                     </p>
                 </div>
-                <Button className="bg-primary-600 hover:bg-primary-700">
+                <Button
+                    className="bg-primary-600 hover:bg-primary-700"
+                    onClick={() => setIsCreateModalOpen(true)}
+                >
+                    <Plus className="mr-2 h-4 w-4" />
                     Add Employee
                 </Button>
             </div>
 
-            <DataTable columns={columns} data={mockEmployees} searchKey="name" />
+            <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
+                    <Input
+                        placeholder="Search by name, email, or phone..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+            </div>
+
+            <div className="border rounded-lg">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Hire Date</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="text-center py-8">
+                                    Loading...
+                                </TableCell>
+                            </TableRow>
+                        ) : data?.data.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="text-center py-8">
+                                    No employees found
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            data?.data.map((employee) => (
+                                <TableRow key={employee.id}>
+                                    <TableCell className="font-medium">
+                                        {employee.first_name} {employee.last_name}
+                                    </TableCell>
+                                    <TableCell>{employee.email || '-'}</TableCell>
+                                    <TableCell>{employee.role || '-'}</TableCell>
+                                    <TableCell>{employee.phone_number}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={getStatusVariant(employee.status)}>
+                                            {employee.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Date(employee.hire_date).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => {
+                                                    // TODO: Navigate to employee detail page or show detail modal
+                                                    alert(`View employee details for ${employee.first_name} ${employee.last_name}`)
+                                                }}
+                                                title="View Details"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setEmployeeToEdit(employee)}
+                                                title="Edit"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleDelete(employee)}
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="h-4 w-4 text-red-600" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Pagination */}
+            {data && data.meta && data.meta.last_page > 1 && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-neutral-600">
+                        Showing {data.data.length} of {data.meta.total} employees
+                    </p>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(page - 1)}
+                            disabled={page === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(page + 1)}
+                            disabled={page === data.meta.last_page}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Create/Edit Modal */}
+            <EmployeeFormModal
+                open={isCreateModalOpen || !!employeeToEdit}
+                onClose={() => {
+                    setIsCreateModalOpen(false)
+                    setEmployeeToEdit(null)
+                }}
+                employee={employeeToEdit}
+            />
         </div>
     )
 }

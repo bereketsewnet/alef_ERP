@@ -111,10 +111,10 @@ export function BillingPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+                    <h1 className="text-3xl font-bold text-neutral-900">
                         Billing & Invoices
                     </h1>
-                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+                    <p className="text-neutral-600 mt-1">
                         Manage client invoices and billing
                     </p>
                 </div>
@@ -127,17 +127,17 @@ export function BillingPage() {
             <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Total Invoiced
                         </p>
-                        <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                        <p className="text-2xl font-bold text-neutral-900">
                             {mockInvoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} ETB
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Paid
                         </p>
                         <p className="text-2xl font-bold text-green-600">
@@ -150,7 +150,7 @@ export function BillingPage() {
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Pending
                         </p>
                         <p className="text-2xl font-bold text-amber-600">
@@ -163,7 +163,7 @@ export function BillingPage() {
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                        <p className="text-sm font-medium text-neutral-600">
                             Overdue
                         </p>
                         <p className="text-2xl font-bold text-red-600">

@@ -19,9 +19,21 @@ class ClientController extends Controller
      *     @OA\Response(response=200, description="List of clients")
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $clients = Client::with('sites')->paginate(50);
+        $query = Client::with('sites');
+
+        // Search by company name, contact person, or phone (case-insensitive)
+        if ($request->has('search')) {
+            $searchTerm = strtolower($request->search);
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(company_name) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(contact_person) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(contact_phone) like ?', ['%' . $searchTerm . '%']);
+            });
+        }
+
+        $clients = $query->paginate(50);
         return response()->json($clients);
     }
 
@@ -98,6 +110,26 @@ class ClientController extends Controller
         $client = Client::findOrFail($id);
         $client->update($request->all());
         return response()->json($client);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/clients/{id}",
+     *     summary="Delete a client",
+     *     tags={"Clients"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Client deleted successfully")
+     * )
+     */
+    public function destroy($id)
+    {
+        $client = Client::findOrFail($id);
+        $client->delete();
+
+        return response()->json([
+            'message' => 'Client deleted successfully'
+        ]);
     }
 
     /**

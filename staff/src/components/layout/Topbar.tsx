@@ -1,4 +1,4 @@
-import { Bell, Search, Sun, Moon, User, Settings, LogOut } from "lucide-react"
+import { Bell, Search, User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -10,11 +10,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useTheme } from "@/components/theme-provider"
 import { useCurrentUser, useLogout } from "@/services/useAuth"
 
 export function Topbar() {
-    const { theme, setTheme } = useTheme()
     const { data: user } = useCurrentUser()
     const { mutate: logout } = useLogout()
 
@@ -31,31 +29,21 @@ export function Topbar() {
     const displayName = user?.name || user?.username || 'Admin User'
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm dark:bg-neutral-950">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm">
             <div className="flex flex-1 items-center gap-4">
                 <form className="hidden sm:block lg:w-96">
                     <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
                         <Input
                             type="search"
                             placeholder="Search employees, sites, assets..."
-                            className="w-full bg-neutral-50 pl-9 dark:bg-neutral-900"
+                            className="w-full bg-neutral-50 pl-9"
                         />
                     </div>
                 </form>
             </div>
 
             <div className="flex items-center gap-2">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                >
-                    <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                    <span className="sr-only">Toggle theme</span>
-                </Button>
-
                 <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
                     <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
@@ -75,7 +63,7 @@ export function Topbar() {
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
                                 <p className="text-sm font-medium leading-none">{displayName}</p>
-                                <p className="text-xs leading-none text-neutral-500 dark:text-neutral-400">
+                                <p className="text-xs leading-none text-neutral-500">
                                     {user?.email || 'admin@alefdelta.com'}
                                 </p>
                             </div>
@@ -90,7 +78,7 @@ export function Topbar() {
                             <span>Settings</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => logout()} className="text-red-600 dark:text-red-400">
+                        <DropdownMenuItem onClick={() => logout()} className="text-red-600">
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>
                         </DropdownMenuItem>

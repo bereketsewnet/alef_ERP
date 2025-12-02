@@ -108,4 +108,57 @@ class RosterService
             ->orderBy('shift_start')
             ->get();
     }
+
+    /**
+     * Bulk assign shifts for date range
+     *
+     * @param int $siteId
+     * @param array $employeeIds
+     * @param string $startDate
+     * @param string $endDate
+     * @param string $startTime
+     * @param string $endTime
+     * @param int $createdByUserId
+     * @return array
+     */
+    public function bulkAssignShifts(
+        int $siteId,
+        array $employeeIds,
+        string $startDate,
+        string $endDate,
+        string $startTime,
+        string $endTime,
+        int $createdByUserId
+    ): array {
+        $created = 0;
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        
+        // Loop through each day in the range
+        while ($start->lte($end)) {
+            $currentDate = $start->format('Y-m-d');
+            
+            // Create shift for each employee
+            foreach ($employeeIds as $employeeId) {
+                ShiftSchedule::create([
+                    'employee_id' => $employeeId,
+                    'site_id' => $siteId,
+                    'shift_start' => $currentDate . ' ' . $startTime,
+                    'shift_end' => $currentDate . ' ' . $endTime,
+                    'is_overtime_shift' => false,
+                    'status' => 'SCHEDULED',
+                    'created_by_user_id' => $createdByUserId,
+                ]);
+                
+                $created++;
+            }
+            
+            $start->addDay();
+        }
+        
+        return [
+            'message' => 'Shifts assigned successfully',
+            'shifts_created' => $created,
+        ];
+    }
 }

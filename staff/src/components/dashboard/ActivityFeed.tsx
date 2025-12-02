@@ -99,23 +99,23 @@ export function ActivityFeed() {
                             return (
                                 <div
                                     key={activity.id}
-                                    className="flex gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800 last:border-0"
+                                    className="flex gap-4 pb-4 border-b border-neutral-200 last:border-0"
                                 >
                                     <div className="mt-1">
-                                        <div className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                                            <Icon className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+                                        <div className="p-2 rounded-lg bg-neutral-100">
+                                            <Icon className="h-4 w-4 text-neutral-600" />
                                         </div>
                                     </div>
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-start justify-between gap-2">
                                             <div>
-                                                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                                                <p className="text-sm font-medium text-neutral-900">
                                                     {activity.employee}
                                                 </p>
                                                 {activity.site && (
                                                     <div className="flex items-center gap-1 mt-0.5">
                                                         <MapPin className="h-3 w-3 text-neutral-500" />
-                                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                                        <p className="text-xs text-neutral-500">
                                                             {activity.site}
                                                         </p>
                                                     </div>
@@ -125,7 +125,7 @@ export function ActivityFeed() {
                                                 {activity.type.replace("_", " ")}
                                             </Badge>
                                         </div>
-                                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                        <p className="text-sm text-neutral-600">
                                             {activity.description}
                                         </p>
                                         <p className="text-xs text-neutral-500">

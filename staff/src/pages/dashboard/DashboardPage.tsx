@@ -7,10 +7,10 @@ export function DashboardPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+                <h1 className="text-3xl font-bold text-neutral-900">
                     Dashboard
                 </h1>
-                <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+                <p className="text-neutral-600 mt-1">
                     Welcome back! Here's an overview of your operations.
                 </p>
             </div>
@@ -58,9 +58,9 @@ export function DashboardPage() {
 
             {/* Placeholder for Map and Additional Widgets */}
             <div className="grid gap-6 md:grid-cols-2">
-                <div className="h-[400px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
+                <div className="h-[400px] rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                        <p className="text-neutral-600 mb-2">
                             Live Map (Leaflet)
                         </p>
                         <p className="text-sm text-neutral-500">
@@ -68,9 +68,9 @@ export function DashboardPage() {
                         </p>
                     </div>
                 </div>
-                <div className="h-[400px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
+                <div className="h-[400px] rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                        <p className="text-neutral-600 mb-2">
                             Asset Availability Chart
                         </p>
                         <p className="text-sm text-neutral-500">

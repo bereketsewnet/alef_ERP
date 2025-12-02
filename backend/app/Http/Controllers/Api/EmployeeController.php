@@ -31,10 +31,13 @@ class EmployeeController extends Controller
         }
 
         if ($request->has('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('first_name', 'like', '%' . $request->search . '%')
-                  ->orWhere('last_name', 'like', '%' . $request->search . '%')
-                  ->orWhere('employee_code', 'like', '%' . $request->search . '%');
+            $searchTerm = strtolower($request->search);
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(first_name) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(last_name) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(email) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(phone_number) like ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(employee_code) like ?', ['%' . $searchTerm . '%']);
             });
         }
 
@@ -66,18 +69,40 @@ class EmployeeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'employee_code' => 'required|string|unique:employees',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
+            'email' => 'nullable|sometimes|email',
             'phone_number' => 'required|string',
-            'job_role_id' => 'required|exists:job_roles,id',
+            'role' => 'nullable|sometimes|string',
+            'status' => 'nullable|in:active,probation,inactive,terminated',
             'hire_date' => 'required|date',
-            'guarantor_details' => 'nullable|array',
         ]);
 
-        $employee = Employee::create($request->all());
+        // Generate unique employee code
+        $lastEmployee = Employee::orderBy('id', 'desc')->first();
+        $nextNumber = $lastEmployee ? ($lastEmployee->id + 1) : 1;
+        $employeeCode = 'EMP' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
-        return response()->json($employee, 201);
+        try {
+            $employee = Employee::create([
+                'employee_code' => $employeeCode,
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'phone_number' => $request->phone_number,
+                'email' => $request->email ?? null,
+                'role' => $request->role ?? null,
+                'status' => $request->status ?? 'active',
+                'hire_date' => $request->hire_date,
+                'job_role_id' => null,
+            ]);
+
+            return response()->json(['data' => $employee], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to create employee',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -122,17 +147,47 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
 
         $request->validate([
-            'employee_code' => 'sometimes|string|unique:employees,employee_code,' . $id,
             'first_name' => 'sometimes|string',
             'last_name' => 'sometimes|string',
+            'email' => 'nullable|sometimes|email',
             'phone_number' => 'sometimes|string',
-            'job_role_id' => 'sometimes|exists:job_roles,id',
-            'status' => 'sometimes|in:ACTIVE,TERMINATED,ON_LEAVE',
+            'role' => 'nullable|sometimes|string',
+            'status' => 'sometimes|in:active,probation,inactive,terminated',
+            'hire_date' => 'sometimes|date',
         ]);
 
-        $employee->update($request->all());
+        $employee->update($request->only([
+            'first_name',
+            'last_name',
+            'email',
+            'phone_number',
+            'role',
+            'status',
+            'hire_date',
+        ]));
 
-        return response()->json($employee);
+        return response()->json(['data' => $employee]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/employees/{id}",
+     *     summary="Delete an employee",
+     *     tags={"Employees"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Employee deleted successfully"),
+     *     @OA\Response(response=404, description="Employee not found")
+     * )
+     */
+    public function destroy($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $employee->delete();
+
+        return response()->json([
+            'message' => 'Employee deleted successfully'
+        ]);
     }
 
     /**

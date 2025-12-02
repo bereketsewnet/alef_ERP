@@ -50,15 +50,17 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/clock-in', [AttendanceController::class, 'clockIn']);
         Route::post('/clock-out', [AttendanceController::class, 'clockOut']);
         Route::get('/logs', [AttendanceController::class, 'index']);
+        Route::put('/logs/{id}/verify', [AttendanceController::class, 'verify']);
+        Route::put('/logs/{id}/unverify', [AttendanceController::class, 'unverify']);
         Route::get('/my-logs', [AttendanceController::class, 'myLogs']);
         Route::get('/export', [AttendanceController::class, 'exportAttendance']);
     });
 
     // Roster Routes
     Route::prefix('roster')->group(function () {
+        Route::get('/', [RosterController::class, 'index']);
         Route::post('/bulk-assign', [RosterController::class, 'bulkAssign']);
         Route::get('/my-roster', [RosterController::class, 'myRoster']);
-        Route::get('/', [RosterController::class, 'index']);
     });
 
     // Employee Routes
@@ -67,6 +69,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [EmployeeController::class, 'store']);
         Route::get('/{id}', [EmployeeController::class, 'show']);
         Route::put('/{id}', [EmployeeController::class, 'update']);
+        Route::delete('/{id}', [EmployeeController::class, 'destroy']);
         Route::post('/link-telegram', [EmployeeController::class, 'linkTelegram']);
     });
 
@@ -76,6 +79,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [ClientController::class, 'store']);
         Route::get('/{id}', [ClientController::class, 'show']);
         Route::put('/{id}', [ClientController::class, 'update']);
+        Route::delete('/{id}', [ClientController::class, 'destroy']);
         Route::post('/{clientId}/sites', [ClientController::class, 'createSite']);
         Route::get('/{clientId}/sites', [ClientController::class, 'getSites']);
     });
