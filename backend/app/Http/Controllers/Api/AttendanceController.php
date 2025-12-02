@@ -7,6 +7,7 @@ use App\Services\AttendanceService;
 use App\Models\AttendanceLog;
 use App\Models\ShiftSchedule;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -23,6 +24,26 @@ class AttendanceController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     */
+    /**
+     * @OA\Post(
+     *     path="/attendance/clock-in",
+     *     summary="Clock in for a shift",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"schedule_id", "latitude", "longitude"},
+     *             @OA\Property(property="schedule_id", type="integer"),
+     *             @OA\Property(property="latitude", type="number", format="float"),
+     *             @OA\Property(property="longitude", type="number", format="float"),
+     *             @OA\Property(property="initData", type="string", description="Telegram initData")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Clocked in successfully"),
+     *     @OA\Response(response=400, description="Clock in failed")
+     * )
      */
     public function clockIn(Request $request)
     {
@@ -72,10 +93,22 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Clock out from a shift
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/attendance/clock-out",
+     *     summary="Clock out from a shift",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"schedule_id", "latitude", "longitude"},
+     *             @OA\Property(property="schedule_id", type="integer"),
+     *             @OA\Property(property="latitude", type="number", format="float"),
+     *             @OA\Property(property="longitude", type="number", format="float")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Clocked out successfully")
+     * )
      */
     public function clockOut(Request $request)
     {
@@ -124,13 +157,26 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Get attendance logs (filterable)
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/attendance/logs",
+     *     summary="Get attendance logs (Admin/Manager)",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="employee_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="start_date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="end_date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="site_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="is_verified", in="query", @OA\Schema(type="boolean")),
+     *     @OA\Response(response=200, description="List of attendance logs")
+     * )
      */
     public function index(Request $request)
     {
+        // Check permissions (simplified)
+        if (!auth()->user()->can('view_attendance')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $query = AttendanceLog::with(['employee', 'schedule.site']);
 
         // Filter by employee
@@ -140,11 +186,11 @@ class AttendanceController extends Controller
 
         // Filter by date range
         if ($request->has('start_date')) {
-            $query->where('clock_in_time', '>=', $request->start_date);
+            $query->whereDate('clock_in_time', '>=', $request->start_date);
         }
 
         if ($request->has('end_date')) {
-            $query->where('clock_in_time', '<=', $request->end_date);
+            $query->whereDate('clock_in_time', '<=', $request->end_date);
         }
 
         // Filter by site
@@ -165,22 +211,23 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Get my attendance logs (for logged-in employee)
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/attendance/my-logs",
+     *     summary="Get my attendance logs",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="List of my attendance logs")
+     * )
      */
     public function myLogs(Request $request)
     {
         $user = auth()->user();
-        $employeeId = $user->employee_id;
-
-        if (!$employeeId) {
-            return response()->json(['error' => 'User is not linked to an employee'], 400);
+        if (!$user->employee_id) {
+            return response()->json(['error' => 'User is not an employee'], 403);
         }
 
-        $query = AttendanceLog::with(['schedule.site.client'])
-            ->where('employee_id', $employeeId);
+        $query = AttendanceLog::where('employee_id', $user->employee_id)
+            ->with(['schedule.site.client']);
 
         // Optional date range
         if ($request->has('start_date')) {
@@ -197,10 +244,16 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Export attendance logs to Excel
-     *
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @OA\Get(
+     *     path="/attendance/export",
+     *     summary="Export attendance logs to Excel",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="start_date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="end_date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="site_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Excel file download")
+     * )
      */
     public function exportAttendance(Request $request)
     {

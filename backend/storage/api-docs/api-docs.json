@@ -1,0 +1,1953 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "ALEF DELTA ERP API",
+        "description": "Production-ready ERP API for manpower supply management with GPS-verified attendance, Telegram integration, payroll automation, and asset tracking.",
+        "contact": {
+            "email": "admin@alefdelta.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "Local Development Server"
+        },
+        {
+            "url": "https://api.alefdelta.com/api",
+            "description": "Production Server"
+        }
+    ],
+    "paths": {
+        "/assets": {
+            "get": {
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "List all assets",
+                "operationId": "7189479fe79f2685e661f7d2bbb3e1d6",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "condition",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of assets"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Create a new asset",
+                "operationId": "609c4e710f7e30789bdd7b025b1a0a76",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "asset_code",
+                                    "name",
+                                    "category"
+                                ],
+                                "properties": {
+                                    "asset_code": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "purchase_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "value": {
+                                        "type": "number",
+                                        "format": "float"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Asset created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assets/assign": {
+            "post": {
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Assign asset to employee",
+                "operationId": "15247c22178498928235c62a56d7a4c6",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "asset_id",
+                                    "employee_id"
+                                ],
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "integer"
+                                    },
+                                    "employee_id": {
+                                        "type": "integer"
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Asset assigned"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assets/return": {
+            "post": {
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Return an asset",
+                "operationId": "20d1bf051e964713574e21d3b96c8a70",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "asset_id"
+                                ],
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "integer"
+                                    },
+                                    "condition": {
+                                        "type": "string",
+                                        "example": "GOOD"
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Asset returned"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assets/employee/{employeeId}": {
+            "get": {
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Get assets assigned to employee",
+                "operationId": "c0f552aa4cc10737aa1e7e6acc84d577",
+                "parameters": [
+                    {
+                        "name": "employeeId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of assigned assets"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/attendance/clock-in": {
+            "post": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Clock in for a shift",
+                "operationId": "b9e586060b624a3880a68dc9a2f66bb4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "schedule_id",
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "schedule_id": {
+                                        "type": "integer"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "initData": {
+                                        "description": "Telegram initData",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Clocked in successfully"
+                    },
+                    "400": {
+                        "description": "Clock in failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/attendance/clock-out": {
+            "post": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Clock out from a shift",
+                "operationId": "023cdbfeb9affb051e9b8076c941cbd3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "schedule_id",
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "schedule_id": {
+                                        "type": "integer"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Clocked out successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/attendance/logs": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Get attendance logs (Admin/Manager)",
+                "operationId": "9493f91e4f39fe6d875dd73259332e60",
+                "parameters": [
+                    {
+                        "name": "employee_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "is_verified",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of attendance logs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/attendance/my-logs": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Get my attendance logs",
+                "operationId": "81a4dbd3bdde4f421b06bd139d27560f",
+                "responses": {
+                    "200": {
+                        "description": "List of my attendance logs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/attendance/export": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Export attendance logs to Excel",
+                "operationId": "d9cdba4b039ef6d50efd0634b532a43e",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Excel file download"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login with username, email, or phone",
+                "operationId": "99d66635c4992aeaa6aa44ff653d0563",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "login",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "description": "Username, Email, or Phone Number",
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful login",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access_token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "bearer"
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user",
+                "operationId": "08136088c4862c313b35d6518bab8d3a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "username",
+                                    "email",
+                                    "password",
+                                    "phone_number"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully"
+                    }
+                }
+            }
+        },
+        "/auth/profile": {
+            "put": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update user profile",
+                "operationId": "1b6f918eb3f3cd3b4d27be8eb1979861",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/change-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Change password",
+                "operationId": "392f5b8efb38f64f049872d18d481cf1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "current_password",
+                                    "new_password"
+                                ],
+                                "properties": {
+                                    "current_password": {
+                                        "type": "string"
+                                    },
+                                    "new_password": {
+                                        "type": "string",
+                                        "minLength": 6
+                                    },
+                                    "new_password_confirmation": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/telegram": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login via Telegram Mini App",
+                "operationId": "952653ad4b81db3bc2dac02c55c6ec66",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "initData"
+                                ],
+                                "properties": {
+                                    "initData": {
+                                        "description": "Raw initData string from Telegram",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful login",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access_token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "bearer"
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid Telegram data"
+                    }
+                }
+            }
+        },
+        "/clients": {
+            "get": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "List all clients",
+                "operationId": "6536f8d22d25758c3e14dbbe8e228af0",
+                "responses": {
+                    "200": {
+                        "description": "List of clients"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Create a new client",
+                "operationId": "74a35b85418e09c2489915865dd22445",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "company_name",
+                                    "contact_person",
+                                    "contact_phone"
+                                ],
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string"
+                                    },
+                                    "contact_person": {
+                                        "type": "string"
+                                    },
+                                    "contact_phone": {
+                                        "type": "string"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string"
+                                    },
+                                    "tin_number": {
+                                        "type": "string"
+                                    },
+                                    "address_details": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Client created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/clients/{id}": {
+            "get": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Get client details",
+                "operationId": "1837c830668b0f7aa87761172e9a8cf9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Client details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Update client details",
+                "operationId": "1ee17ab59b59dd0a816f385b724d2b6c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string"
+                                    },
+                                    "contact_person": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Client updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/clients/{clientId}/sites": {
+            "get": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Get all sites for a client",
+                "operationId": "65729696ccdc8b5f6d21f7e8f999eda3",
+                "parameters": [
+                    {
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of sites"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Clients"
+                ],
+                "summary": "Create a site for a client",
+                "operationId": "f0888c581c353cc22959fe02114945ca",
+                "parameters": [
+                    {
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "site_name",
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "site_name": {
+                                        "type": "string"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "radius_meters": {
+                                        "type": "integer",
+                                        "example": 100
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Site created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employees": {
+            "get": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "List all employees",
+                "operationId": "9aeb15c3a8c5b0b8b9e0931d1673e787",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "ACTIVE",
+                                "TERMINATED",
+                                "ON_LEAVE"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of employees"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Create a new employee",
+                "operationId": "2475af536398d342aca2fd7f60f9af3a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "employee_code",
+                                    "first_name",
+                                    "last_name",
+                                    "phone_number",
+                                    "job_role_id",
+                                    "hire_date"
+                                ],
+                                "properties": {
+                                    "employee_code": {
+                                        "type": "string"
+                                    },
+                                    "first_name": {
+                                        "type": "string"
+                                    },
+                                    "last_name": {
+                                        "type": "string"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "job_role_id": {
+                                        "type": "integer"
+                                    },
+                                    "hire_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "guarantor_details": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Employee created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employees/{id}": {
+            "get": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Get employee details",
+                "operationId": "41cfd4a7b54d2f35c31ad2afd9d37f3f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Employee details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Update employee details",
+                "operationId": "f1e833660cfbccbfbdef00c84e24c5cb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "employee_code": {
+                                        "type": "string"
+                                    },
+                                    "first_name": {
+                                        "type": "string"
+                                    },
+                                    "last_name": {
+                                        "type": "string"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "job_role_id": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ACTIVE",
+                                            "TERMINATED",
+                                            "ON_LEAVE"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Employee updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employees/link-telegram": {
+            "post": {
+                "tags": [
+                    "Employees"
+                ],
+                "summary": "Link employee to Telegram account",
+                "operationId": "bc16a13e54f34a35b52abcceaa6914ce",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "employee_id",
+                                    "telegram_chat_id"
+                                ],
+                                "properties": {
+                                    "employee_id": {
+                                        "type": "integer"
+                                    },
+                                    "telegram_chat_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Telegram linked successfully"
+                    },
+                    "404": {
+                        "description": "Telegram user not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/payroll-periods": {
+            "post": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Create a new payroll period",
+                "operationId": "a698d0a6f55a1522c63e722c9de74802",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "start_date",
+                                    "end_date"
+                                ],
+                                "properties": {
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Payroll period created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/generate-payroll": {
+            "post": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Generate payroll for a period",
+                "operationId": "52d3c5f742453dbf743507b5fa9bf9d1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "payroll_period_id"
+                                ],
+                                "properties": {
+                                    "payroll_period_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payroll generation started"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/payslips": {
+            "get": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Get all payslips (Admin/Finance)",
+                "operationId": "33b58898c0af1cefb9458ad875748fe2",
+                "parameters": [
+                    {
+                        "name": "payroll_period_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "employee_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of payslips"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/my-payslips": {
+            "get": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Get my payslips",
+                "operationId": "82500b963f385d57657f82ee29829ada",
+                "responses": {
+                    "200": {
+                        "description": "List of my payslips"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/invoices": {
+            "get": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Get invoices",
+                "operationId": "d40643dc033f59c21aba9fad64aa0d9b",
+                "parameters": [
+                    {
+                        "name": "client_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of invoices"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/payslips/{id}/download": {
+            "get": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Download payslip PDF",
+                "operationId": "5e9677261f16229220d1cceee8b0344f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/finance/payroll/export": {
+            "get": {
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "Export payroll to Excel",
+                "operationId": "1c96ede548c1748421f4a62ebc46d82f",
+                "parameters": [
+                    {
+                        "name": "payroll_period_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Excel file download"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/health": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health Check",
+                "operationId": "14039960f5c35aafcd0adcc381fc5f34",
+                "responses": {
+                    "200": {
+                        "description": "System is healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "example": "2023-01-01T00:00:00.000000Z"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/incidents": {
+            "get": {
+                "tags": [
+                    "Incidents"
+                ],
+                "summary": "List all incidents",
+                "operationId": "c58b1625d41eb05fa2809fa6eb326e25",
+                "parameters": [
+                    {
+                        "name": "site_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "severity_level",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "report_type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of incidents"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Incidents"
+                ],
+                "summary": "Report an incident",
+                "operationId": "9c3c4a3c596429e52f3580bcae9c8a2a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "site_id",
+                                    "report_type",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "site_id": {
+                                        "type": "integer"
+                                    },
+                                    "report_type": {
+                                        "type": "string",
+                                        "example": "INCIDENT"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "severity_level": {
+                                        "type": "string",
+                                        "example": "MEDIUM"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Incident reported"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/incidents/panic": {
+            "post": {
+                "tags": [
+                    "Incidents"
+                ],
+                "summary": "Trigger panic button",
+                "operationId": "cc63e0dbe474a0b5291767724999d805",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "site_id",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "site_id": {
+                                        "type": "integer"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Panic alert sent"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/roster/bulk-assign": {
+            "post": {
+                "tags": [
+                    "Roster"
+                ],
+                "summary": "Bulk assign shifts to employees",
+                "operationId": "a3c81b90b615c2bafb0ddc476ba645ae",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "site_id",
+                                    "employee_ids",
+                                    "start_date",
+                                    "end_date",
+                                    "start_time",
+                                    "end_time"
+                                ],
+                                "properties": {
+                                    "site_id": {
+                                        "type": "integer"
+                                    },
+                                    "employee_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "start_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "08:00"
+                                    },
+                                    "end_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "17:00"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Shifts assigned successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/roster/my-roster": {
+            "get": {
+                "tags": [
+                    "Roster"
+                ],
+                "summary": "Get my upcoming shifts",
+                "operationId": "717957c56d3c1861d40dfaf18d76dc97",
+                "responses": {
+                    "200": {
+                        "description": "List of upcoming shifts"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/roster": {
+            "get": {
+                "tags": [
+                    "Roster"
+                ],
+                "summary": "Get all shifts (Admin/Manager)",
+                "operationId": "dc8d38943f514d362114bdede2823d29",
+                "parameters": [
+                    {
+                        "name": "site_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of shifts"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "List all users (Admin only)",
+                "operationId": "7208c29037df2b8bb02499ba39ed8a78",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Create a new user (Admin only)",
+                "operationId": "262eb5ca1fdea354023c0a8870442c1e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "username",
+                                    "email",
+                                    "password",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "SUPER_ADMIN",
+                                            "OPS_MANAGER",
+                                            "HR_MANAGER",
+                                            "FINANCE",
+                                            "SITE_SUPERVISOR",
+                                            "FIELD_STAFF"
+                                        ]
+                                    },
+                                    "employee_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Get user details (Admin only)",
+                "operationId": "6946bbab7898f59a09e3c8e529a38907",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Update user details (Admin only)",
+                "operationId": "05028d02ea3e9a99abd6260cfe05b179",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "role": {
+                                        "type": "string"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    },
+                                    "employee_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}/reset-password": {
+            "post": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Reset user password (Admin only)",
+                "operationId": "7218fc333d63c42733347318672efc50",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "new_password"
+                                ],
+                                "properties": {
+                                    "new_password": {
+                                        "type": "string",
+                                        "minLength": 6
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter JWT token obtained from login endpoint",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Assets",
+            "description": "Assets"
+        },
+        {
+            "name": "Attendance",
+            "description": "Attendance"
+        },
+        {
+            "name": "Authentication",
+            "description": "Authentication"
+        },
+        {
+            "name": "Clients",
+            "description": "Clients"
+        },
+        {
+            "name": "Employees",
+            "description": "Employees"
+        },
+        {
+            "name": "Finance",
+            "description": "Finance"
+        },
+        {
+            "name": "System",
+            "description": "System"
+        },
+        {
+            "name": "Incidents",
+            "description": "Incidents"
+        },
+        {
+            "name": "Roster",
+            "description": "Roster"
+        },
+        {
+            "name": "User Management",
+            "description": "User Management"
+        }
+    ]
+}

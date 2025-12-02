@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Http\Controllers;
+
+use OpenApi\Annotations as OA;
+
 /**
  * @OA\Info(
  *     title="ALEF DELTA ERP API",
@@ -27,50 +31,7 @@
  *     bearerFormat="JWT",
  *     description="Enter JWT token obtained from login endpoint"
  * )
- * 
- * @OA\Tag(
- *     name="Authentication",
- *     description="User authentication and token management"
- * )
- * 
- * @OA\Tag(
- *     name="Employees",
- *     description="Employee management endpoints"
- * )
- * 
- * @OA\Tag(
- *     name="Attendance",
- *     description="GPS-verified attendance tracking"
- * )
- * 
- * @OA\Tag(
- *     name="Roster",
- *     description="Shift scheduling and roster management"
- * )
- * 
- * @OA\Tag(
- *     name="Clients",
- *     description="Client and site management"
- * )
- * 
- * @OA\Tag(
- *     name="Assets",
- *     description="Asset assignment and tracking"
- * )
- * 
- * @OA\Tag(
- *     name="Finance",
- *     description="Payroll and invoice management"
- * )
- * 
- * @OA\Tag(
- *     name="Incidents",
- *     description="Operational incident reporting"
- * )
  */
-
-namespace App\Http\Controllers;
-
 abstract class Controller
 {
     //

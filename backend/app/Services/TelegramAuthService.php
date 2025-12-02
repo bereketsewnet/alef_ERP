@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
  */
 class TelegramAuthService
 {
-    private string $botToken;
+    private ?string $botToken;
 
     public function __construct()
     {

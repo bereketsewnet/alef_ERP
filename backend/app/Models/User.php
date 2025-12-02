@@ -16,6 +16,7 @@ class User extends Authenticatable implements JWTSubject
         'employee_id',
         'username',
         'email',
+        'phone_number',
         'password',
         'telegram_chat_id',
         'role',

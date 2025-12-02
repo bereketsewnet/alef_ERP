@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\IncidentController;
+use App\Http\Controllers\Api\HealthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\IncidentController;
 // Public Auth Routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/telegram', [AuthController::class, 'telegramLogin']);
 });
 
@@ -30,6 +32,17 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+    });
+
+    // User Management Routes (Admin)
+    Route::prefix('users')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\UserController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\UserController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\UserController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\UserController::class, 'update']);
+        Route::post('/{id}/reset-password', [\App\Http\Controllers\Api\UserController::class, 'resetPassword']);
     });
 
     // Attendance Routes
@@ -94,4 +107,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/panic', [IncidentController::class, 'panic']);
     });
 });
+
+// Health Check
+Route::get('/health', [HealthController::class, 'index']);
 

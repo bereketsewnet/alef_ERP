@@ -8,19 +8,10 @@ use App\Models\Employee;
 use App\Models\JobRole;
 use Illuminate\Support\Facades\Hash;
 
-class UserSeeder extends Seeder
+class SampleDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Super Admin User
-        User::create([
-            'username' => 'admin',
-            'email' => 'admin@alefdelta.com',
-            'password' => Hash::make('admin123'),
-            'role' => 'SUPER_ADMIN',
-            'is_active' => true,
-        ]);
-
         // Create sample employees
         $guardRole = JobRole::where('title', 'Security Guard')->first();
         $cleanerRole = JobRole::where('title', 'Cleaner')->first();
@@ -69,23 +60,5 @@ class UserSeeder extends Seeder
                 'is_active' => true,
             ]);
         }
-
-        // Create HR Manager
-        User::create([
-            'username' => 'hr_manager',
-            'email' => 'hr@alefdelta.com',
-            'password' => Hash::make('hr123'),
-            'role' => 'HR_MANAGER',
-            'is_active' => true,
-        ]);
-
-        // Create Finance User
-        User::create([
-            'username' => 'finance',
-            'email' => 'finance@alefdelta.com',
-            'password' => Hash::make('finance123'),
-            'role' => 'FINANCE',
-            'is_active' => true,
-        ]);
     }
 }

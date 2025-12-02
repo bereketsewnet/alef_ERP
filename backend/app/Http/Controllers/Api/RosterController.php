@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\RosterService;
 use App\Models\ShiftSchedule;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 class RosterController extends Controller
 {
@@ -16,66 +17,100 @@ class RosterController extends Controller
         $this->rosterService = $rosterService;
     }
 
+    /**
+     * @OA\Post(
+     *     path="/roster/bulk-assign",
+     *     summary="Bulk assign shifts to employees",
+     *     tags={"Roster"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"site_id", "employee_ids", "start_date", "end_date", "start_time", "end_time"},
+     *             @OA\Property(property="site_id", type="integer"),
+     *             @OA\Property(property="employee_ids", type="array", @OA\Items(type="integer")),
+     *             @OA\Property(property="start_date", type="string", format="date"),
+     *             @OA\Property(property="end_date", type="string", format="date"),
+     *             @OA\Property(property="start_time", type="string", format="time", example="08:00"),
+     *             @OA\Property(property="end_time", type="string", format="time", example="17:00")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Shifts assigned successfully")
+     * )
+     */
+    public function bulkAssign(Request $request)
+    {
+        // Validation
+        $request->validate([
+            'site_id' => 'required|exists:client_sites,id',
+            'employee_ids' => 'required|array',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+        ]);
+
+        $result = $this->rosterService->bulkAssignShifts(
+            $request->site_id,
+            $request->employee_ids,
+            $request->start_date,
+            $request->end_date,
+            $request->start_time,
+            $request->end_time,
+            auth()->id()
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/roster/my-roster",
+     *     summary="Get my upcoming shifts",
+     *     tags={"Roster"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="List of upcoming shifts")
+     * )
+     */
+    public function myRoster()
+    {
+        $user = auth()->user();
+        if (!$user->employee_id) {
+            return response()->json(['error' => 'User is not an employee'], 403);
+        }
+
+        $shifts = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
+            ->where('date', '>=', now()->toDateString())
+            ->with('site')
+            ->orderBy('date')
+            ->get();
+
+        return response()->json($shifts);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/roster",
+     *     summary="Get all shifts (Admin/Manager)",
+     *     tags={"Roster"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="site_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Response(response=200, description="List of shifts")
+     * )
+     */
     public function index(Request $request)
     {
-        $query = ShiftSchedule::with(['employee', 'site.client', 'createdBy']);
-
-        if ($request->has('employee_id')) {
-            $query->where('employee_id', $request->employee_id);
-        }
+        $query = \App\Models\ShiftSchedule::with(['employee', 'site']);
 
         if ($request->has('site_id')) {
             $query->where('site_id', $request->site_id);
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has('date')) {
+            $query->where('date', $request->date);
         }
 
-        if ($request->has('start_date')) {
-            $query->where('shift_start', '>=', $request->start_date);
-        }
-
-        if ($request->has('end_date')) {
-            $query->where('shift_end', '<=', $request->end_date);
-        }
-
-        return response()->json($query->orderBy('shift_start')->paginate(50));
-    }
-
-    public function bulkAssign(Request $request)
-    {
-        $request->validate([
-            'assignments' => 'required|array',
-            'assignments.*.employee_id' => 'required|exists:employees,id',
-            'assignments.*.site_id' => 'required|exists:client_sites,id',
-            'assignments.*.shift_start' => 'required|date',
-            'assignments.*.shift_end' => 'required|date|after:assignments.*.shift_start',
-            'assignments.*.is_overtime_shift' => 'sometimes|boolean',
-        ]);
-
-        $user = auth()->user();
-        $result = $this->rosterService->bulkAssign($request->assignments, $user->id);
-
-        return response()->json([
-            'success' => true,
-            'created' => $result['created'],
-            'conflicts' => $result['conflicts'],
-        ]);
-    }
-
-    public function myRoster(Request $request)
-    {
-        $user = auth()->user();
-        $employeeId = $user->employee_id;
-
-        if (!$employeeId) {
-            return response()->json(['error' => 'User is not linked to an employee'], 400);
-        }
-
-        $days = $request->get('days', 7);
-        $shifts = $this->rosterService->getUpcomingShifts($employeeId, $days);
-
-        return response()->json($shifts);
+        return response()->json($query->paginate(50));
     }
 }

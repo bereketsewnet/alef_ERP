@@ -7,6 +7,7 @@ use App\Services\AssetService;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 class AssetController extends Controller
 {
@@ -17,6 +18,17 @@ class AssetController extends Controller
         $this->assetService = $assetService;
     }
 
+    /**
+     * @OA\Get(
+     *     path="/assets",
+     *     summary="List all assets",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="category", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="condition", in="query", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="List of assets")
+     * )
+     */
     public function index(Request $request)
     {
         $query = Asset::query();
@@ -32,6 +44,26 @@ class AssetController extends Controller
         return response()->json($query->paginate(50));
     }
 
+    /**
+     * @OA\Post(
+     *     path="/assets",
+     *     summary="Create a new asset",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"asset_code", "name", "category"},
+     *             @OA\Property(property="asset_code", type="string"),
+     *             @OA\Property(property="name", type="string"),
+     *             @OA\Property(property="category", type="string"),
+     *             @OA\Property(property="purchase_date", type="string", format="date"),
+     *             @OA\Property(property="value", type="number", format="float")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Asset created")
+     * )
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -47,55 +79,86 @@ class AssetController extends Controller
         return response()->json($asset, 201);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/assets/assign",
+     *     summary="Assign asset to employee",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"asset_id", "employee_id"},
+     *             @OA\Property(property="asset_id", type="integer"),
+     *             @OA\Property(property="employee_id", type="integer"),
+     *             @OA\Property(property="notes", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Asset assigned")
+     * )
+     */
     public function assign(Request $request)
     {
-        $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'employee_id' => 'required|exists:employees,id',
-            'notes' => 'nullable|string',
-        ]);
-
-        $result = $this->assetService->assignAsset(
-            $request->asset_id,
-            $request->employee_id,
-            $request->notes
-        );
-
-        if (!$result['success']) {
-            return response()->json(['error' => $result['message']], 400);
+        try {
+            $assignment = $this->assetService->assignAsset(
+                $request->asset_id,
+                $request->employee_id,
+                $request->notes
+            );
+            return response()->json($assignment);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        return response()->json($result['assignment'], 201);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/assets/return",
+     *     summary="Return an asset",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"asset_id"},
+     *             @OA\Property(property="asset_id", type="integer"),
+     *             @OA\Property(property="condition", type="string", example="GOOD"),
+     *             @OA\Property(property="notes", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Asset returned")
+     * )
+     */
     public function returnAsset(Request $request)
     {
-        $request->validate([
-            'assignment_id' => 'required|exists:asset_assignments,id',
-            'return_condition' => 'required|string',
-            'notes' => 'nullable|string',
-        ]);
-
-        $result = $this->assetService->returnAsset(
-            $request->assignment_id,
-            $request->return_condition,
-            $request->notes
-        );
-
-        if (!$result['success']) {
-            return response()->json(['error' => $result['message']], 400);
+        try {
+            $assignment = $this->assetService->returnAsset(
+                $request->asset_id,
+                $request->condition,
+                $request->notes
+            );
+            return response()->json($assignment);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        return response()->json(['message' => $result['message']]);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/assets/employee/{employeeId}",
+     *     summary="Get assets assigned to employee",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="employeeId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="List of assigned assets")
+     * )
+     */
     public function employeeAssets($employeeId)
     {
-        $assignments = AssetAssignment::with('asset')
-            ->where('assigned_to_employee_id', $employeeId)
-            ->whereNull('returned_at')
-            ->get();
+        $assets = Asset::whereHas('currentAssignment', function ($q) use ($employeeId) {
+            $q->where('employee_id', $employeeId);
+        })->get();
 
-        return response()->json($assignments);
+        return response()->json($assets);
     }
 }

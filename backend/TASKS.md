@@ -15,6 +15,14 @@
 - [ ] 🔄 Start development server (`php artisan serve`)
 - [ ] 🔄 Test API endpoints with Postman
 
+## Management Scripts (Windows)
+
+Located in `backend/` folder:
+
+- **`start_app.bat`**: Runs migrations, seeds (all data), and starts the API server. (In PowerShell, run as `.\start_app.bat`)
+- **`stop_app.bat`**: Stops the API server running on port 8000. (In PowerShell, run as `.\stop_app.bat`)
+- **`reset_db.bat`**: **WARNING** - Resets database and seeds ONLY production data. (In PowerShell, run as `.\reset_db.bat`)
+
 ## Testing
 
 - [ ] 🔄 Write unit tests for GPS validation service
