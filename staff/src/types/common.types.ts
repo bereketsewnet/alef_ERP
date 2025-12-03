@@ -51,10 +51,15 @@ export enum Permission {
 
 export interface User {
     id: number
-    name: string
+    username: string
     email: string
-    role: Role
-    permissions: Permission[]
-    created_at: string
-    updated_at: string
+    phone_number?: string
+    role: string
+    employee_id?: number
+    telegram_chat_id?: string
+    last_login?: string
+    name?: string // Optional for display purposes
+    permissions?: Permission[]
+    created_at?: string
+    updated_at?: string
 }

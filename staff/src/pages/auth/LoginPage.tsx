@@ -16,7 +16,7 @@ import {
 import { Link } from 'react-router-dom'
 
 const loginSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    login: z.string().min(1, 'Email, username, or phone is required'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     remember: z.boolean().default(false),
 })
@@ -29,7 +29,7 @@ export function LoginPage() {
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            email: '',
+            login: '',
             password: '',
             remember: false,
         },
@@ -40,27 +40,27 @@ export function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-secondary-500">
-            <div className="bg-white dark:bg-neutral-800 p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <div className="light min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-secondary-500">
+            <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-primary-600 mb-2">
                         {import.meta.env.VITE_APP_NAME || 'ALEF DELTA ERP'}
                     </h1>
-                    <p className="text-neutral-600 dark:text-neutral-400">Staff Portal</p>
+                    <p className="text-neutral-600">Staff Portal</p>
                 </div>
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
                             control={form.control}
-                            name="email"
+                            name="login"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Email</FormLabel>
+                                    <FormLabel>Email / Username</FormLabel>
                                     <FormControl>
                                         <Input
-                                            type="email"
-                                            placeholder="Enter your email"
+                                            type="text"
+                                            placeholder="Enter your email or username"
                                             {...field}
                                         />
                                     </FormControl>

@@ -1,15 +1,16 @@
 import type { User } from './common.types'
 
 export interface LoginRequest {
-    email: string
+    login: string
     password: string
     remember?: boolean
 }
 
 export interface LoginResponse {
-    token: string
+    access_token: string
+    token_type: string
+    expires_in: number
     user: User
-    expires_at: string
 }
 
 export interface RefreshTokenResponse {

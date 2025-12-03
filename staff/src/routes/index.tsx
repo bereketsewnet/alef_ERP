@@ -9,6 +9,7 @@ import { ClientListPage } from '@/pages/clients/ClientListPage'
 import { AssetListPage } from '@/pages/assets/AssetListPage'
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { BillingPage } from '@/pages/billing/BillingPage'
+import { UserManagementPage } from '@/pages/settings/UserManagementPage'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
@@ -35,6 +36,7 @@ export function AppRoutes() {
                 <Route path="/assets" element={<AssetListPage />} />
                 <Route path="/payroll" element={<PayrollPage />} />
                 <Route path="/billing" element={<BillingPage />} />
+                <Route path="/settings/users" element={<UserManagementPage />} />
             </Route>
 
             {/* Default redirect */}

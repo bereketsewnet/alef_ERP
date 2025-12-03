@@ -29,7 +29,7 @@ export function useLogin() {
         mutationFn: (data: LoginRequest) => authApi.login(data),
         onSuccess: (data) => {
             // Store tokens
-            localStorage.setItem('auth_token', data.token)
+            localStorage.setItem('auth_token', data.access_token)
 
             // Invalidate and refetch user data
             queryClient.invalidateQueries({ queryKey: authKeys.me() })
