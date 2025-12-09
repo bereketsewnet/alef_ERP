@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientsApi, type CreateClientRequest, type CreateSiteRequest } from '@/api/endpoints/clients'
 import { toast } from 'sonner'
 
-export const useClients = (page = 1) => {
+export const useClients = (params: any = { page: 1 }) => {
     return useQuery({
-        queryKey: ['clients', page],
-        queryFn: () => clientsApi.list(page),
+        queryKey: ['clients', params],
+        queryFn: () => clientsApi.list(params),
     })
 }
 

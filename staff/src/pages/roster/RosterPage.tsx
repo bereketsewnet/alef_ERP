@@ -73,7 +73,7 @@ export function RosterPage() {
 
     const { data: rosterData, isLoading } = useRoster({ page, site_id: siteFilter, date: dateFilter })
     const { data: employeesData } = useEmployees({ per_page: 1000 })
-    const { data: clientsData } = useClients(1)
+    const { data: clientsData } = useClients({ page: 1 })
     const { mutate: bulkAssign, isPending: isAssigning } = useBulkAssignShifts()
     const { data: jobs } = useJobs({ active_only: true })
 

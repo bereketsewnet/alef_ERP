@@ -72,13 +72,14 @@ class IncidentController extends Controller
         ]);
 
         $user = auth()->user();
-        if (!$user->employee_id) {
-            return response()->json(['error' => 'User is not an employee'], 403);
-        }
+        // Allow users without employee_id (Admins) to report incidents
+        // if (!$user->employee_id) {
+        //     return response()->json(['error' => 'User is not an employee'], 403);
+        // }
 
         $report = OperationalReport::create([
             'site_id' => $request->site_id,
-            'reported_by_employee_id' => $user->employee_id,
+            'reported_by_employee_id' => $user->employee_id ?? null,
             'report_type' => $request->report_type,
             'description' => $request->description,
             'severity_level' => $request->severity_level ?? 'LOW',
@@ -114,13 +115,14 @@ class IncidentController extends Controller
         $user = auth()->user();
         $employeeId = $user->employee_id;
 
-        if (!$employeeId) {
-            return response()->json(['error' => 'User is not an employee'], 403);
-        }
+        // Allow panic from admins too
+        // if (!$employeeId) {
+        //     return response()->json(['error' => 'User is not an employee'], 403);
+        // }
 
         $report = OperationalReport::create([
             'site_id' => $request->site_id,
-            'reported_by_employee_id' => $employeeId,
+            'reported_by_employee_id' => $employeeId ?? null,
             'report_type' => 'PANIC',
             'description' => $request->description,
             'severity_level' => 'CRITICAL',

@@ -16,6 +16,8 @@ import { JobCategoriesPage } from '@/pages/jobs/JobCategoriesPage'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
+import { IncidentsPage } from '@/pages/incidents/IncidentsPage'
+
 export function AppRoutes() {
     return (
         <Routes>
@@ -42,6 +44,7 @@ export function AppRoutes() {
                 <Route path="/payroll" element={<PayrollPage />} />
                 <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
                 <Route path="/billing" element={<BillingPage />} />
+                <Route path="/incidents" element={<IncidentsPage />} />
                 <Route path="/settings/users" element={<UserManagementPage />} />
             </Route>
 

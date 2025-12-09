@@ -33,7 +33,8 @@ class ClientController extends Controller
             });
         }
 
-        $clients = $query->paginate(50);
+        $perPage = $request->input('per_page', 50);
+        $clients = $query->paginate($perPage);
         return response()->json($clients);
     }
 

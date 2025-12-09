@@ -165,6 +165,15 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [IncidentController::class, 'store']);
         Route::post('/panic', [IncidentController::class, 'panic']);
     });
+
+    // Invoice Routes
+    Route::prefix('invoices')->group(function () {
+        Route::get('/stats', [\App\Http\Controllers\Api\InvoiceController::class, 'dashboard_stats']);
+        Route::get('/', [\App\Http\Controllers\Api\InvoiceController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\InvoiceController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
+        Route::get('/{id}/download', [\App\Http\Controllers\Api\InvoiceController::class, 'download']);
+    });
 });
 
 // Health Check

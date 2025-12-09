@@ -59,8 +59,8 @@ export interface CreateSiteRequest {
 }
 
 export const clientsApi = {
-    list: async (page = 1): Promise<ClientListResponse> => {
-        const response = await apiClient.get(`/clients?page=${page}`)
+    list: async (params: any = { page: 1 }): Promise<ClientListResponse> => {
+        const response = await apiClient.get('/clients', { params })
         return response.data
     },
 

@@ -59,7 +59,7 @@ export function ClientListPage() {
     const [expandedClientIds, setExpandedClientIds] = useState<Set<number>>(new Set())
     const [siteToView, setSiteToView] = useState<any | null>(null)
 
-    const { data, isLoading, error } = useClients(page)
+    const { data, isLoading, error } = useClients({ page })
     const { mutate: createClient, isPending: isCreating } = useCreateClient()
     const { mutate: createSite, isPending: isCreatingSite } = useCreateSite()
     // deleteClient available if needed in future
