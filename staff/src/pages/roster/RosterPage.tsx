@@ -37,6 +37,7 @@ import { Calendar, Users, Clock, ChevronLeft, ChevronRight, Eye } from "lucide-r
 import { useRoster, useBulkAssignShifts } from "@/services/useRoster"
 import { useEmployees } from "@/services/useEmployees"
 import { useClients } from "@/services/useClients"
+import { useJobs } from "@/services/useJobs"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -44,6 +45,7 @@ import type { ShiftSchedule } from "@/api/endpoints/roster"
 
 const bulkAssignSchema = z.object({
     site_id: z.string().min(1, 'Site is required'),
+    job_id: z.string().min(1, 'Job is required'),
     employee_ids: z.array(z.string()).min(1, 'Select at least one employee'),
     start_date: z.string().min(1, 'Start date is required'),
     end_date: z.string().min(1, 'End date is required'),
@@ -73,11 +75,13 @@ export function RosterPage() {
     const { data: employeesData } = useEmployees({ per_page: 1000 })
     const { data: clientsData } = useClients(1)
     const { mutate: bulkAssign, isPending: isAssigning } = useBulkAssignShifts()
+    const { data: jobs } = useJobs({ active_only: true })
 
     const form = useForm({
         resolver: zodResolver(bulkAssignSchema),
         defaultValues: {
             site_id: '',
+            job_id: '',
             employee_ids: [],
             start_date: '',
             end_date: '',
@@ -89,6 +93,7 @@ export function RosterPage() {
     const handleBulkAssign = (values: z.infer<typeof bulkAssignSchema>) => {
         bulkAssign({
             site_id: parseInt(values.site_id),
+            job_id: parseInt(values.job_id),
             employee_ids: values.employee_ids.map(id => parseInt(id)),
             start_date: values.start_date,
             end_date: values.end_date,
@@ -501,6 +506,32 @@ export function RosterPage() {
 
                             <FormField
                                 control={form.control}
+                                name="job_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Job Type</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select job type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {jobs?.map(job => (
+                                                    <SelectItem key={job.id} value={job.id.toString()}>
+                                                        {job.job_code} - {job.job_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-neutral-500">Pay rates will be determined by job settings</p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
                                 name="employee_ids"
                                 render={({ field }) => (
                                     <FormItem>
@@ -585,6 +616,8 @@ export function RosterPage() {
                                     )}
                                 />
                             </div>
+
+                            {/* Job Selection - Added right after time fields */}
 
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setBulkAssignOpen(false)}>

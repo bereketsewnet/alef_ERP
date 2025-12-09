@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -27,11 +27,12 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2 } from "lucide-react"
+import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2, Eye, ChevronDown, ChevronUp } from "lucide-react"
 import { useClients, useCreateClient, useCreateSite, useDeleteClient } from "@/services/useClients"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { SiteDetailsModal } from "@/components/sites/SiteDetailsModal"
 
 const clientSchema = z.object({
     company_name: z.string().min(2, 'Company name is required'),
@@ -55,11 +56,14 @@ export function ClientListPage() {
     const [clientModalOpen, setClientModalOpen] = useState(false)
     const [siteModalOpen, setSiteModalOpen] = useState(false)
     const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
+    const [expandedClientIds, setExpandedClientIds] = useState<Set<number>>(new Set())
+    const [siteToView, setSiteToView] = useState<any | null>(null)
 
     const { data, isLoading, error } = useClients(page)
     const { mutate: createClient, isPending: isCreating } = useCreateClient()
     const { mutate: createSite, isPending: isCreatingSite } = useCreateSite()
-    const { mutate: deleteClient } = useDeleteClient()
+    // deleteClient available if needed in future
+    useDeleteClient()
 
     const clientForm = useForm({
         resolver: zodResolver(clientSchema),
@@ -130,6 +134,18 @@ export function ClientListPage() {
     const handleAddSite = (clientId: number) => {
         setSelectedClientId(clientId)
         setSiteModalOpen(true)
+    }
+
+    const toggleClientExpansion = (clientId: number) => {
+        setExpandedClientIds(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(clientId)) {
+                newSet.delete(clientId)
+            } else {
+                newSet.add(clientId)
+            }
+            return newSet
+        })
     }
 
     // Calculate totals
@@ -261,32 +277,65 @@ export function ClientListPage() {
                         )}
 
                         {filteredClients.map((client) => (
-                            <TableRow key={client.id}>
-                                <TableCell className="font-medium">
-                                    {client.company_name}
-                                </TableCell>
-                                <TableCell>{client.contact_person}</TableCell>
-                                <TableCell>{client.contact_phone}</TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-1">
-                                        <MapPin className="h-4 w-4 text-neutral-500" />
-                                        <span>{client.sites?.length || 0}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="success">Active</Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleAddSite(client.id)}
-                                    >
-                                        <Plus className="h-4 w-4 mr-1" />
-                                        Add Site
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
+                            <Fragment key={client.id}>
+                                <TableRow className="cursor-pointer hover:bg-neutral-50" onClick={() => toggleClientExpansion(client.id)}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            {expandedClientIds.has(client.id) ? (
+                                                <ChevronUp className="h-4 w-4 text-neutral-500" />
+                                            ) : (
+                                                <ChevronDown className="h-4 w-4 text-neutral-500" />
+                                            )}
+                                            {client.company_name}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{client.contact_person}</TableCell>
+                                    <TableCell>{client.contact_phone}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1">
+                                            <MapPin className="h-4 w-4 text-neutral-500" />
+                                            <span>{client.sites?.length || 0}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="success">Active</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); handleAddSite(client.id); }}
+                                        >
+                                            <Plus className="h-4 w-4 mr-1" />
+                                            Add Site
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                                {expandedClientIds.has(client.id) && client.sites?.map((site: any) => (
+                                    <TableRow key={site.id} className="bg-neutral-50">
+                                        <TableCell colSpan={4} className="pl-10">
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="h-4 w-4 text-green-500" />
+                                                <span className="font-medium">{site.site_name}</span>
+                                                <span className="text-xs text-neutral-500">
+                                                    ({Number(site.latitude).toFixed(4)}, {Number(site.longitude).toFixed(4)})
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setSiteToView(site)}
+                                            >
+                                                <Eye className="h-4 w-4 mr-1" />
+                                                View Jobs
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </Fragment>
                         ))}
                     </TableBody>
                 </Table>
@@ -511,6 +560,13 @@ export function ClientListPage() {
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            {/* Site Details Modal */}
+            <SiteDetailsModal
+                open={!!siteToView}
+                onClose={() => setSiteToView(null)}
+                site={siteToView}
+            />
         </div>
     )
 }

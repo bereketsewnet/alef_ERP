@@ -73,7 +73,6 @@ class EmployeeController extends Controller
             'last_name' => 'required|string',
             'email' => 'nullable|sometimes|email',
             'phone_number' => 'required|string',
-            'role' => 'nullable|sometimes|string',
             'status' => 'nullable|in:active,probation,inactive,terminated',
             'hire_date' => 'required|date',
         ]);
@@ -90,7 +89,6 @@ class EmployeeController extends Controller
                 'last_name' => $request->last_name,
                 'phone_number' => $request->phone_number,
                 'email' => $request->email ?? null,
-                'role' => $request->role ?? null,
                 'status' => $request->status ?? 'active',
                 'hire_date' => $request->hire_date,
                 'job_role_id' => null,
@@ -151,7 +149,6 @@ class EmployeeController extends Controller
             'last_name' => 'sometimes|string',
             'email' => 'nullable|sometimes|email',
             'phone_number' => 'sometimes|string',
-            'role' => 'nullable|sometimes|string',
             'status' => 'sometimes|in:active,probation,inactive,terminated',
             'hire_date' => 'sometimes|date',
         ]);
@@ -161,7 +158,6 @@ class EmployeeController extends Controller
             'last_name',
             'email',
             'phone_number',
-            'role',
             'status',
             'hire_date',
         ]));
@@ -223,5 +219,154 @@ class EmployeeController extends Controller
         }
 
         return response()->json(['error' => 'Telegram user not found'], 404);
+    }
+
+    /**
+     * Get all jobs assigned to an employee
+     */
+    public function getJobs($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $jobs = $employee->jobs()->with('category')->get();
+        
+        return response()->json($jobs);
+    }
+
+    /**
+     * Assign a job to an employee
+     */
+    public function assignJob(Request $request, $id)
+    {
+        $employee = Employee::findOrFail($id);
+        
+        $validated = $request->validate([
+            'job_id' => 'required|exists:jobs,id',
+            'is_primary' => 'boolean',
+            'override_salary' => 'nullable|numeric|min:0',
+            'override_hourly_rate' => 'nullable|numeric|min:0',
+            'override_tax_percent' => 'nullable|numeric|min:0|max:100',
+            'override_late_penalty' => 'nullable|numeric|min:0',
+            'override_absent_penalty' => 'nullable|numeric|min:0',
+            'override_agency_fee_percent' => 'nullable|numeric|min:0|max:100',
+            'override_overtime_multiplier' => 'nullable|numeric|min:1|max:5',
+        ]);
+        
+        // Check if already assigned
+        if ($employee->hasJob($validated['job_id'])) {
+            return response()->json(['error' => 'Job already assigned to this employee'], 422);
+        }
+        
+        // If this is the first job or is_primary is true, ensure it's primary
+        $isPrimary = $validated['is_primary'] ?? false;
+        if ($employee->jobs()->count() === 0) {
+            $isPrimary = true; // First job is always primary
+        }
+        
+        // If setting as primary, unset other primaries
+        if ($isPrimary) {
+            $employee->jobs()->updateExistingPivot(
+                $employee->jobs()->pluck('jobs.id')->toArray(),
+                ['is_primary' => false]
+            );
+        }
+        
+        // Attach the job with overrides
+        $employee->jobs()->attach($validated['job_id'], [
+            'is_primary' => $isPrimary,
+            'override_salary' => $validated['override_salary'] ?? null,
+            'override_hourly_rate' => $validated['override_hourly_rate'] ?? null,
+            'override_tax_percent' => $validated['override_tax_percent'] ?? null,
+            'override_late_penalty' => $validated['override_late_penalty'] ?? null,
+            'override_absent_penalty' => $validated['override_absent_penalty'] ?? null,
+            'override_agency_fee_percent' => $validated['override_agency_fee_percent'] ?? null,
+            'override_overtime_multiplier' => $validated['override_overtime_multiplier'] ?? null,
+        ]);
+        
+        $employee->load('jobs.category');
+        
+        return response()->json([
+            'message' => 'Job assigned successfully',
+            'employee' => $employee
+        ], 201);
+    }
+
+    /**
+     * Update job overrides for an employee
+     */
+    public function updateJob(Request $request, $employeeId, $jobId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+        
+        if (!$employee->hasJob($jobId)) {
+            return response()->json(['error' => 'Job not assigned to this employee'], 404);
+        }
+        
+        $validated = $request->validate([
+            'override_salary' => 'nullable|numeric|min:0',
+            'override_hourly_rate' => 'nullable|numeric|min:0',
+            'override_tax_percent' => 'nullable|numeric|min:0|max:100',
+            'override_late_penalty' => 'nullable|numeric|min:0',
+            'override_absent_penalty' => 'nullable|numeric|min:0',
+            'override_agency_fee_percent' => 'nullable|numeric|min:0|max:100',
+            'override_overtime_multiplier' => 'nullable|numeric|min:1|max:5',
+        ]);
+        
+        $employee->jobs()->updateExistingPivot($jobId, $validated);
+        
+        return response()->json([
+            'message' => 'Job overrides updated',
+            'settings' => $employee->getJobSettings($jobId)
+        ]);
+    }
+
+    /**
+     * Remove a job from an employee
+     */
+    public function removeJob($employeeId, $jobId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+        
+        if (!$employee->hasJob($jobId)) {
+            return response()->json(['error' => 'Job not assigned to this employee'], 404);
+        }
+        
+        // Check if this was the primary job
+        $wasPrimary = $employee->jobs()
+            ->where('jobs.id', $jobId)
+            ->wherePivot('is_primary', true)
+            ->exists();
+        
+        $employee->jobs()->detach($jobId);
+        
+        // If this was primary and there are other jobs, make one of them primary
+        if ($wasPrimary && $employee->jobs()->count() > 0) {
+            $firstJob = $employee->jobs()->first();
+            $employee->jobs()->updateExistingPivot($firstJob->id, ['is_primary' => true]);
+        }
+        
+        return response()->json(['message' => 'Job removed from employee']);
+    }
+
+    /**
+     * Set a job as primary for an employee
+     */
+    public function setPrimaryJob($employeeId, $jobId)
+    {
+        $employee = Employee::findOrFail($employeeId);
+        
+        if (!$employee->hasJob($jobId)) {
+            return response()->json(['error' => 'Job not assigned to this employee'], 404);
+        }
+        
+        // Unset all as primary
+        $employee->jobs()->updateExistingPivot(
+            $employee->jobs()->pluck('jobs.id')->toArray(),
+            ['is_primary' => false]
+        );
+        
+        // Set this one as primary
+        $employee->jobs()->updateExistingPivot($jobId, ['is_primary' => true]);
+        
+        return response()->json(['message' => 'Primary job updated']);
     }
 }

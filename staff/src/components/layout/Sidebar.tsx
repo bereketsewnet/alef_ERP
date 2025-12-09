@@ -14,7 +14,8 @@ import {
     Settings,
     LogOut,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Briefcase
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLogout } from "@/services/useAuth"
@@ -30,6 +31,7 @@ export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {
 
     const navItems = [
         { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { title: "Jobs", href: "/jobs", icon: Briefcase },
         { title: "Roster", href: "/roster", icon: CalendarDays },
         { title: "Employees", href: "/employees", icon: Users },
         { title: "Attendance", href: "/attendance", icon: ClipboardCheck },

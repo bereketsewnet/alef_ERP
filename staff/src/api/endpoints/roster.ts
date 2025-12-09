@@ -4,6 +4,7 @@ export interface ShiftSchedule {
     id: number
     employee_id: number
     site_id: number
+    job_id: number | null
     shift_start: string
     shift_end: string
     is_overtime_shift: boolean
@@ -21,6 +22,11 @@ export interface ShiftSchedule {
         id: number
         site_name: string
         client_id: number
+    }
+    job?: {
+        id: number
+        job_name: string
+        job_code: string
     }
     attendance_logs?: Array<{
         id: number
@@ -47,6 +53,7 @@ export interface RosterListResponse {
 
 export interface BulkAssignRequest {
     site_id: number
+    job_id: number
     employee_ids: number[]
     start_date: string
     end_date: string

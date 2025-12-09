@@ -14,11 +14,13 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import { EmployeeFormModal } from '@/components/employees/EmployeeFormModal'
+import { EmployeeDetailsModal } from '@/components/employees/EmployeeDetailsModal'
 
 export function EmployeeListPage() {
     const [search, setSearch] = useState('')
     const [page, setPage] = useState(1)
     const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null)
+    const [employeeToView, setEmployeeToView] = useState<Employee | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
     const { data, isLoading } = useEmployees({ page, search: search || undefined })
@@ -80,7 +82,7 @@ export function EmployeeListPage() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
+
                             <TableHead>Phone</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Hire Date</TableHead>
@@ -107,7 +109,7 @@ export function EmployeeListPage() {
                                         {employee.first_name} {employee.last_name}
                                     </TableCell>
                                     <TableCell>{employee.email || '-'}</TableCell>
-                                    <TableCell>{employee.role || '-'}</TableCell>
+
                                     <TableCell>{employee.phone_number}</TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusVariant(employee.status)}>
@@ -122,10 +124,7 @@ export function EmployeeListPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => {
-                                                    // TODO: Navigate to employee detail page or show detail modal
-                                                    alert(`View employee details for ${employee.first_name} ${employee.last_name}`)
-                                                }}
+                                                onClick={() => setEmployeeToView(employee)}
                                                 title="View Details"
                                             >
                                                 <Eye className="h-4 w-4" />
@@ -190,6 +189,13 @@ export function EmployeeListPage() {
                     setEmployeeToEdit(null)
                 }}
                 employee={employeeToEdit}
+            />
+
+            {/* View Details Modal */}
+            <EmployeeDetailsModal
+                open={!!employeeToView}
+                onClose={() => setEmployeeToView(null)}
+                employee={employeeToView}
             />
         </div>
     )

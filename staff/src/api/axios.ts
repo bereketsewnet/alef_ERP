@@ -66,6 +66,7 @@ apiClient.interceptors.response.use(
         // Handle other errors
         const apiError: ApiError = {
             message: error.response?.data?.message || error.message || 'An error occurred',
+            error: error.response?.data?.error, // Capture specific error message
             errors: error.response?.data?.errors,
             status: error.response?.status,
         }

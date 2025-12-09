@@ -8,4 +8,4 @@ Medium Priority: 7. Asset Management 8. Dashboard Analytics
 
 Lower Priority: 9. Payroll Processing 10. Billing & Invoices
 
-Now the Employee page should work without errors! Would you like me to proceed with Attendance Management (Priority #4) next?
+Now the Employee page should work without errors! Would you like me to proceed with Attendance Management (Priority #4) next?-

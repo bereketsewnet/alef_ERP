@@ -71,6 +71,13 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{id}', [EmployeeController::class, 'update']);
         Route::delete('/{id}', [EmployeeController::class, 'destroy']);
         Route::post('/link-telegram', [EmployeeController::class, 'linkTelegram']);
+        
+        // Employee Job assignments
+        Route::get('/{id}/jobs', [EmployeeController::class, 'getJobs']);
+        Route::post('/{id}/jobs', [EmployeeController::class, 'assignJob']);
+        Route::put('/{employeeId}/jobs/{jobId}', [EmployeeController::class, 'updateJob']);
+        Route::delete('/{employeeId}/jobs/{jobId}', [EmployeeController::class, 'removeJob']);
+        Route::put('/{employeeId}/jobs/{jobId}/primary', [EmployeeController::class, 'setPrimaryJob']);
     });
 
     // Client & Site Routes
@@ -80,29 +87,77 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [ClientController::class, 'show']);
         Route::put('/{id}', [ClientController::class, 'update']);
         Route::delete('/{id}', [ClientController::class, 'destroy']);
-        Route::post('/{clientId}/sites', [ClientController::class, 'createSite']);
+        Route::post('/{id}/sites', [ClientController::class, 'createSite']);
         Route::get('/{clientId}/sites', [ClientController::class, 'getSites']);
+    });
+
+    // Site Job Requirements
+    Route::prefix('sites')->group(function () {
+        Route::get('/{siteId}/jobs', [ClientController::class, 'getSiteJobs']);
+        Route::post('/{siteId}/jobs', [ClientController::class, 'addSiteJob']);
+        Route::put('/{siteId}/jobs/{jobId}', [ClientController::class, 'updateSiteJob']);
+        Route::delete('/{siteId}/jobs/{jobId}', [ClientController::class, 'removeSiteJob']);
+    });
+
+    // Job Categories
+    Route::prefix('job-categories')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\JobCategoryController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\JobCategoryController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\JobCategoryController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\JobCategoryController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\JobCategoryController::class, 'destroy']);
+    });
+
+    // Jobs
+    Route::prefix('jobs')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\JobController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\JobController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\JobController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\JobController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\JobController::class, 'destroy']);
+        Route::post('/{id}/skills', [\App\Http\Controllers\Api\JobController::class, 'addSkill']);
+        Route::delete('/{jobId}/skills/{skillId}', [\App\Http\Controllers\Api\JobController::class, 'removeSkill']);
+        Route::get('/{id}/employees', [\App\Http\Controllers\Api\JobController::class, 'getEmployees']);
+        Route::get('/{id}/sites', [\App\Http\Controllers\Api\JobController::class, 'getSites']);
     });
 
     // Asset Routes
     Route::prefix('assets')->group(function () {
         Route::get('/', [AssetController::class, 'index']);
         Route::post('/', [AssetController::class, 'store']);
-        Route::post('/assign', [AssetController::class, 'assign']);
-        Route::post('/return', [AssetController::class, 'returnAsset']);
-        Route::get('/employee/{employeeId}', [AssetController::class, 'employeeAssets']);
+        Route::get('/stats', [AssetController::class, 'stats']);
+        Route::get('/unreturned', [AssetController::class, 'unreturned']);
+        Route::get('/{id}', [AssetController::class, 'show']);
+        Route::put('/{id}', [AssetController::class, 'update']);
+        Route::delete('/{id}', [AssetController::class, 'destroy']);
+        Route::post('/{id}/assign', [AssetController::class, 'assign']);
+        Route::post('/{id}/return', [AssetController::class, 'returnAsset']);
     });
 
-    // Finance Routes
-    Route::prefix('finance')->group(function () {
-        Route::post('/payroll-periods', [FinanceController::class, 'createPayrollPeriod']);
-        Route::post('/generate-payroll', [FinanceController::class, 'generatePayroll']);
-        Route::get('/payslips', [FinanceController::class, 'getPayslips']);
-        Route::get('/my-payslips', [FinanceController::class, 'getMyPayslips']);
-        Route::get('/payslips/{id}/download', [FinanceController::class, 'downloadPayslipPdf']);
-        Route::get('/payroll/export', [FinanceController::class, 'exportPayroll']);
-        Route::get('/invoices', [FinanceController::class, 'getInvoices']);
+    // Payroll Management
+    Route::prefix('payroll')->group(function () {
+        Route::get('periods', [App\Http\Controllers\Api\PayrollController::class, 'index']);
+        Route::post('periods', [App\Http\Controllers\Api\PayrollController::class, 'store']);
+        Route::get('periods/{id}', [App\Http\Controllers\Api\PayrollController::class, 'show']);
+        Route::post('periods/{id}/generate', [App\Http\Controllers\Api\PayrollController::class, 'generate']);
+        Route::post('periods/{id}/approve', [App\Http\Controllers\Api\PayrollController::class, 'approve']);
+        Route::get('items/{id}/payslip', [App\Http\Controllers\Api\PayrollController::class, 'downloadPayslip']);
+        Route::get('stats', [App\Http\Controllers\Api\PayrollController::class, 'stats']);
+        
+        // Settings
+        Route::get('settings', [App\Http\Controllers\Api\PayrollController::class, 'getSettings']);
+        Route::put('settings/{key}', [App\Http\Controllers\Api\PayrollController::class, 'updateSetting']);
     });
+
+    // Penalty Management
+    Route::get('penalties', [App\Http\Controllers\Api\PayrollController::class, 'getPenalties']);
+    Route::post('penalties', [App\Http\Controllers\Api\PayrollController::class, 'storePenalty']);
+    Route::delete('penalties/{id}', [App\Http\Controllers\Api\PayrollController::class, 'deletePenalty']);
+
+    // Bonus Management
+    Route::get('bonuses', [App\Http\Controllers\Api\PayrollController::class, 'getBonuses']);
+    Route::post('bonuses', [App\Http\Controllers\Api\PayrollController::class, 'storeBonus']);
+    Route::delete('bonuses/{id}', [App\Http\Controllers\Api\PayrollController::class, 'deleteBonus']);
 
     // Incident Routes
     Route::prefix('incidents')->group(function () {
@@ -114,4 +169,3 @@ Route::middleware('auth:api')->group(function () {
 
 // Health Check
 Route::get('/health', [HealthController::class, 'index']);
-

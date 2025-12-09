@@ -41,22 +41,63 @@ class RosterController extends Controller
     public function bulkAssign(Request $request)
     {
         // Validation
-        $request->validate([
+        $validated = $request->validate([
             'site_id' => 'required|exists:client_sites,id',
-            'employee_ids' => 'required|array',
+            'job_id' => 'required|exists:jobs,id',
+            'employee_ids' => 'required|array|min:1',
+            'employee_ids.*' => 'exists:employees,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
             'end_time' => 'required',
         ]);
 
+        $site = \App\Models\ClientSite::findOrFail($validated['site_id']);
+        $job = \App\Models\Job::findOrFail($validated['job_id']);
+        
+        // Check if site requires this job (if site has job requirements)
+        $siteJobIds = $site->requiredJobs()->pluck('jobs.id')->toArray();
+        if (!empty($siteJobIds) && !in_array($validated['job_id'], $siteJobIds)) {
+            return response()->json([
+                'error' => "Action Failed: The site '{$site->site_name}' does not accept '{$job->job_name}' shifts. It only requires: " . 
+                    $site->requiredJobs()->pluck('job_name')->implode(', ')
+            ], 422);
+        }
+        
+        // Validate each employee has the required job
+        $invalidEmployees = [];
+        foreach ($validated['employee_ids'] as $employeeId) {
+            $employee = \App\Models\Employee::find($employeeId);
+            if (!$employee->hasJob($validated['job_id'])) {
+                $invalidEmployees[] = [
+                    'id' => $employeeId,
+                    'name' => $employee->first_name . ' ' . $employee->last_name,
+                    'assigned_jobs' => $employee->jobs()->pluck('job_name')->toArray()
+                ];
+            }
+        }
+        
+        if (!empty($invalidEmployees)) {
+            $details = array_map(function($e) {
+                $currentJobs = empty($e['assigned_jobs']) ? 'No Jobs' : implode(', ', $e['assigned_jobs']);
+                return "{$e['name']} (Current: {$currentJobs})";
+            }, $invalidEmployees);
+
+            return response()->json([
+                'error' => "Unable to Assign: The following employees are not qualified to work as '{$job->job_name}': " . implode(', ', $details),
+                'invalid_employees' => $invalidEmployees,
+                'required_job' => $job->job_name
+            ], 422);
+        }
+
         $result = $this->rosterService->bulkAssignShifts(
-            $request->site_id,
-            $request->employee_ids,
-            $request->start_date,
-            $request->end_date,
-            $request->start_time,
-            $request->end_time,
+            $validated['site_id'],
+            $validated['job_id'],
+            $validated['employee_ids'],
+            $validated['start_date'],
+            $validated['end_date'],
+            $validated['start_time'],
+            $validated['end_time'],
             auth()->id()
         );
 

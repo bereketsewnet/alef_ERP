@@ -8,8 +8,11 @@ import { RosterPage } from '@/pages/roster/RosterPage'
 import { ClientListPage } from '@/pages/clients/ClientListPage'
 import { AssetListPage } from '@/pages/assets/AssetListPage'
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
+import { PayrollSettingsPage } from '@/pages/payroll/PayrollSettingsPage'
 import { BillingPage } from '@/pages/billing/BillingPage'
 import { UserManagementPage } from '@/pages/settings/UserManagementPage'
+import { JobsPage } from '@/pages/jobs/JobsPage'
+import { JobCategoriesPage } from '@/pages/jobs/JobCategoriesPage'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
@@ -34,7 +37,10 @@ export function AppRoutes() {
                 <Route path="/attendance" element={<AttendanceLogsPage />} />
                 <Route path="/clients" element={<ClientListPage />} />
                 <Route path="/assets" element={<AssetListPage />} />
+                <Route path="/jobs" element={<JobsPage />} />
+                <Route path="/jobs/categories" element={<JobCategoriesPage />} />
                 <Route path="/payroll" element={<PayrollPage />} />
+                <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/settings/users" element={<UserManagementPage />} />
             </Route>

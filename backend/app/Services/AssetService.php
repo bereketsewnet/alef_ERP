@@ -20,15 +20,13 @@ class AssetService
      * @param int $assetId
      * @param int $employeeId
      * @param string|null $notes
-     * @return array ['success' => bool, 'message' => string, 'assignment' => AssetAssignment|null]
+     * @param int|null $assignedByUserId
+     * @return AssetAssignment
+     * @throws \Exception
      */
-    public function assignAsset(int $assetId, int $employeeId, ?string $notes = null): array
+    public function assignAsset(int $assetId, int $employeeId, ?string $notes = null, ?int $assignedByUserId = null): AssetAssignment
     {
-        $asset = Asset::find($assetId);
-
-        if (!$asset) {
-            return ['success' => false, 'message' => 'Asset not found', 'assignment' => null];
-        }
+        $asset = Asset::findOrFail($assetId);
 
         // Check if asset is already assigned
         $existingAssignment = AssetAssignment::where('asset_id', $assetId)
@@ -36,7 +34,12 @@ class AssetService
             ->first();
 
         if ($existingAssignment) {
-            return ['success' => false, 'message' => 'Asset is already assigned', 'assignment' => null];
+            throw new \Exception('Asset is already assigned');
+        }
+
+        // Check if asset is available for assignment
+        if ($asset->condition === 'LOST') {
+            throw new \Exception('Cannot assign lost asset');
         }
 
         // Create assignment
@@ -45,54 +48,52 @@ class AssetService
             'assigned_to_employee_id' => $employeeId,
             'assigned_at' => now(),
             'notes' => $notes,
+            'assigned_by_user_id' => $assignedByUserId,
         ]);
 
-        // Update asset condition if needed
+        // Update asset condition if it's new
         if ($asset->condition === 'NEW') {
             $asset->update(['condition' => 'GOOD']);
         }
 
-        return [
-            'success' => true,
-            'message' => 'Asset assigned successfully',
-            'assignment' => $assignment,
-        ];
+        return $assignment;
     }
 
     /**
      * Return asset from employee
      *
-     * @param int $assignmentId
+     * @param int $assetId
      * @param string $returnCondition
      * @param string|null $notes
-     * @return array ['success' => bool, 'message' => string]
+     * @param int|null $returnedByUserId
+     * @return AssetAssignment
+     * @throws \Exception
      */
-    public function returnAsset(int $assignmentId, string $returnCondition, ?string $notes = null): array
+    public function returnAsset(int $assetId, string $returnCondition, ?string $notes = null, ?int $returnedByUserId = null): AssetAssignment
     {
-        $assignment = AssetAssignment::find($assignmentId);
+        $asset = Asset::findOrFail($assetId);
+
+        // Find active assignment
+        $assignment = AssetAssignment::where('asset_id', $assetId)
+            ->whereNull('returned_at')
+            ->first();
 
         if (!$assignment) {
-            return ['success' => false, 'message' => 'Assignment not found'];
-        }
-
-        if ($assignment->returned_at) {
-            return ['success' => false, 'message' => 'Asset already returned'];
+            throw new \Exception('No active assignment found for this asset');
         }
 
         // Update assignment
         $assignment->update([
             'returned_at' => now(),
             'return_condition' => $returnCondition,
-            'notes' => $assignment->notes . "\n" . $notes,
+            'notes' => $assignment->notes ? $assignment->notes . "\n" . $notes : $notes,
+            'returned_by_user_id' => $returnedByUserId,
         ]);
 
         // Update asset condition
-        $assignment->asset->update(['condition' => $returnCondition]);
+        $asset->update(['condition' => $returnCondition]);
 
-        return [
-            'success' => true,
-            'message' => 'Asset returned successfully',
-        ];
+        return $assignment;
     }
 
     /**

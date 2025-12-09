@@ -180,7 +180,83 @@ class ClientController extends Controller
      */
     public function getSites($clientId)
     {
-        $sites = ClientSite::where('client_id', $clientId)->get();
+        $sites = ClientSite::where('client_id', $clientId)->with('requiredJobs')->get();
         return response()->json($sites);
+    }
+
+    /**
+     * Get jobs required at a specific site
+     */
+    public function getSiteJobs($siteId)
+    {
+        $site = ClientSite::findOrFail($siteId);
+        $jobs = $site->requiredJobs()->with('category')->get();
+        
+        return response()->json($jobs);
+    }
+
+    /**
+     * Add a job requirement to a site
+     */
+    public function addSiteJob(Request $request, $siteId)
+    {
+        $site = ClientSite::findOrFail($siteId);
+        
+        $validated = $request->validate([
+            'job_id' => 'required|exists:jobs,id',
+            'positions_needed' => 'integer|min:1',
+        ]);
+        
+        // Check if already added
+        if ($site->requiresJob($validated['job_id'])) {
+            return response()->json(['error' => 'Job already required at this site'], 422);
+        }
+        
+        $site->requiredJobs()->attach($validated['job_id'], [
+            'positions_needed' => $validated['positions_needed'] ?? 1,
+        ]);
+        
+        $site->load('requiredJobs.category');
+        
+        return response()->json([
+            'message' => 'Job requirement added to site',
+            'site' => $site
+        ], 201);
+    }
+
+    /**
+     * Update job positions needed at a site
+     */
+    public function updateSiteJob(Request $request, $siteId, $jobId)
+    {
+        $site = ClientSite::findOrFail($siteId);
+        
+        if (!$site->requiresJob($jobId)) {
+            return response()->json(['error' => 'Job not required at this site'], 404);
+        }
+        
+        $validated = $request->validate([
+            'positions_needed' => 'required|integer|min:1',
+        ]);
+        
+        $site->requiredJobs()->updateExistingPivot($jobId, $validated);
+        
+        return response()->json(['message' => 'Job positions updated']);
+    }
+
+    /**
+     * Remove a job requirement from a site
+     */
+    public function removeSiteJob($siteId, $jobId)
+    {
+        $site = ClientSite::findOrFail($siteId);
+        
+        if (!$site->requiresJob($jobId)) {
+            return response()->json(['error' => 'Job not required at this site'], 404);
+        }
+        
+        $site->requiredJobs()->detach($jobId);
+        
+        return response()->json(['message' => 'Job requirement removed from site']);
     }
 }

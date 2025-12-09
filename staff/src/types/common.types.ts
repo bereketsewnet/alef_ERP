@@ -18,6 +18,7 @@ export interface PaginatedResponse<T> {
 
 export interface ApiError {
     message: string
+    error?: string // Custom error message from backend
     errors?: Record<string, string[]>
     status?: number
 }

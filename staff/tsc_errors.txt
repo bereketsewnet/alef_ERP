@@ -1,0 +1,54 @@
+﻿src/App.tsx(8,24): error TS2322: Type '{ children: Element; defaultTheme: string; storageKey: string; }' is not assignable to type 'IntrinsicAttributes & ThemeProviderProps'.
+  Property 'defaultTheme' does not exist on type 'IntrinsicAttributes & ThemeProviderProps'.
+src/components/auth/ProtectedRoute.tsx(46,56): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Role'.
+src/components/auth/ProtectedRoute.tsx(73,13): error TS18048: 'user.permissions' is possibly 'undefined'.
+src/components/ui/toaster.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/assets/AssetListPage.tsx(702,96): error TS2551: Property 'employee_code' does not exist on type 'Employee'. Did you mean 'employee_id'?
+src/pages/auth/LoginPage.tsx(30,9): error TS2322: Type 'Resolver<{ login: string; password: string; remember?: boolean | undefined; }, any, { login: string; password: string; remember: boolean; }>' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+  Types of parameters 'options' and 'options' are incompatible.
+    Type 'ResolverOptions<{ login: string; password: string; remember: boolean; }>' is not assignable to type 'ResolverOptions<{ login: string; password: string; remember?: boolean | undefined; }>'.
+      Type 'boolean | undefined' is not assignable to type 'boolean'.
+        Type 'undefined' is not assignable to type 'boolean'.
+src/pages/auth/LoginPage.tsx(53,55): error TS2345: Argument of type '(data: LoginFormValues) => void' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ login: string; password: string; remember: boolean; }'.
+      Type 'FieldValues' is missing the following properties from type '{ login: string; password: string; remember: boolean; }': login, password, remember
+src/pages/auth/LoginPage.tsx(55,29): error TS2322: Type 'Control<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Control<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }> | undefined'.
+      Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+        Type 'ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues>>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ login: string; password: string; remember: boolean; }>'.
+              Type 'TFieldValues' is not assignable to type '{ login: string; password: string; remember: boolean; }'.
+                Type 'FieldValues' is missing the following properties from type '{ login: string; password: string; remember: boolean; }': login, password, remember
+src/pages/auth/LoginPage.tsx(73,29): error TS2322: Type 'Control<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Control<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }> | undefined'.
+      Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+        Type 'ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues>>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ login: string; password: string; remember: boolean; }>'.
+              Type 'TFieldValues' is not assignable to type '{ login: string; password: string; remember: boolean; }'.
+                Type 'FieldValues' is missing the following properties from type '{ login: string; password: string; remember: boolean; }': login, password, remember
+src/pages/auth/LoginPage.tsx(92,33): error TS2322: Type 'Control<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Control<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }> | undefined'.
+      Type 'Resolver<{ login: string; password: string; remember: boolean; }, any, TFieldValues>' is not assignable to type 'Resolver<{ login: string; password: string; remember: boolean; }, any, { login: string; password: string; remember: boolean; }>'.
+        Type 'ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, TFieldValues>>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ login: string; password: string; remember: boolean; }, { login: string; password: string; remember: boolean; }> | Promise<ResolverResult<{ login: string; password: string; remember: boolean; }, { ...; }>>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ login: string; password: string; remember: boolean; }>'.
+              Type 'TFieldValues' is not assignable to type '{ login: string; password: string; remember: boolean; }'.
+                Type 'FieldValues' is missing the following properties from type '{ login: string; password: string; remember: boolean; }': login, password, remember
+src/pages/billing/BillingPage.tsx(92,16): error TS6133: 'row' is declared but its value is never read.
+src/pages/clients/ClientListPage.tsx(62,11): error TS6133: 'deleteClient' is declared but its value is never read.
+src/pages/payroll/BonusesPanel.tsx(139,49): error TS2339: Property 'map' does not exist on type 'PaginatedResponse<Employee>'.
+src/pages/payroll/PayrollSettingsPage.tsx(9,1): error TS6133: 'toast' is declared but its value is never read.
+src/pages/payroll/PayrollSettingsPage.tsx(10,1): error TS6133: 'formatCurrency' is declared but its value is never read.
+src/pages/payroll/PenaltiesPanel.tsx(138,49): error TS2339: Property 'map' does not exist on type 'PaginatedResponse<Employee>'.
+src/services/useJobs.ts(25,5): error TS1484: 'CreateJobCategoryRequest' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/useJobs.ts(26,5): error TS1484: 'CreateJobRequest' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/useJobs.ts(27,5): error TS1484: 'AssignJobRequest' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/services/useJobs.ts(28,5): error TS1484: 'AddSiteJobRequest' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/types/common.types.ts(31,13): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/types/common.types.ts(39,13): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.

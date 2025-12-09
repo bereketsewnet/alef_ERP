@@ -123,6 +123,7 @@ class RosterService
      */
     public function bulkAssignShifts(
         int $siteId,
+        int $jobId,
         array $employeeIds,
         string $startDate,
         string $endDate,
@@ -143,6 +144,7 @@ class RosterService
                 ShiftSchedule::create([
                     'employee_id' => $employeeId,
                     'site_id' => $siteId,
+                    'job_id' => $jobId,
                     'shift_start' => $currentDate . ' ' . $startTime,
                     'shift_end' => $currentDate . ' ' . $endTime,
                     'is_overtime_shift' => false,

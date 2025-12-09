@@ -7,6 +7,7 @@ use App\Services\AssetService;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use OpenApi\Annotations as OA;
 
 class AssetController extends Controller
@@ -21,27 +22,63 @@ class AssetController extends Controller
     /**
      * @OA\Get(
      *     path="/assets",
-     *     summary="List all assets",
+     *     summary="List all assets with search and filters",
      *     tags={"Assets"},
      *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="category", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="condition", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string")),
      *     @OA\Response(response=200, description="List of assets")
      * )
      */
     public function index(Request $request)
     {
-        $query = Asset::query();
+        $query = Asset::with(['currentAssignment.employee']);
 
-        if ($request->has('category')) {
+        // Search by asset_code, name, or category
+        if ($request->has('search') && $request->search) {
+            $query->search($request->search);
+        }
+
+        // Filter by category
+        if ($request->has('category') && $request->category) {
             $query->where('category', $request->category);
         }
 
-        if ($request->has('condition')) {
+        // Filter by condition
+        if ($request->has('condition') && $request->condition) {
             $query->where('condition', $request->condition);
         }
 
+        // Filter by status (assigned/available)
+        if ($request->has('status')) {
+            if ($request->status === 'assigned') {
+                $query->assigned();
+            } elseif ($request->status === 'available') {
+                $query->available();
+            }
+        }
+
         return response()->json($query->paginate(50));
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/assets/{id}",
+     *     summary="Get asset details with assignment history",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Asset details")
+     * )
+     */
+    public function show($id)
+    {
+        $asset = Asset::with(['currentAssignment.employee', 'assignments.employee', 'assignments.assignedBy', 'assignments.returnedBy'])
+            ->findOrFail($id);
+
+        return response()->json($asset);
     }
 
     /**
@@ -57,6 +94,7 @@ class AssetController extends Controller
      *             @OA\Property(property="asset_code", type="string"),
      *             @OA\Property(property="name", type="string"),
      *             @OA\Property(property="category", type="string"),
+     *             @OA\Property(property="description", type="string"),
      *             @OA\Property(property="purchase_date", type="string", format="date"),
      *             @OA\Property(property="value", type="number", format="float")
      *         )
@@ -66,30 +104,91 @@ class AssetController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'asset_code' => 'required|string|unique:assets',
             'name' => 'required|string',
             'category' => 'required|string',
+            'description' => 'nullable|string',
             'purchase_date' => 'nullable|date',
             'value' => 'nullable|numeric',
+            'condition' => 'nullable|in:NEW,GOOD,DAMAGED,LOST',
         ]);
 
-        $asset = Asset::create($request->all());
+        // Set default condition if not provided
+        if (!isset($validated['condition'])) {
+            $validated['condition'] = 'NEW';
+        }
+
+        $asset = Asset::create($validated);
 
         return response()->json($asset, 201);
     }
 
     /**
+     * @OA\Put(
+     *     path="/assets/{id}",
+     *     summary="Update an asset",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(required=true, @OA\JsonContent()),
+     *     @OA\Response(response=200, description="Asset updated")
+     * )
+     */
+    public function update(Request $request, $id)
+    {
+        $asset = Asset::findOrFail($id);
+
+        $validated = $request->validate([
+            'asset_code' => 'sometimes|string|unique:assets,asset_code,' . $id,
+            'name' => 'sometimes|string',
+            'category' => 'sometimes|string',
+            'description' => 'nullable|string',
+            'purchase_date' => 'nullable|date',
+            'value' => 'nullable|numeric',
+            'condition' => 'sometimes|in:NEW,GOOD,DAMAGED,LOST',
+        ]);
+
+        $asset->update($validated);
+
+        return response()->json($asset);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/assets/{id}",
+     *     summary="Delete an asset",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=204, description="Asset deleted")
+     * )
+     */
+    public function destroy($id)
+    {
+        $asset = Asset::findOrFail($id);
+        
+        // Check if asset is currently assigned
+        if ($asset->currentAssignment) {
+            return response()->json(['error' => 'Cannot delete an asset that is currently assigned'], 400);
+        }
+
+        $asset->delete();
+
+        return response()->json(null, 204);
+    }
+
+    /**
      * @OA\Post(
-     *     path="/assets/assign",
+     *     path="/assets/{id}/assign",
      *     summary="Assign asset to employee",
      *     tags={"Assets"},
      *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"asset_id", "employee_id"},
-     *             @OA\Property(property="asset_id", type="integer"),
+     *             required={"employee_id"},
      *             @OA\Property(property="employee_id", type="integer"),
      *             @OA\Property(property="notes", type="string")
      *         )
@@ -97,15 +196,22 @@ class AssetController extends Controller
      *     @OA\Response(response=200, description="Asset assigned")
      * )
      */
-    public function assign(Request $request)
+    public function assign(Request $request, $id)
     {
         try {
+            $validated = $request->validate([
+                'employee_id' => 'required|exists:employees,id',
+                'notes' => 'nullable|string',
+            ]);
+
             $assignment = $this->assetService->assignAsset(
-                $request->asset_id,
-                $request->employee_id,
-                $request->notes
+                $id,
+                $validated['employee_id'],
+                $validated['notes'] ?? null,
+                Auth::id()
             );
-            return response()->json($assignment);
+
+            return response()->json($assignment->load(['asset', 'employee']));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -113,15 +219,14 @@ class AssetController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/assets/return",
+     *     path="/assets/{id}/return",
      *     summary="Return an asset",
      *     tags={"Assets"},
      *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"asset_id"},
-     *             @OA\Property(property="asset_id", type="integer"),
      *             @OA\Property(property="condition", type="string", example="GOOD"),
      *             @OA\Property(property="notes", type="string")
      *         )
@@ -129,15 +234,22 @@ class AssetController extends Controller
      *     @OA\Response(response=200, description="Asset returned")
      * )
      */
-    public function returnAsset(Request $request)
+    public function returnAsset(Request $request, $id)
     {
         try {
+            $validated = $request->validate([
+                'condition' => 'nullable|in:NEW,GOOD,DAMAGED,LOST',
+                'notes' => 'nullable|string',
+            ]);
+
             $assignment = $this->assetService->returnAsset(
-                $request->asset_id,
-                $request->condition,
-                $request->notes
+                $id,
+                $validated['condition'] ?? 'GOOD',
+                $validated['notes'] ?? null,
+                Auth::id()
             );
-            return response()->json($assignment);
+
+            return response()->json($assignment->load(['asset', 'employee']));
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -145,20 +257,43 @@ class AssetController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/assets/employee/{employeeId}",
-     *     summary="Get assets assigned to employee",
+     *     path="/assets/unreturned",
+     *     summary="Get list of unreturned assets",
      *     tags={"Assets"},
      *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="employeeId", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="List of assigned assets")
+     *     @OA\Response(response=200, description="List of unreturned assets")
      * )
      */
-    public function employeeAssets($employeeId)
+    public function unreturned()
     {
-        $assets = Asset::whereHas('currentAssignment', function ($q) use ($employeeId) {
-            $q->where('employee_id', $employeeId);
-        })->get();
+        $assets = Asset::with(['currentAssignment.employee'])
+            ->assigned()
+            ->get();
 
         return response()->json($assets);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/assets/stats",
+     *     summary="Get asset statistics",
+     *     tags={"Assets"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Asset statistics")
+     * )
+     */
+    public function stats()
+    {
+        $total = Asset::count();
+        $available = Asset::available()->count();
+        $assigned = Asset::assigned()->count();
+        $maintenance = Asset::where('condition', 'DAMAGED')->count();
+
+        return response()->json([
+            'total' => $total,
+            'available' => $available,
+            'assigned' => $assigned,
+            'maintenance' => $maintenance,
+        ]);
     }
 }
