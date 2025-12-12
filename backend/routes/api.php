@@ -174,6 +174,16 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
         Route::get('/{id}/download', [\App\Http\Controllers\Api\InvoiceController::class, 'download']);
     });
+
+    // Report Routes
+    Route::prefix('reports')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Api\ReportController::class, 'getDashboardStats']);
+        Route::get('/attendance', [\App\Http\Controllers\Api\ReportController::class, 'getAttendanceReport']);
+        Route::get('/finance', [\App\Http\Controllers\Api\ReportController::class, 'getFinanceReport']);
+        Route::get('/incidents', [\App\Http\Controllers\Api\ReportController::class, 'getIncidentsReport']);
+        Route::get('/roster', [\App\Http\Controllers\Api\ReportController::class, 'getRosterReport']);
+        Route::get('/export/{type}', [\App\Http\Controllers\Api\ReportController::class, 'exportReport']);
+    });
 });
 
 // Health Check

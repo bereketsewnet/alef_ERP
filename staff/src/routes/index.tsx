@@ -17,6 +17,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 import { IncidentsPage } from '@/pages/incidents/IncidentsPage'
+import { ReportsPage } from '@/pages/reports/ReportsPage'
 
 export function AppRoutes() {
     return (
@@ -45,6 +46,7 @@ export function AppRoutes() {
                 <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/incidents" element={<IncidentsPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings/users" element={<UserManagementPage />} />
             </Route>
 
