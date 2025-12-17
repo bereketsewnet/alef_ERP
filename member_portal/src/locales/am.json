@@ -1,0 +1,151 @@
+{
+    "app": {
+        "name": "አሌፍ የአባላት ፖርታል",
+        "loading": "በመጫን ላይ...",
+        "error": "ችግር ተከስቷል",
+        "retry": "እንደገና ሞክር",
+        "cancel": "ሰርዝ",
+        "confirm": "አረጋግጥ",
+        "save": "አስቀምጥ",
+        "delete": "ሰርዝ",
+        "edit": "አርም",
+        "back": "ተመለስ",
+        "next": "ቀጣይ",
+        "done": "ተጠናቋል",
+        "offline": "ከመስመር ውጭ ነዎት",
+        "online": "ወደ መስመር ተመልሰዋል"
+    },
+    "common": {
+        "save": "አስቀምጥ",
+        "cancel": "ሰርዝ",
+        "error": "ስህተት",
+        "success": "ተሳክቷል",
+        "loading": "በመጫን ላይ..."
+    },
+    "auth": {
+        "login": "ግባ",
+        "logout": "ውጣ",
+        "phone": "ስልክ ቁጥር",
+        "password": "የይለፍ ቃል",
+        "rememberMe": "አስታውሰኝ",
+        "forgotPassword": "የይለፍ ቃል ረሳሁ?",
+        "loginError": "ስልክ ወይም የይለፍ ቃል ስህተት",
+        "welcome": "እንኳን ደህና መጡ!"
+    },
+    "nav": {
+        "home": "ዋና",
+        "roster": "መርሃ ግብር",
+        "history": "ታሪክ",
+        "profile": "መገለጫ"
+    },
+    "home": {
+        "todayShift": "የዛሬ ፈረቃ",
+        "noShift": "ዛሬ ፈረቃ የለም",
+        "nextShift": "ቀጣይ ፈረቃ",
+        "clockIn": "መግቢያ",
+        "clockOut": "መውጫ",
+        "distance": "ርቀት",
+        "within": "በክልል ውስጥ",
+        "outside": "ከክልል ውጭ",
+        "gpsAccuracy": "የጂፒኤስ ትክክለኛነት",
+        "pendingSync": "ገና ያልተመዘገበ"
+    },
+    "attendance": {
+        "title": "መገኘት",
+        "clockInSuccess": "በተሳካ ሁኔታ ገብተዋል!",
+        "clockOutSuccess": "በተሳካ ሁኔታ ወጥተዋል!",
+        "clockInFailed": "መግባት አልተሳካም",
+        "clockOutFailed": "መውጣት አልተሳካም",
+        "tooFar": "ከጣቢያው በጣም ርቀው ነዎት",
+        "gpsRequired": "የጂፒኤስ ቦታ ያስፈልጋል",
+        "selfieOptional": "ፎቶ ያንሱ (አማራጭ)",
+        "takeSelfie": "ፎቶ ያንሱ",
+        "removeSelfie": "አስወግድ",
+        "queued": "ከመስመር ውጭ ተቀምጧል። ሲገናኙ ይመዘገባል።",
+        "history": "የመገኘት ታሪክ",
+        "verified": "ተረጋግጧል",
+        "pending": "በመጠባበቅ ላይ",
+        "late": "ዘግይቷል",
+        "onTime": "በሰዓቱ"
+    },
+    "roster": {
+        "title": "የእኔ መርሃ ግብር",
+        "upcoming": "ቀጣይ ፈረቃዎች",
+        "past": "ያለፉ ፈረቃዎች",
+        "today": "ዛሬ",
+        "tomorrow": "ነገ",
+        "noUpcoming": "ቀጣይ ፈረቃ የለም",
+        "shiftDetails": "የፈረቃ ዝርዝሮች",
+        "site": "ጣቢያ",
+        "time": "ሰዓት",
+        "role": "ሚና",
+        "instructions": "መመሪያዎች",
+        "getDirections": "አቅጣጫ ያግኙ"
+    },
+    "incident": {
+        "title": "ክስተት ሪፖርት ያድርጉ",
+        "type": "የክስተት ዓይነት",
+        "description": "ገለጻ",
+        "severity": "ክብደት",
+        "photos": "ፎቶዎች",
+        "addPhoto": "ፎቶ ያክሉ",
+        "submit": "ሪፖርት ያስገቡ",
+        "success": "ክስተት በተሳካ ሁኔታ ተዘግቧል",
+        "types": {
+            "security": "የደህንነት ችግር",
+            "safety": "የሴፍቲ አደጋ",
+            "equipment": "የመሳሪያ ችግር",
+            "other": "ሌላ"
+        },
+        "severities": {
+            "low": "ዝቅተኛ",
+            "medium": "መካከለኛ",
+            "high": "ከፍተኛ",
+            "critical": "ወሳኝ"
+        }
+    },
+    "panic": {
+        "title": "የአደጋ ጊዜ ማንቂያ",
+        "button": "SOS",
+        "confirm": "የአደጋ ጊዜ ማንቂያ ይላክ?",
+        "confirmMessage": "ይህ ወዲያውኑ የደህንነት ኦፕሬሽኖችን በአሁኑ ቦታዎ ያሳውቃል።",
+        "sent": "የአደጋ ጊዜ ማንቂያ ተልኳል!",
+        "failed": "ማንቂያ መላክ አልተሳካም። ከመስመር ውጭ ተቀምጧል።"
+    },
+    "payroll": {
+        "title": "የእኔ ደመወዝ",
+        "period": "የክፍያ ጊዜ",
+        "gross": "ጠቅላላ ደመወዝ",
+        "deductions": "ቅናሾች",
+        "net": "የተጣራ ደመወዝ",
+        "penalties": "ቅጣቶች",
+        "bonuses": "ጉርሻዎች",
+        "downloadPayslip": "የደመወዝ ደረሰኝ አውርድ",
+        "noPayslips": "ምንም የደመወዝ ደረሰኝ የለም"
+    },
+    "profile": {
+        "title": "መገለጫ",
+        "personalInfo": "የግል መረጃ",
+        "firstName": "ስም",
+        "lastName": "የአባት ስም",
+        "phone": "ስልክ",
+        "email": "ኢሜይል",
+        "emergencyContact": "የአደጋ ጊዜ ተገናኝ",
+        "emergencyPhone": "የአደጋ ጊዜ ስልክ",
+        "settings": "ቅንብሮች",
+        "language": "ቋንቋ",
+        "changePassword": "የይለፍ ቃል ቀይር",
+        "currentPassword": "አሁን ያለው የይለፍ ቃል",
+        "newPassword": "አዲስ የይለፍ ቃል",
+        "confirmPassword": "የይለፍ ቃል አረጋግጥ"
+    },
+    "sync": {
+        "title": "በመጠባበቅ ላይ ያሉ ድርጊቶች",
+        "pending": "በመጠባበቅ ላይ",
+        "syncing": "በመመዝገብ ላይ",
+        "failed": "አልተሳካም",
+        "syncNow": "አሁን መዝግብ",
+        "clearFailed": "ያልተሳኩትን ሰርዝ",
+        "noItems": "በመጠባበቅ ላይ ያሉ ነገሮች የሉም"
+    }
+}

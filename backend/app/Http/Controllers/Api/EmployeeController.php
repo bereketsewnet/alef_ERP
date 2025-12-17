@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -71,8 +72,8 @@ class EmployeeController extends Controller
         $request->validate([
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'email' => 'nullable|sometimes|email',
-            'phone_number' => 'required|string',
+            'email' => 'nullable|sometimes|email|unique:employees,email',
+            'phone_number' => 'required|string|unique:employees,phone_number',
             'status' => 'nullable|in:active,probation,inactive,terminated',
             'hire_date' => 'required|date',
         ]);
@@ -83,6 +84,8 @@ class EmployeeController extends Controller
         $employeeCode = 'EMP' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
         try {
+            DB::beginTransaction();
+
             $employee = Employee::create([
                 'employee_code' => $employeeCode,
                 'first_name' => $request->first_name,
@@ -94,8 +97,42 @@ class EmployeeController extends Controller
                 'job_role_id' => null,
             ]);
 
+            // Create associated User account for login
+            // Default password is 'password' (should be changed on first login)
+            $username = strtolower($request->first_name . '.' . $request->last_name);
+            
+            // Ensure username is unique
+            $originalUsername = $username;
+            $counter = 1;
+            while (User::where('username', $username)->exists()) {
+                $username = $originalUsername . $counter;
+                $counter++;
+            }
+
+            // If phone/email already exists in users (rare but possible if manually created), link it?
+            // For now, let's assume if they are creating an employee via API, we make a new user or link by phone.
+            
+            $existingUser = User::where('phone_number', $request->phone_number)->first();
+
+            if ($existingUser) {
+                $existingUser->update(['employee_id' => $employee->id]);
+            } else {
+                User::create([
+                    'username' => $username,
+                    'email' => $request->email ?? ($username . '@example.com'), // Fallback email if not provided
+                    'phone_number' => $request->phone_number,
+                    'password' => Hash::make('password'),
+                    'role' => 'FIELD_STAFF',
+                    'is_active' => true,
+                    'employee_id' => $employee->id,
+                ]);
+            }
+
+            DB::commit();
+
             return response()->json(['data' => $employee], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'error' => 'Failed to create employee',
                 'message' => $e->getMessage()
@@ -179,11 +216,32 @@ class EmployeeController extends Controller
     public function destroy($id)
     {
         $employee = Employee::findOrFail($id);
-        $employee->delete();
-
-        return response()->json([
-            'message' => 'Employee deleted successfully'
-        ]);
+        
+        try {
+            DB::beginTransaction();
+            
+            // Delete associated user account if it exists
+            $user = User::where('employee_id', $id)->first();
+            if ($user) {
+                // Determine if we should delete or just unlink?
+                // User asked to "delete the user account also"
+                $user->delete();
+            }
+            
+            $employee->delete();
+            
+            DB::commit();
+    
+            return response()->json([
+                'message' => 'Employee and associated user account deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Failed to delete employee',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

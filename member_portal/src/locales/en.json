@@ -1,0 +1,151 @@
+{
+    "app": {
+        "name": "Alef Member Portal",
+        "loading": "Loading...",
+        "error": "Something went wrong",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "back": "Back",
+        "next": "Next",
+        "done": "Done",
+        "offline": "You are offline",
+        "online": "Back online"
+    },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "error": "Error",
+        "success": "Success",
+        "loading": "Loading..."
+    },
+    "auth": {
+        "login": "Login",
+        "logout": "Logout",
+        "phone": "Phone Number",
+        "password": "Password",
+        "rememberMe": "Remember me",
+        "forgotPassword": "Forgot password?",
+        "loginError": "Invalid phone or password",
+        "welcome": "Welcome back!"
+    },
+    "nav": {
+        "home": "Home",
+        "roster": "Schedule",
+        "history": "History",
+        "profile": "Profile"
+    },
+    "home": {
+        "todayShift": "Today's Shift",
+        "noShift": "No shift scheduled for today",
+        "nextShift": "Next Shift",
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "distance": "Distance",
+        "within": "Within range",
+        "outside": "Outside range",
+        "gpsAccuracy": "GPS Accuracy",
+        "pendingSync": "Pending Sync"
+    },
+    "attendance": {
+        "title": "Attendance",
+        "clockInSuccess": "Clocked in successfully!",
+        "clockOutSuccess": "Clocked out successfully!",
+        "clockInFailed": "Clock in failed",
+        "clockOutFailed": "Clock out failed",
+        "tooFar": "You are too far from the site",
+        "gpsRequired": "GPS location is required",
+        "selfieOptional": "Take a selfie (optional)",
+        "takeSelfie": "Take Selfie",
+        "removeSelfie": "Remove",
+        "queued": "Saved offline. Will sync when connected.",
+        "history": "Attendance History",
+        "verified": "Verified",
+        "pending": "Pending",
+        "late": "Late",
+        "onTime": "On Time"
+    },
+    "roster": {
+        "title": "My Schedule",
+        "upcoming": "Upcoming Shifts",
+        "past": "Past Shifts",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "noUpcoming": "No upcoming shifts",
+        "shiftDetails": "Shift Details",
+        "site": "Site",
+        "time": "Time",
+        "role": "Role",
+        "instructions": "Instructions",
+        "getDirections": "Get Directions"
+    },
+    "incident": {
+        "title": "Report Incident",
+        "type": "Incident Type",
+        "description": "Description",
+        "severity": "Severity",
+        "photos": "Photos",
+        "addPhoto": "Add Photo",
+        "submit": "Submit Report",
+        "success": "Incident reported successfully",
+        "types": {
+            "security": "Security Issue",
+            "safety": "Safety Hazard",
+            "equipment": "Equipment Problem",
+            "other": "Other"
+        },
+        "severities": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "High",
+            "critical": "Critical"
+        }
+    },
+    "panic": {
+        "title": "Emergency Alert",
+        "button": "SOS",
+        "confirm": "Send emergency alert?",
+        "confirmMessage": "This will immediately notify security operations with your current location.",
+        "sent": "Emergency alert sent!",
+        "failed": "Failed to send alert. Saved offline."
+    },
+    "payroll": {
+        "title": "My Payroll",
+        "period": "Pay Period",
+        "gross": "Gross Salary",
+        "deductions": "Deductions",
+        "net": "Net Salary",
+        "penalties": "Penalties",
+        "bonuses": "Bonuses",
+        "downloadPayslip": "Download Payslip",
+        "noPayslips": "No payslips available"
+    },
+    "profile": {
+        "title": "Profile",
+        "personalInfo": "Personal Information",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "phone": "Phone",
+        "email": "Email",
+        "emergencyContact": "Emergency Contact",
+        "emergencyPhone": "Emergency Phone",
+        "settings": "Settings",
+        "language": "Language",
+        "changePassword": "Change Password",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password"
+    },
+    "sync": {
+        "title": "Pending Actions",
+        "pending": "Pending",
+        "syncing": "Syncing",
+        "failed": "Failed",
+        "syncNow": "Sync Now",
+        "clearFailed": "Clear Failed",
+        "noItems": "No pending items"
+    }
+}

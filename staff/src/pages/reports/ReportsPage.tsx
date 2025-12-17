@@ -1,14 +1,67 @@
-
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar as CalendarIcon, Download, FileBarChart, PieChart, BarChart } from "lucide-react"
-import { useReportDashboard, useExportReport } from "@/services/useReports"
 import { BarChart as RechartsBar, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from "recharts"
 import { startOfMonth, endOfMonth, format } from "date-fns"
+import { DataTable } from "@/components/ui/data-table"
+import { useReportDashboard, useExportReport, useAttendanceReport, useFinanceReport, useIncidentsReport, useRosterReport } from "@/services/useReports"
+import type { ColumnDef } from "@tanstack/react-table"
+import { Badge } from "@/components/ui/badge"
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+// Helper column definitions
+const rosterColumns: ColumnDef<any>[] = [
+    { accessorKey: "shift_start", header: "Start Time", cell: ({ row }) => format(new Date(row.original.shift_start), 'MMM dd, HH:mm') },
+    { accessorKey: "shift_end", header: "End Time", cell: ({ row }) => format(new Date(row.original.shift_end), 'MMM dd, HH:mm') },
+    { accessorKey: "site.site_name", header: "Site" },
+    { accessorKey: "employee.first_name", header: "Employee", cell: ({ row }) => `${row.original.employee?.first_name || ''} ${row.original.employee?.last_name || ''}` },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant="outline">{row.original.status}</Badge> }
+]
+
+const attendanceColumns: ColumnDef<any>[] = [
+    { accessorKey: "created_at", header: "Time", cell: ({ row }) => format(new Date(row.original.created_at), 'MMM dd, HH:mm') },
+    { accessorKey: "schedule.employee.first_name", header: "Employee", cell: ({ row }) => `${row.original.schedule?.employee?.first_name || ''} ${row.original.schedule?.employee?.last_name || ''}` },
+    { accessorKey: "schedule.site.site_name", header: "Site" },
+    { accessorKey: "verification_method", header: "Method" },
+    {
+        accessorKey: "flagged_late", header: "Status", cell: ({ row }) => (
+            <Badge variant={row.original.flagged_late ? "destructive" : "default"}>
+                {row.original.flagged_late ? "Late" : "On Time"}
+            </Badge>
+        )
+    }
+]
+
+const financeColumns: ColumnDef<any>[] = [
+    { accessorKey: "invoice_number", header: "Invoice #" },
+    { accessorKey: "client.company_name", header: "Client" },
+    { accessorKey: "invoice_date", header: "Date" },
+    { accessorKey: "total_amount", header: "Amount", cell: ({ row }) => `$${Number(row.original.total_amount).toLocaleString()}` },
+    {
+        accessorKey: "status", header: "Status", cell: ({ row }) => (
+            <Badge variant={row.original.status === 'PAID' ? "default" : row.original.status === 'OVERDUE' ? "destructive" : "secondary"}>
+                {row.original.status}
+            </Badge>
+        )
+    }
+]
+
+const incidentColumns: ColumnDef<any>[] = [
+    { accessorKey: "created_at", header: "Reported At", cell: ({ row }) => format(new Date(row.original.created_at), 'MMM dd, HH:mm') },
+    { accessorKey: "site.site_name", header: "Site" },
+    { accessorKey: "report_type", header: "Type" },
+    {
+        accessorKey: "severity_level", header: "Severity", cell: ({ row }) => (
+            <Badge variant={row.original.severity_level === 'CRITICAL' ? "destructive" : row.original.severity_level === 'HIGH' ? "destructive" : "default"}>
+                {row.original.severity_level}
+            </Badge>
+        )
+    },
+    { accessorKey: "reported_by.first_name", header: "Reported By", cell: ({ row }) => `${row.original.reported_by?.first_name || ''} ${row.original.reported_by?.last_name || 'N/A'}` }
+]
 
 export function ReportsPage() {
     const [dateRange, setDateRange] = useState({
@@ -16,20 +69,22 @@ export function ReportsPage() {
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
     })
 
-    // We'll add a proper date picker later, for now simple default to current month
+    const params = { start_date: dateRange.start, end_date: dateRange.end }
 
-    const { data: stats, isLoading } = useReportDashboard({
-        start_date: dateRange.start,
-        end_date: dateRange.end
-    })
+    // Data Hooks
+    const { data: stats, isLoading: isLoadingStats } = useReportDashboard(params)
+    const { data: rosterData, isLoading: isLoadingRoster } = useRosterReport(params)
+    const { data: attendanceData, isLoading: isLoadingAttendance } = useAttendanceReport(params)
+    const { data: financeData, isLoading: isLoadingFinance } = useFinanceReport(params)
+    const { data: incidentData, isLoading: isLoadingIncidents } = useIncidentsReport(params)
 
     const { mutate: exportFile, isPending: isExporting } = useExportReport()
 
     const handleExport = (type: string, format: 'pdf' | 'excel') => {
-        exportFile({ type, format, params: { start_date: dateRange.start, end_date: dateRange.end } })
+        exportFile({ type, format, params })
     }
 
-    if (isLoading) return <div className="p-8">Loading reports...</div>
+    if (isLoadingStats) return <div className="p-8">Loading reports...</div>
 
     return (
         <div className="space-y-6">
@@ -98,12 +153,12 @@ export function ReportsPage() {
 
                     {/* Charts */}
                     <div className="grid gap-4 md:grid-cols-2">
-                        <Card className="col-span-1">
+                        <Card className="col-span-1 min-w-0">
                             <CardHeader>
                                 <CardTitle>Attendance Status</CardTitle>
                             </CardHeader>
                             <CardContent className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <RechartsPie>
                                         <Pie
                                             data={stats?.attendance}
@@ -127,12 +182,12 @@ export function ReportsPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="col-span-1">
+                        <Card className="col-span-1 min-w-0">
                             <CardHeader>
                                 <CardTitle>Incident Severity</CardTitle>
                             </CardHeader>
                             <CardContent className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <RechartsBar
                                         data={stats?.incidents}
                                         layout="vertical"
@@ -163,9 +218,9 @@ export function ReportsPage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <div className="bg-neutral-50 p-8 text-center text-muted-foreground border rounded-md">
-                                Detailed Roster Table Loading... (Placeholder)
-                            </div>
+                            {isLoadingRoster ? <div>Loading...</div> :
+                                <DataTable columns={rosterColumns} data={rosterData?.data || []} />
+                            }
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -182,9 +237,9 @@ export function ReportsPage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <div className="bg-neutral-50 p-8 text-center text-muted-foreground border rounded-md">
-                                Detailed Attendance Table Loading... (Placeholder)
-                            </div>
+                            {isLoadingAttendance ? <div>Loading...</div> :
+                                <DataTable columns={attendanceColumns} data={attendanceData?.data || []} />
+                            }
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -201,9 +256,9 @@ export function ReportsPage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <div className="bg-neutral-50 p-8 text-center text-muted-foreground border rounded-md">
-                                Detailed Finance Table Loading... (Placeholder)
-                            </div>
+                            {isLoadingFinance ? <div>Loading...</div> :
+                                <DataTable columns={financeColumns} data={financeData?.data || []} />
+                            }
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -220,9 +275,9 @@ export function ReportsPage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <div className="bg-neutral-50 p-8 text-center text-muted-foreground border rounded-md">
-                                Detailed Incident Table Loading... (Placeholder)
-                            </div>
+                            {isLoadingIncidents ? <div>Loading...</div> :
+                                <DataTable columns={incidentColumns} data={incidentData?.data || []} />
+                            }
                         </CardContent>
                     </Card>
                 </TabsContent>

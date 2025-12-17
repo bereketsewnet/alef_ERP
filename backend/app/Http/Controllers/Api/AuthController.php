@@ -191,20 +191,16 @@ class AuthController extends Controller
 
     protected function respondWithToken($token, $user)
     {
+        // Load employee relationship if not loaded
+        if (!$user->relationLoaded('employee')) {
+            $user->load('employee');
+        }
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'role' => $user->role,
-                'employee_id' => $user->employee_id,
-                'telegram_chat_id' => $user->telegram_chat_id,
-                'last_login' => $user->last_login,
-            ],
+            'user' => $user,
         ]);
     }
 
@@ -287,18 +283,9 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth()->user();
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone_number' => $user->phone_number,
-                'role' => $user->role,
-                'employee_id' => $user->employee_id,
-                'last_login' => $user->last_login,
-            ],
-        ]);
+        $user->load('employee');
+        
+        return response()->json($user);
     }
 
     /**

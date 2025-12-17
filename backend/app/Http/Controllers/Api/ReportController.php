@@ -78,7 +78,12 @@ class ReportController extends Controller
         }
 
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            // Fix: Filter by flagged_late since 'status' column doesn't exist
+            if ($request->status === 'LATE') {
+                $query->where('flagged_late', true);
+            } elseif ($request->status === 'PRESENT') {
+                $query->where('flagged_late', false);
+            }
         }
 
         return response()->json($query->orderBy('created_at', 'desc')->paginate(50));
@@ -92,10 +97,10 @@ class ReportController extends Controller
         $query = Invoice::with(['client']);
 
         if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('issue_date', [$request->start_date, $request->end_date]);
+            $query->whereBetween('invoice_date', [$request->start_date, $request->end_date]);
         }
 
-        return response()->json($query->orderBy('issue_date', 'desc')->paginate(50));
+        return response()->json($query->orderBy('invoice_date', 'desc')->paginate(50));
     }
 
     /**

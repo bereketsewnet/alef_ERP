@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AuthFixController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\RosterController;
 use App\Http\Controllers\Api\EmployeeController;
@@ -29,7 +30,8 @@ Route::middleware('auth:api')->group(function () {
     
     // Auth Routes
     Route::prefix('auth')->group(function () {
-        Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('auth/refresh', [AuthController::class, 'refresh']);
+        Route::post('auth/sync-users', [AuthFixController::class, 'generateUsersForEmployees']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);

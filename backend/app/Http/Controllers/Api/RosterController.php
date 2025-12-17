@@ -121,9 +121,9 @@ class RosterController extends Controller
         }
 
         $shifts = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
-            ->where('date', '>=', now()->toDateString())
+            ->where('shift_start', '>=', now()->startOfDay())
             ->with('site')
-            ->orderBy('date')
+            ->orderBy('shift_start')
             ->get();
 
         return response()->json($shifts);
