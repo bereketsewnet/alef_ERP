@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Briefcase, Search, Edit, Trash2, Loader2, Users, Building, Medal } from "lucide-react"
@@ -44,10 +44,20 @@ export function JobsPage() {
     // Skills Modal State
     const [skillsJob, setSkillsJob] = useState<{ id: number, name: string } | null>(null)
 
-    const { data: jobs, isLoading } = useJobs({
+    const { data: jobs, isLoading, error } = useJobs({
         category_id: (selectedCategory && selectedCategory !== "_all") ? Number(selectedCategory) : undefined,
         search: search || undefined,
     })
+
+    // Debug logging
+    useEffect(() => {
+        console.log('[JobsPage] Jobs data:', jobs);
+        console.log('[JobsPage] Jobs isLoading:', isLoading);
+        console.log('[JobsPage] Jobs error:', error);
+        console.log('[JobsPage] Jobs type:', typeof jobs);
+        console.log('[JobsPage] Jobs is array:', Array.isArray(jobs));
+        console.log('[JobsPage] Jobs length:', Array.isArray(jobs) ? jobs.length : 'N/A');
+    }, [jobs, isLoading, error])
     const { data: categories } = useJobCategories()
     const createJob = useCreateJob()
     const updateJob = useUpdateJob()
@@ -164,6 +174,9 @@ export function JobsPage() {
                         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>{editingJob ? 'Edit Job' : 'Create New Job'}</DialogTitle>
+                                <DialogDescription>
+                                    {editingJob ? 'Update job details and pay configuration' : 'Create a new job with pay rates and settings'}
+                                </DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

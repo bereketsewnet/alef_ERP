@@ -12,7 +12,7 @@ export interface Incident {
     updated_at: string
     site?: {
         id: number
-        name: string
+        site_name: string
     }
     reported_by?: {
         id: number

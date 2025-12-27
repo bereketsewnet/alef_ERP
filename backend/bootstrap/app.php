@@ -12,8 +12,27 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Enable CORS globally (must be first to handle preflight OPTIONS requests)
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+        
+        // Disable CSRF for API routes
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request, \Throwable $e) {
+            if ($request->is('api/*')) {
+                return true;
+            }
+            return $request->expectsJson();
+        });
+
+        $exceptions->report(function (\Throwable $e) {
+            \Log::error('Global Exception: ' . $e->getMessage(), [
+                'exception' => $e,
+                'url' => request()->fullUrl(),
+                'method' => request()->method(),
+            ]);
+        });
     })->create();

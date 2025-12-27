@@ -1,5 +1,5 @@
 import api from '../axios'
-import type { ShiftSchedule, PaginatedResponse } from '@/types'
+import type { ShiftSchedule } from '@/types'
 
 export const rosterApi = {
     getMyRoster: async (params?: { start_date?: string; end_date?: string }): Promise<ShiftSchedule[]> => {

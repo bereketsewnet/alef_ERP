@@ -11,6 +11,7 @@ export interface Employee {
     status: 'active' | 'probation' | 'inactive' | 'terminated'
     hire_date: string
     employee_id?: string
+    employee_code?: string
     site_id?: number
     telegram_chat_id?: string
     created_at: string

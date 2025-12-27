@@ -121,8 +121,18 @@ export const deleteJobCategory = async (id: number): Promise<void> => {
 
 // Jobs API
 export const getJobs = async (params?: { category_id?: number; active_only?: boolean; search?: string }): Promise<Job[]> => {
-    const response = await api.get('/jobs', { params });
-    return response.data;
+    console.log('[API] Fetching jobs with params:', params);
+    try {
+        const response = await api.get('/jobs', { params });
+        console.log('[API] Jobs response status:', response.status);
+        console.log('[API] Jobs response data:', response.data);
+        console.log('[API] Jobs count:', Array.isArray(response.data) ? response.data.length : 'Not an array');
+        return response.data;
+    } catch (error: any) {
+        console.error('[API] Error fetching jobs:', error);
+        console.error('[API] Error response:', error.response?.data);
+        throw error;
+    }
 };
 
 export const getJob = async (id: number): Promise<Job> => {

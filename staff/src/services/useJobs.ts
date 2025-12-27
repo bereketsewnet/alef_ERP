@@ -79,10 +79,23 @@ export function useDeleteJobCategory() {
 // --- Jobs ---
 
 export function useJobs(params?: { category_id?: number; active_only?: boolean; search?: string }) {
-    return useQuery({
+    const query = useQuery({
         queryKey: ['jobs', params],
         queryFn: () => getJobs(params),
     });
+    
+    // Debug logging
+    if (query.data) {
+        console.log('[useJobs] Query successful, received data:', query.data);
+        console.log('[useJobs] Data type:', typeof query.data);
+        console.log('[useJobs] Is array:', Array.isArray(query.data));
+        console.log('[useJobs] Data length:', Array.isArray(query.data) ? query.data.length : 'N/A');
+    }
+    if (query.error) {
+        console.error('[useJobs] Query error:', query.error);
+    }
+    
+    return query;
 }
 
 export function useJob(id: number) {

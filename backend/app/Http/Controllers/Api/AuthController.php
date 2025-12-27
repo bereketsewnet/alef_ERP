@@ -46,36 +46,76 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'login' => 'required|string',
-            'password' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'login' => 'required|string',
+                'password' => 'required|string',
+            ]);
 
-        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        if ($loginType === 'username' && is_numeric($request->login)) {
-            $loginType = 'phone_number';
+            // Determine login type: email, phone_number, or username
+            $login = trim($request->login);
+            $loginType = 'username'; // default
+            $actualLoginValue = $login; // Value to use for authentication
+            
+            // Check if it's an email
+            if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+                $loginType = 'email';
+            }
+            // Check if it's a phone number (contains digits and possibly +, spaces, dashes)
+            elseif (preg_match('/^[\+]?[\d\s\-\(\)]+$/', $login) && strlen(preg_replace('/\D/', '', $login)) >= 7) {
+                $loginType = 'phone_number';
+                // Normalize phone number: remove spaces, dashes, parentheses for comparison
+                $normalizedPhone = preg_replace('/\D/', '', $login);
+                
+                // Try to find user with matching phone number
+                // First try exact match
+                $user = User::where('phone_number', $login)->first();
+                
+                // If not found, try normalized match
+                if (!$user) {
+                    $user = User::whereRaw('REPLACE(REPLACE(REPLACE(REPLACE(phone_number, " ", ""), "-", ""), "(", ""), ")", "") = ?', [$normalizedPhone])->first();
+                }
+                
+                // If still not found, try matching last 9 digits (local number)
+                if (!$user && strlen($normalizedPhone) >= 9) {
+                    $last9 = substr($normalizedPhone, -9);
+                    $user = User::whereRaw('REPLACE(REPLACE(REPLACE(REPLACE(phone_number, " ", ""), "-", ""), "(", ""), ")", "") LIKE ?', ['%' . $last9])->first();
+                }
+                
+                if ($user) {
+                    // Use the exact phone_number from database for JWT authentication
+                    $actualLoginValue = $user->phone_number;
+                } else {
+                    // Phone number not found, return invalid credentials
+                    return response()->json(['error' => 'Invalid credentials'], 401);
+                }
+            }
+
+            $credentials = [
+                $loginType => $actualLoginValue,
+                'password' => $request->password,
+            ];
+
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json(['error' => 'Invalid credentials'], 401);
+            }
+
+            $user = auth()->user();
+
+            if (!$user->is_active) {
+                JWTAuth::invalidate($token);
+                return response()->json(['error' => 'Account is inactive'], 403);
+            }
+
+            // Update last login
+            $user->update(['last_login' => now()]);
+
+            return $this->respondWithToken($token, $user);
+        } catch (\Exception $e) {
+            \Log::error('Login error: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $credentials = [
-            $loginType => $request->login,
-            'password' => $request->password,
-        ];
-
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
-        }
-
-        $user = auth()->user();
-
-        if (!$user->is_active) {
-            JWTAuth::invalidate($token);
-            return response()->json(['error' => 'Account is inactive'], 403);
-        }
-
-        // Update last login
-        $user->update(['last_login' => now()]);
-
-        return $this->respondWithToken($token, $user);
     }
 
     /**
@@ -282,10 +322,18 @@ class AuthController extends Controller
      */
     public function me()
     {
-        $user = auth()->user();
-        $user->load('employee');
-        
-        return response()->json($user);
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 401);
+            }
+            $user->load('employee');
+            return response()->json(['user' => $user]);
+        } catch (\Exception $e) {
+            \Log::error('Me error: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

@@ -43,7 +43,7 @@ export function ProtectedRoute({
 
     // Check role-based access
     if (requiredRoles.length > 0) {
-        const hasRequiredRole = requiredRoles.includes(user.role)
+        const hasRequiredRole = requiredRoles.includes(user.role as Role)
         if (!hasRequiredRole) {
             return (
                 <div className="min-h-screen flex items-center justify-center">
@@ -70,7 +70,7 @@ export function ProtectedRoute({
     // Check permission-based access
     if (requiredPermissions.length > 0) {
         const hasAllPermissions = requiredPermissions.every((permission) =>
-            user.permissions.includes(permission)
+            user.permissions?.includes(permission)
         )
         if (!hasAllPermissions) {
             return (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { User, Phone, Mail, Globe, Lock, ChevronRight, LogOut, Briefcase, Calendar, BadgeCheck } from 'lucide-react'
+import { User, Phone, Mail, Globe, Lock, ChevronRight, LogOut, Briefcase, Calendar } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'

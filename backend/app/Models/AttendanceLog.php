@@ -12,4 +12,9 @@ class AttendanceLog extends Model
     {
         return $this->belongsTo(ShiftSchedule::class, 'schedule_id');
     }
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class);
+    }
 }

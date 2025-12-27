@@ -57,15 +57,24 @@ class JobController extends Controller
             'job_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'pay_type' => 'required|in:HOURLY,MONTHLY',
-            'base_salary' => 'required|numeric|min:0',
-            'hourly_rate' => 'required|numeric|min:0',
-            'overtime_multiplier' => 'numeric|min:1|max:5',
-            'tax_percent' => 'numeric|min:0|max:100',
-            'late_penalty' => 'numeric|min:0',
-            'absent_penalty' => 'numeric|min:0',
-            'agency_fee_percent' => 'numeric|min:0|max:100',
-            'is_active' => 'boolean',
+            'base_salary' => 'nullable|numeric|min:0|required_if:pay_type,MONTHLY',
+            'hourly_rate' => 'nullable|numeric|min:0|required_if:pay_type,HOURLY',
+            'overtime_multiplier' => 'nullable|numeric|min:1|max:5',
+            'tax_percent' => 'nullable|numeric|min:0|max:100',
+            'late_penalty' => 'nullable|numeric|min:0',
+            'absent_penalty' => 'nullable|numeric|min:0',
+            'agency_fee_percent' => 'nullable|numeric|min:0|max:100',
+            'is_active' => 'nullable|boolean',
         ]);
+        
+        // Set defaults for pay_type specific fields
+        if ($validated['pay_type'] === 'MONTHLY') {
+            $validated['hourly_rate'] = $validated['hourly_rate'] ?? 0;
+            $validated['base_salary'] = $validated['base_salary'] ?? 0;
+        } else {
+            $validated['base_salary'] = $validated['base_salary'] ?? 0;
+            $validated['hourly_rate'] = $validated['hourly_rate'] ?? 0;
+        }
         
         $job = Job::create($validated);
         $job->load(['category', 'skills']);

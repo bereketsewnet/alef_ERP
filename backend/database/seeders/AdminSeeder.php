@@ -10,8 +10,8 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Super Admin User
-        User::firstOrCreate(
+        // Create Super Admin User (always create, even if exists)
+        $admin = User::firstOrCreate(
             ['email' => 'admin@alefdelta.com'],
             [
                 'username' => 'admin',
@@ -20,9 +20,17 @@ class AdminSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+        
+        // Update password if user already exists (in case it was changed)
+        if ($admin->wasRecentlyCreated === false) {
+            $admin->update([
+                'password' => Hash::make('admin123'),
+                'is_active' => true,
+            ]);
+        }
 
         // Create HR Manager
-        User::firstOrCreate(
+        $hr = User::firstOrCreate(
             ['email' => 'hr@alefdelta.com'],
             [
                 'username' => 'hr_manager',
@@ -31,9 +39,16 @@ class AdminSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+        
+        if ($hr->wasRecentlyCreated === false) {
+            $hr->update([
+                'password' => Hash::make('hr123'),
+                'is_active' => true,
+            ]);
+        }
 
         // Create Finance User
-        User::firstOrCreate(
+        $finance = User::firstOrCreate(
             ['email' => 'finance@alefdelta.com'],
             [
                 'username' => 'finance',
@@ -42,5 +57,17 @@ class AdminSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+        
+        if ($finance->wasRecentlyCreated === false) {
+            $finance->update([
+                'password' => Hash::make('finance123'),
+                'is_active' => true,
+            ]);
+        }
+        
+        echo "Created/Updated admin accounts:\n";
+        echo "  - Admin: admin@alefdelta.com / admin123\n";
+        echo "  - HR: hr@alefdelta.com / hr123\n";
+        echo "  - Finance: finance@alefdelta.com / finance123\n";
     }
 }

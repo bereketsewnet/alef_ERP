@@ -115,18 +115,26 @@ class RosterController extends Controller
      */
     public function myRoster()
     {
-        $user = auth()->user();
-        if (!$user->employee_id) {
-            return response()->json(['error' => 'User is not an employee'], 403);
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                 return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            if (!$user->employee_id) {
+                return response()->json(['error' => 'User is not an employee'], 403);
+            }
+
+            $shifts = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
+                ->where('shift_start', '>=', now()->startOfDay())
+                ->with('site')
+                ->orderBy('shift_start')
+                ->get();
+
+            return response()->json($shifts);
+        } catch (\Exception $e) {
+            \Log::error('MyRoster error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $shifts = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
-            ->where('shift_start', '>=', now()->startOfDay())
-            ->with('site')
-            ->orderBy('shift_start')
-            ->get();
-
-        return response()->json($shifts);
     }
 
     /**

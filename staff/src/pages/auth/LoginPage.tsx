@@ -27,7 +27,7 @@ export function LoginPage() {
     const { mutate: login, isPending } = useLogin()
 
     const form = useForm<LoginFormValues>({
-        resolver: zodResolver(loginSchema),
+        resolver: zodResolver(loginSchema) as any,
         defaultValues: {
             login: '',
             password: '',
@@ -35,7 +35,7 @@ export function LoginPage() {
         },
     })
 
-    const onSubmit = (data: LoginFormValues) => {
+    const onSubmit = (data: any) => {
         login(data)
     }
 
@@ -52,7 +52,7 @@ export function LoginPage() {
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
-                            control={form.control}
+                            control={form.control as any}
                             name="login"
                             render={({ field }) => (
                                 <FormItem>
@@ -70,7 +70,7 @@ export function LoginPage() {
                         />
 
                         <FormField
-                            control={form.control}
+                            control={form.control as any}
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
@@ -89,7 +89,7 @@ export function LoginPage() {
 
                         <div className="flex items-center justify-between">
                             <FormField
-                                control={form.control}
+                                control={form.control as any}
                                 name="remember"
                                 render={({ field }) => (
                                     <FormItem className="flex items-center space-x-2">

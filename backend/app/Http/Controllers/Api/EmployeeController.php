@@ -98,7 +98,7 @@ class EmployeeController extends Controller
             ]);
 
             // Create associated User account for login
-            // Default password is 'password' (should be changed on first login)
+            // Generate username from first and last name
             $username = strtolower($request->first_name . '.' . $request->last_name);
             
             // Ensure username is unique
@@ -109,19 +109,27 @@ class EmployeeController extends Controller
                 $counter++;
             }
 
-            // If phone/email already exists in users (rare but possible if manually created), link it?
-            // For now, let's assume if they are creating an employee via API, we make a new user or link by phone.
+            // Generate a secure default password
+            // Format: EmployeeCode + Last 4 digits of phone (e.g., EMP00001-5678)
+            $phoneDigits = preg_replace('/\D/', '', $request->phone_number);
+            $last4Digits = substr($phoneDigits, -4);
+            $defaultPassword = $employeeCode . '-' . $last4Digits;
             
+            // If phone/email already exists in users, link it
             $existingUser = User::where('phone_number', $request->phone_number)->first();
+            $userAccount = null;
 
             if ($existingUser) {
                 $existingUser->update(['employee_id' => $employee->id]);
+                $userAccount = $existingUser;
+                // Use existing password (don't reset it)
+                $defaultPassword = null;
             } else {
-                User::create([
+                $userAccount = User::create([
                     'username' => $username,
-                    'email' => $request->email ?? ($username . '@example.com'), // Fallback email if not provided
+                    'email' => $request->email ?? ($username . '@alefdelta.com'), // Use company domain
                     'phone_number' => $request->phone_number,
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make($defaultPassword),
                     'role' => 'FIELD_STAFF',
                     'is_active' => true,
                     'employee_id' => $employee->id,
@@ -130,7 +138,22 @@ class EmployeeController extends Controller
 
             DB::commit();
 
-            return response()->json(['data' => $employee], 201);
+            // Return employee data with login credentials
+            $responseData = [
+                'data' => $employee->load(['user', 'jobRole']),
+            ];
+            
+            // Include login credentials if new user was created
+            if ($defaultPassword) {
+                $responseData['login_credentials'] = [
+                    'username' => $username,
+                    'email' => $userAccount->email,
+                    'password' => $defaultPassword,
+                    'message' => 'Please share these credentials with the employee. They should change their password on first login.',
+                ];
+            }
+
+            return response()->json($responseData, 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

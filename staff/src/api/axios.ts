@@ -20,6 +20,14 @@ apiClient.interceptors.request.use(
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`
         }
+        // Log API requests for debugging
+        if (import.meta.env.DEV) {
+            console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+                params: config.params,
+                hasToken: !!token,
+                headers: config.headers,
+            });
+        }
         return config
     },
     (error) => {
@@ -30,6 +38,14 @@ apiClient.interceptors.request.use(
 // Response interceptor - Handle errors and token refresh
 apiClient.interceptors.response.use(
     (response) => {
+        // Log API responses for debugging
+        if (import.meta.env.DEV) {
+            console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+                status: response.status,
+                data: response.data,
+                headers: response.headers,
+            });
+        }
         return response
     },
     async (error: AxiosError<ApiError>) => {
