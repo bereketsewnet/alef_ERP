@@ -3,7 +3,8 @@ import apiClient from "../axios"
 export interface Incident {
     id: number
     site_id: number
-    reported_by_employee_id: number
+    reported_by_employee_id: number | null
+    reported_by_name: string | null
     report_type: 'INCIDENT' | 'PANIC' | 'OBSERVATION' | 'MAINTENANCE'
     description: string
     severity_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
@@ -40,5 +41,8 @@ export const incidentsApi = {
     panic: async (data: { site_id: number, description: string }): Promise<any> => {
         const response = await apiClient.post('/incidents/panic', data)
         return response.data
+    },
+    delete: async (id: number): Promise<void> => {
+        await apiClient.delete(`/incidents/${id}`)
     }
 }

@@ -17,6 +17,7 @@ const formSchema = z.object({
     report_type: z.string().min(1, "Type is required"),
     severity_level: z.string().min(1, "Severity is required"),
     description: z.string().min(10, "Description must be at least 10 characters"),
+    reported_by_name: z.string().optional(),
 })
 
 interface ReportIncidentModalProps {
@@ -36,6 +37,7 @@ export function ReportIncidentModal({ open, onOpenChange }: ReportIncidentModalP
             report_type: "INCIDENT",
             severity_level: "LOW",
             description: "",
+            reported_by_name: "",
         }
     })
 
@@ -54,6 +56,7 @@ export function ReportIncidentModal({ open, onOpenChange }: ReportIncidentModalP
             report_type: values.report_type,
             severity_level: values.severity_level,
             description: values.description,
+            reported_by_name: values.reported_by_name || undefined,
         }, {
             onSuccess: () => {
                 onOpenChange(false)
@@ -197,6 +200,25 @@ export function ReportIncidentModal({ open, onOpenChange }: ReportIncidentModalP
                                         <textarea
                                             placeholder="Describe what happened..."
                                             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="reported_by_name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reported By (Optional)</FormLabel>
+                                    <FormControl>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter reporter name..."
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                             {...field}
                                         />
                                     </FormControl>

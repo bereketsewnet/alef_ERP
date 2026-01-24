@@ -75,3 +75,7 @@ docker-compose down
 
 See `VPS_SETUP.md` for detailed configuration and troubleshooting.
 
+cd /var/www/Alef_ERP
+docker-compose build backend staff
+docker-compose up -d backend staff
+

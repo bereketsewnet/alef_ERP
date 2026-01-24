@@ -27,8 +27,9 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2, Eye, ChevronDown, ChevronUp } from "lucide-react"
-import { useClients, useCreateClient, useCreateSite, useDeleteClient } from "@/services/useClients"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2, Eye, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { useClients, useCreateClient, useCreateSite, useDeleteClient, useDeleteSite } from "@/services/useClients"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -58,12 +59,14 @@ export function ClientListPage() {
     const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
     const [expandedClientIds, setExpandedClientIds] = useState<Set<number>>(new Set())
     const [siteToView, setSiteToView] = useState<any | null>(null)
+    const [clientToDelete, setClientToDelete] = useState<{ id: number; name: string } | null>(null)
+    const [siteToDelete, setSiteToDelete] = useState<{ id: number; name: string; clientId: number } | null>(null)
 
     const { data, isLoading, error } = useClients({ page })
     const { mutate: createClient, isPending: isCreating } = useCreateClient()
     const { mutate: createSite, isPending: isCreatingSite } = useCreateSite()
-    // deleteClient available if needed in future
-    useDeleteClient()
+    const { mutate: deleteClient } = useDeleteClient()
+    const { mutate: deleteSite } = useDeleteSite()
 
     const clientForm = useForm({
         resolver: zodResolver(clientSchema),
@@ -146,6 +149,46 @@ export function ClientListPage() {
             }
             return newSet
         })
+    }
+
+    const handleConfirmDeleteClient = () => {
+        if (!clientToDelete) return
+
+        // Extra browser security confirmation
+        const confirmed = window.confirm(
+            `This will permanently delete client "${clientToDelete.name}" and ALL related data:\n\n` +
+            `• All sites under this client\n` +
+            `• All shift schedules and attendance logs for those sites\n` +
+            `• Any site job requirements and operational reports\n\n` +
+            `This action cannot be undone. Are you absolutely sure?`
+        )
+        if (!confirmed) {
+            return
+        }
+
+        deleteClient(clientToDelete.id, {
+            onSuccess: () => setClientToDelete(null),
+        })
+    }
+
+    const handleConfirmDeleteSite = () => {
+        if (!siteToDelete) return
+
+        // Extra browser security confirmation
+        const confirmed = window.confirm(
+            `This will permanently delete site "${siteToDelete.name}" and related data:\n\n` +
+            `• Shift schedules and attendance logs associated with this site\n` +
+            `• Any job requirements assigned to this site\n\n` +
+            `This action cannot be undone. Are you absolutely sure?`
+        )
+        if (!confirmed) {
+            return
+        }
+
+        deleteSite(
+            { clientId: siteToDelete.clientId, siteId: siteToDelete.id },
+            { onSuccess: () => setSiteToDelete(null) }
+        )
     }
 
     // Calculate totals
@@ -301,14 +344,28 @@ export function ClientListPage() {
                                         <Badge variant="success">Active</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => { e.stopPropagation(); handleAddSite(client.id); }}
-                                        >
-                                            <Plus className="h-4 w-4 mr-1" />
-                                            Add Site
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => { e.stopPropagation(); handleAddSite(client.id); }}
+                                            >
+                                                <Plus className="h-4 w-4 mr-1" />
+                                                Add Site
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-600"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setClientToDelete({ id: client.id, name: client.company_name })
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-1" />
+                                                Delete
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                                 {expandedClientIds.has(client.id) && client.sites?.map((site: any) => (
@@ -324,14 +381,31 @@ export function ClientListPage() {
                                         </TableCell>
                                         <TableCell></TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setSiteToView(site)}
-                                            >
-                                                <Eye className="h-4 w-4 mr-1" />
-                                                View Jobs
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setSiteToView(site)}
+                                                >
+                                                    <Eye className="h-4 w-4 mr-1" />
+                                                    View Jobs
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-600"
+                                                    onClick={() =>
+                                                        setSiteToDelete({
+                                                            id: site.id,
+                                                            name: site.site_name,
+                                                            clientId: site.client_id,
+                                                        })
+                                                    }
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                    Delete
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -566,6 +640,32 @@ export function ClientListPage() {
                 open={!!siteToView}
                 onClose={() => setSiteToView(null)}
                 site={siteToView}
+            />
+
+            <ConfirmDialog
+                open={!!clientToDelete}
+                onOpenChange={(open) => {
+                    if (!open) setClientToDelete(null)
+                }}
+                title="Delete Client"
+                description={`This will delete client "${clientToDelete?.name}" and all of its sites, including related shifts, attendance logs, and site job requirements. This action cannot be undone.`}
+                onConfirm={handleConfirmDeleteClient}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="destructive"
+            />
+
+            <ConfirmDialog
+                open={!!siteToDelete}
+                onOpenChange={(open) => {
+                    if (!open) setSiteToDelete(null)
+                }}
+                title="Delete Site"
+                description={`This will delete site "${siteToDelete?.name}" and its related shifts, attendance logs, and job requirements. This action cannot be undone.`}
+                onConfirm={handleConfirmDeleteSite}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="destructive"
             />
         </div>
     )

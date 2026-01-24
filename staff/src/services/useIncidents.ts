@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { incidentsApi } from "@/api/endpoints/incidents"
+import { toast } from "sonner"
 
 export const incidentKeys = {
     all: ['incidents'] as const,
@@ -29,6 +30,20 @@ export function usePanicButton() {
         mutationFn: incidentsApi.panic,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: incidentKeys.all })
+        },
+    })
+}
+
+export function useDeleteIncident() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: incidentsApi.delete,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: incidentKeys.all })
+            toast.success('Incident deleted successfully')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete incident')
         },
     })
 }

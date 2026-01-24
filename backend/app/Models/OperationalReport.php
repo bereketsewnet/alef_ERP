@@ -12,6 +12,7 @@ class OperationalReport extends Model
     protected $fillable = [
         'site_id',
         'reported_by_employee_id',
+        'reported_by_name',
         'report_type',
         'description',
         'evidence_media_urls',

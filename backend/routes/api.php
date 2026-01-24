@@ -89,8 +89,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [ClientController::class, 'show']);
         Route::put('/{id}', [ClientController::class, 'update']);
         Route::delete('/{id}', [ClientController::class, 'destroy']);
+
+        // Client sites
         Route::post('/{id}/sites', [ClientController::class, 'createSite']);
         Route::get('/{clientId}/sites', [ClientController::class, 'getSites']);
+        Route::delete('/{clientId}/sites/{siteId}', [ClientController::class, 'destroySite']);
     });
 
     // Site Job Requirements
@@ -166,6 +169,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/', [IncidentController::class, 'index']);
         Route::post('/', [IncidentController::class, 'store']);
         Route::post('/panic', [IncidentController::class, 'panic']);
+        Route::delete('/{id}', [IncidentController::class, 'destroy']);
     });
 
     // Invoice Routes

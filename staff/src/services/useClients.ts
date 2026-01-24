@@ -64,6 +64,22 @@ export const useDeleteClient = () => {
     })
 }
 
+export const useDeleteSite = () => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: ({ clientId, siteId }: { clientId: number; siteId: number }) =>
+            clientsApi.deleteSite(clientId, siteId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clients'] })
+            toast.success('Site deleted successfully')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete site')
+        },
+    })
+}
+
 export const useClientSites = (clientId: number) => {
     return useQuery({
         queryKey: ['client-sites', clientId],

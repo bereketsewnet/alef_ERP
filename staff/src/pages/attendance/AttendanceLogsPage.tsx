@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock } from "lucide-react"
 import { useAttendanceLogs, useVerifyAttendance, useUnverifyAttendance, useExportAttendance } from "@/services/useAttendance"
+import { useClients } from "@/services/useClients"
 import type { AttendanceFilters, AttendanceLog } from "@/api/endpoints/attendance"
 
 export function AttendanceLogsPage() {
@@ -33,6 +34,9 @@ export function AttendanceLogsPage() {
     const { mutate: verify } = useVerifyAttendance()
     const { mutate: unverify } = useUnverifyAttendance()
     const { mutate: exportData, isPending: isExporting } = useExportAttendance()
+
+    // Load sites (via clients) for site filter dropdown
+    const { data: clientsData } = useClients({ page: 1, per_page: 500 })
 
     // Debounce search
     useEffect(() => {
@@ -52,6 +56,15 @@ export function AttendanceLogsPage() {
             ...prev,
             [type === 'start' ? 'start_date' : 'end_date']: value || undefined,
             page: 1
+        }))
+    }
+
+    const handleSiteFilter = (value: string) => {
+        const siteId = value ? Number(value) : undefined
+        setFilters(prev => ({
+            ...prev,
+            site_id: siteId,
+            page: 1,
         }))
     }
 
@@ -89,6 +102,22 @@ export function AttendanceLogsPage() {
         return `${hours.toFixed(2)}h`
     }
 
+    // Calculate status counts from current page data
+    const statusCounts = data?.data.reduce((acc, log) => {
+        if (!log.clock_out_time) {
+            acc.active++
+        } else {
+            if (log.flagged_late) {
+                acc.late++
+            } else if (log.flagged_early_leave) {
+                acc.early++
+            } else {
+                acc.present++
+            }
+        }
+        return acc
+    }, { active: 0, late: 0, early: 0, present: 0 }) || { active: 0, late: 0, early: 0, present: 0 }
+
     return (
         <div className="space-y-6">
             <div>
@@ -100,9 +129,35 @@ export function AttendanceLogsPage() {
                 </p>
             </div>
 
+            {/* Status Summary */}
+            {data && data.data.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="text-sm text-blue-600 font-medium">Active</div>
+                        <div className="text-2xl font-bold text-blue-700 mt-1">{statusCounts.active}</div>
+                        <div className="text-xs text-blue-500 mt-1">Currently working</div>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="text-sm text-red-600 font-medium">Late</div>
+                        <div className="text-2xl font-bold text-red-700 mt-1">{statusCounts.late}</div>
+                        <div className="text-xs text-red-500 mt-1">Arrived late</div>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="text-sm text-yellow-600 font-medium">Early</div>
+                        <div className="text-2xl font-bold text-yellow-700 mt-1">{statusCounts.early}</div>
+                        <div className="text-xs text-yellow-500 mt-1">Left early</div>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="text-sm text-green-600 font-medium">Present</div>
+                        <div className="text-2xl font-bold text-green-700 mt-1">{statusCounts.present}</div>
+                        <div className="text-xs text-green-500 mt-1">On time & complete</div>
+                    </div>
+                </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                    <div className="flex flex-col sm:flex-row gap-4 items-end">
                     <div className="flex-1 w-full relative">
                         <Label htmlFor="search" className="mb-2 block">Search</Label>
                         <div className="relative">
@@ -136,6 +191,24 @@ export function AttendanceLogsPage() {
                                 className="w-40"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <Label className="mb-2 block">Site</Label>
+                        <select
+                            className="flex h-10 w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={filters.site_id?.toString() || ''}
+                            onChange={(e) => handleSiteFilter(e.target.value)}
+                        >
+                            <option value="">All sites</option>
+                            {clientsData?.data.flatMap((client: any) =>
+                                (client.sites || []).map((site: any) => (
+                                    <option key={site.id} value={site.id}>
+                                        {client.company_name} - {site.site_name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
                     </div>
 
                     <Button onClick={handleExport} disabled={isExporting} variant="outline" className="mb-[1px]">
@@ -211,7 +284,7 @@ export function AttendanceLogsPage() {
                                             <>
                                                 {log.flagged_late && <Badge variant="destructive">Late</Badge>}
                                                 {log.flagged_early_leave && <Badge variant="warning">Early</Badge>}
-                                                {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">On Time</Badge>}
+                                                {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
                                             </>
                                         ) : (
                                             <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">Active</Badge>

@@ -93,4 +93,8 @@ export const clientsApi = {
         const response = await apiClient.post(`/clients/${clientId}/sites`, data)
         return response.data
     },
+
+    deleteSite: async (clientId: number, siteId: number): Promise<void> => {
+        await apiClient.delete(`/clients/${clientId}/sites/${siteId}`)
+    },
 }

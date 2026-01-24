@@ -186,6 +186,22 @@ class ClientController extends Controller
     }
 
     /**
+     * Delete a single site for a client
+     */
+    public function destroySite($clientId, $siteId)
+    {
+        $site = ClientSite::where('client_id', $clientId)
+            ->where('id', $siteId)
+            ->firstOrFail();
+
+        $site->delete();
+
+        return response()->json([
+            'message' => 'Site deleted successfully',
+        ]);
+    }
+
+    /**
      * Get jobs required at a specific site
      */
     public function getSiteJobs($siteId)

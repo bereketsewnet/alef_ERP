@@ -60,7 +60,21 @@ const incidentColumns: ColumnDef<any>[] = [
             </Badge>
         )
     },
-    { accessorKey: "reported_by.first_name", header: "Reported By", cell: ({ row }) => `${row.original.reported_by?.first_name || ''} ${row.original.reported_by?.last_name || 'N/A'}` }
+    { 
+        accessorKey: "reported_by", 
+        header: "Reported By", 
+        cell: ({ row }) => {
+            const reportedByName = row.original.reported_by_name
+            const reportedByEmployee = row.original.reported_by
+            if (reportedByName && reportedByName.trim()) {
+                return reportedByName
+            } else if (reportedByEmployee) {
+                const employeeName = `${reportedByEmployee.first_name || ''} ${reportedByEmployee.last_name || ''}`.trim()
+                return employeeName || '-'
+            }
+            return '-'
+        }
+    }
 ]
 
 export function ReportsPage() {

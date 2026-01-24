@@ -69,6 +69,7 @@ class IncidentController extends Controller
             'description' => 'required|string',
             'severity_level' => 'sometimes|string',
             'evidence_media_urls' => 'nullable|array',
+            'reported_by_name' => 'nullable|string|max:255',
         ]);
 
         $user = auth()->user();
@@ -80,6 +81,7 @@ class IncidentController extends Controller
         $report = OperationalReport::create([
             'site_id' => $request->site_id,
             'reported_by_employee_id' => $user->employee_id ?? null,
+            'reported_by_name' => $request->reported_by_name ?? null,
             'report_type' => $request->report_type,
             'description' => $request->description,
             'severity_level' => $request->severity_level ?? 'LOW',
@@ -138,5 +140,26 @@ class IncidentController extends Controller
             'message' => 'Panic alert sent successfully. HQ has been notified.',
             'report' => $report,
         ], 201);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/incidents/{id}",
+     *     summary="Delete an incident",
+     *     tags={"Incidents"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Incident deleted successfully"),
+     *     @OA\Response(response=404, description="Incident not found")
+     * )
+     */
+    public function destroy($id)
+    {
+        $incident = OperationalReport::findOrFail($id);
+        $incident->delete();
+
+        return response()->json([
+            'message' => 'Incident deleted successfully'
+        ]);
     }
 }

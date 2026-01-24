@@ -2,9 +2,10 @@ import { useState } from "react"
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import type { ColumnDef } from "@tanstack/react-table"
-import { AlertTriangle, Loader2, ArrowUpDown } from "lucide-react"
-import { useIncidents } from "@/services/useIncidents"
+import { AlertTriangle, Loader2, ArrowUpDown, Trash2 } from "lucide-react"
+import { useIncidents, useDeleteIncident } from "@/services/useIncidents"
 import { ReportIncidentModal } from "@/components/incidents/ReportIncidentModal"
 import { ViewIncidentModal } from "@/components/incidents/ViewIncidentModal"
 import type { Incident } from "@/api/endpoints/incidents"
@@ -12,8 +13,10 @@ import type { Incident } from "@/api/endpoints/incidents"
 export function IncidentsPage() {
     const [createModalOpen, setCreateModalOpen] = useState(false)
     const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
+    const [incidentToDelete, setIncidentToDelete] = useState<Incident | null>(null)
 
     const { data: incidents, isLoading } = useIncidents({ page: 1 })
+    const { mutate: deleteIncident } = useDeleteIncident()
 
     const columns: ColumnDef<Incident>[] = [
         {
@@ -65,8 +68,15 @@ export function IncidentsPage() {
             accessorKey: "reported_by",
             header: "Reported By",
             cell: ({ row }) => {
-                const user = row.original.reported_by
-                return user ? `${user.first_name} ${user.last_name}` : "Unknown"
+                const reportedByName = row.original.reported_by_name
+                const reportedByEmployee = row.original.reported_by
+                if (reportedByName && reportedByName.trim()) {
+                    return reportedByName
+                } else if (reportedByEmployee) {
+                    const employeeName = `${reportedByEmployee.first_name || ''} ${reportedByEmployee.last_name || ''}`.trim()
+                    return employeeName || '-'
+                }
+                return '-'
             }
         },
         {
@@ -88,13 +98,23 @@ export function IncidentsPage() {
             id: "actions",
             cell: ({ row }) => {
                 return (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedIncident(row.original)}
-                    >
-                        View
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIncident(row.original)}
+                        >
+                            View
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIncidentToDelete(row.original)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
                 )
             },
         },
@@ -129,6 +149,27 @@ export function IncidentsPage() {
                 incident={selectedIncident}
                 open={!!selectedIncident}
                 onOpenChange={(open) => !open && setSelectedIncident(null)}
+            />
+
+            <ConfirmDialog
+                open={!!incidentToDelete}
+                onOpenChange={(open) => !open && setIncidentToDelete(null)}
+                title="Delete Incident"
+                description={`Are you sure you want to delete this incident? This action cannot be undone. The incident report will be permanently removed from the system.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={() => {
+                    if (incidentToDelete) {
+                        if (window.confirm(`⚠️ WARNING: You are about to permanently delete incident #${incidentToDelete.id}.\n\nThis will remove:\n- The incident report\n- All associated data\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to proceed?`)) {
+                            deleteIncident(incidentToDelete.id, {
+                                onSuccess: () => {
+                                    setIncidentToDelete(null)
+                                }
+                            })
+                        }
+                    }
+                }}
+                variant="destructive"
             />
         </div>
     )
