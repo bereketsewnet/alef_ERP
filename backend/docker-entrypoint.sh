@@ -7,6 +7,7 @@ mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/storage/framework/cache
 mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/app/public/invoice-proofs
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # Ensure log file is writable
@@ -14,11 +15,35 @@ touch /var/www/html/storage/logs/laravel.log
 chown www-data:www-data /var/www/html/storage/logs/laravel.log
 chmod 664 /var/www/html/storage/logs/laravel.log
 
-# Ensure .env file is writable
-if [ -f /var/www/html/.env ]; then
-    chown www-data:www-data /var/www/html/.env
-    chmod 664 /var/www/html/.env
+# Create storage symlink if it doesn't exist
+if [ ! -L /var/www/html/public/storage ] && [ ! -d /var/www/html/public/storage ]; then
+    echo "Creating storage symlink..."
+    php artisan storage:link 2>&1 || echo "Warning: Failed to create storage link (may need to run manually)"
+else
+    echo "Storage symlink already exists"
 fi
+
+# Ensure .env file permissions (if mounted as volume, it's read-only, so we skip chown/chmod)
+if [ -f /var/www/html/.env ]; then
+    # Only set permissions if file is writable (not a read-only mount)
+    if [ -w /var/www/html/.env ]; then
+        chown www-data:www-data /var/www/html/.env
+        chmod 664 /var/www/html/.env
+    else
+        echo "Note: .env file is mounted as read-only (this is expected for synced config)"
+    fi
+fi
+
+# If .env doesn't exist, try to create from .env.example
+if [ ! -f /var/www/html/.env ] && [ -f /var/www/html/.env.example ]; then
+    echo "No .env file found, creating from .env.example..."
+    cp /var/www/html/.env.example /var/www/html/.env 2>/dev/null || true
+    if [ -f /var/www/html/.env ]; then
+        chown www-data:www-data /var/www/html/.env
+        chmod 664 /var/www/html/.env
+    fi
+fi
+
 echo "Storage permissions set"
 
 # Wait for database to be ready

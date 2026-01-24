@@ -24,6 +24,7 @@ services:
       FRONTEND_URL: http://102.211.186.118:5176
     volumes:
       - backend_storage:/var/www/html/storage
+      - ./backend/.env:/var/www/html/.env:ro
     depends_on:
       - db
     networks:

@@ -3,11 +3,12 @@ import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Eye, Download, FileText, Loader2, Send } from "lucide-react"
+import { ArrowUpDown, Eye, Download, FileText, Loader2, Send, CheckCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useInvoices, useInvoiceStats, useDownloadInvoice, useSendInvoice } from "@/services/useInvoices"
 import { CreateInvoiceModal } from "@/components/billing/CreateInvoiceModal"
 import { InvoiceDetailsModal } from "@/components/billing/InvoiceDetailsModal"
+import { MarkAsPaidModal } from "@/components/billing/MarkAsPaidModal"
 import { useToast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
 
@@ -15,6 +16,8 @@ export function BillingPage() {
     const [search, setSearch] = useState("")
     const [createModalOpen, setCreateModalOpen] = useState(false)
     const [viewInvoiceId, setViewInvoiceId] = useState<number | null>(null)
+    const [markAsPaidInvoiceId, setMarkAsPaidInvoiceId] = useState<number | null>(null)
+    const [markAsPaidInvoiceNumber, setMarkAsPaidInvoiceNumber] = useState<string>("")
     const { toast } = useToast()
 
     // API Hooks
@@ -100,7 +103,7 @@ export function BillingPage() {
             header: "Invoice #",
         },
         {
-            accessorKey: "client.name",
+            accessorKey: "client",
             header: ({ column }) => {
                 return (
                     <Button
@@ -111,6 +114,10 @@ export function BillingPage() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 )
+            },
+            cell: ({ row }) => {
+                const client = row.original.client
+                return client?.company_name || client?.name || 'N/A'
             },
         },
         {
@@ -175,6 +182,20 @@ export function BillingPage() {
                             >
                                 <Send className="h-4 w-4 mr-1" />
                                 {isSending ? 'Sending...' : 'Send'}
+                            </Button>
+                        )}
+                        {(invoice.status === 'SENT' || invoice.status === 'DRAFT') && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                    setMarkAsPaidInvoiceId(invoice.id)
+                                    setMarkAsPaidInvoiceNumber(invoice.invoice_number)
+                                }}
+                                className="text-blue-600 hover:text-blue-700"
+                            >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Mark as Paid
                             </Button>
                         )}
                     </div>
@@ -261,6 +282,19 @@ export function BillingPage() {
 
             <CreateInvoiceModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
             <InvoiceDetailsModal invoiceId={viewInvoiceId} onClose={() => setViewInvoiceId(null)} />
+            {markAsPaidInvoiceId && (
+                <MarkAsPaidModal
+                    open={!!markAsPaidInvoiceId}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setMarkAsPaidInvoiceId(null)
+                            setMarkAsPaidInvoiceNumber("")
+                        }
+                    }}
+                    invoiceId={markAsPaidInvoiceId}
+                    invoiceNumber={markAsPaidInvoiceNumber}
+                />
+            )}
         </div>
     )
 }

@@ -10,7 +10,9 @@ use App\Models\ClientSite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class InvoiceController extends Controller
 {
@@ -119,7 +121,14 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Invoice not found'], 404);
         }
 
-        return response()->json(['data' => $invoice]);
+        // Add proof image URL if available
+        $invoiceData = $invoice->toArray();
+        if ($invoice->proof_image_path) {
+            // Generate full URL for the proof image using asset() helper
+            $invoiceData['proof_image_url'] = asset('storage/' . $invoice->proof_image_path);
+        }
+
+        return response()->json(['data' => $invoiceData]);
     }
 
     /**
@@ -242,6 +251,98 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Mark invoice as paid
+     */
+    public function markAsPaid(Request $request, $id)
+    {
+        try {
+            $invoice = Invoice::with(['items', 'client'])->find($id);
+
+            if (!$invoice) {
+                return response()->json(['message' => 'Invoice not found'], 404);
+            }
+
+            // Validate request
+            $validated = $request->validate([
+                'payment_date' => 'required|date',
+                'payment_description' => 'nullable|string|max:1000',
+                'receipt_number' => 'nullable|string|max:255',
+                'proof_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            ]);
+
+            // At least one of receipt_number or proof_image must be provided
+            if (empty($validated['receipt_number']) && !$request->hasFile('proof_image')) {
+                return response()->json([
+                    'message' => 'Validation error',
+                    'error' => 'Please provide either a receipt number or proof image (or both).'
+                ], 422);
+            }
+
+            // Handle image upload
+            $proofImagePath = null;
+            if ($request->hasFile('proof_image')) {
+                $image = $request->file('proof_image');
+                $filename = 'invoice_' . $invoice->id . '_' . time() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('invoice-proofs', $filename, 'public');
+                $proofImagePath = $path;
+            }
+
+            // Update invoice
+            $invoice->status = 'PAID';
+            $invoice->payment_date = $validated['payment_date'];
+            $invoice->payment_description = $validated['payment_description'] ?? null;
+            $invoice->receipt_number = $validated['receipt_number'] ?? null;
+            $invoice->proof_image_path = $proofImagePath;
+            $invoice->paid_at = now();
+            $invoice->paid_by = Auth::id();
+            $invoice->save();
+
+            // Get client email
+            $client = $invoice->client;
+            if (!$client || !$client->email || trim($client->email) === '') {
+                return response()->json([
+                    'message' => 'Invoice marked as paid, but email notification could not be sent',
+                    'error' => 'Client email is not configured.',
+                    'data' => $invoice->fresh(['items', 'client'])
+                ], 200); // Still return success since payment was recorded
+            }
+
+            // Generate payment confirmation email
+            $emailContent = $this->generatePaymentConfirmationContent($invoice);
+
+            // Send email
+            try {
+                Mail::raw($emailContent, function ($message) use ($invoice, $client) {
+                    $message->to($client->email)
+                        ->subject('Payment Confirmation - Invoice #' . $invoice->invoice_number)
+                        ->from(config('mail.from.address'), config('mail.from.name'));
+                });
+
+                return response()->json([
+                    'message' => 'Invoice marked as paid and confirmation email sent to ' . $client->email,
+                    'data' => $invoice->fresh(['items', 'client'])
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Payment confirmation email failed: ' . $e->getMessage());
+                
+                // Still return success since payment was recorded
+                return response()->json([
+                    'message' => 'Invoice marked as paid, but email notification failed',
+                    'error' => 'Email sending failed: ' . $e->getMessage(),
+                    'data' => $invoice->fresh(['items', 'client'])
+                ], 200);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Mark invoice as paid failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to mark invoice as paid',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Generate invoice content for email
      */
     private function generateInvoiceContent(Invoice $invoice): string
@@ -270,6 +371,66 @@ class InvoiceController extends Controller
         $content .= sprintf("TOTAL AMOUNT: %10.2f ETB\n", $invoice->total_amount);
         $content .= "================================\n\n";
         $content .= "Thank you for your business!\n";
+
+        return $content;
+    }
+
+    /**
+     * Generate payment confirmation email content
+     */
+    private function generatePaymentConfirmationContent(Invoice $invoice): string
+    {
+        $content = "PAYMENT CONFIRMATION\n";
+        $content .= "================================\n\n";
+        $content .= "Invoice #{$invoice->invoice_number}\n";
+        $content .= "Client: {$invoice->client->company_name}\n";
+        $content .= "Invoice Date: {$invoice->invoice_date}\n";
+        $content .= "Due Date: {$invoice->due_date}\n";
+        $content .= "Total Amount: {$invoice->total_amount} ETB\n\n";
+        
+        $content .= "--------------------------------\n";
+        $content .= "PAYMENT DETAILS:\n";
+        $content .= "--------------------------------\n";
+        $content .= "Payment Date: {$invoice->payment_date}\n";
+        
+        if ($invoice->receipt_number) {
+            $content .= "Receipt Number: {$invoice->receipt_number}\n";
+        }
+        
+        if ($invoice->payment_description) {
+            $content .= "Description: {$invoice->payment_description}\n";
+        }
+        
+        $content .= "\n";
+        
+        // Add proof image link if available
+        if ($invoice->proof_image_path) {
+            $imageUrl = url('storage/' . $invoice->proof_image_path);
+            $content .= "--------------------------------\n";
+            $content .= "PROOF OF PAYMENT:\n";
+            $content .= "--------------------------------\n";
+            $content .= "View proof image: {$imageUrl}\n\n";
+        }
+        
+        $content .= "--------------------------------\n";
+        $content .= "INVOICE ITEMS:\n";
+        $content .= "--------------------------------\n";
+        
+        foreach ($invoice->items as $item) {
+            $content .= sprintf(
+                "%-30s %5d x %10.2f = %10.2f ETB\n",
+                substr($item->description, 0, 30),
+                $item->quantity,
+                $item->unit_price,
+                $item->total
+            );
+        }
+        
+        $content .= "--------------------------------\n";
+        $content .= sprintf("TOTAL AMOUNT: %10.2f ETB\n", $invoice->total_amount);
+        $content .= "================================\n\n";
+        $content .= "Payment Status: PAID\n";
+        $content .= "Thank you for your payment!\n";
 
         return $content;
     }

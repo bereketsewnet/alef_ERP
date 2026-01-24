@@ -180,6 +180,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
         Route::get('/{id}/download', [\App\Http\Controllers\Api\InvoiceController::class, 'download']);
         Route::post('/{id}/send', [\App\Http\Controllers\Api\InvoiceController::class, 'send']);
+        Route::post('/{id}/mark-paid', [\App\Http\Controllers\Api\InvoiceController::class, 'markAsPaid']);
     });
 
     // Report Routes

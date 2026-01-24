@@ -20,9 +20,18 @@ export interface Invoice {
     client?: {
         id: number
         company_name: string
+        email?: string
     }
     items?: InvoiceItem[]
     created_at: string
+    // Payment fields
+    payment_date?: string
+    payment_description?: string
+    receipt_number?: string
+    proof_image_path?: string
+    proof_image_url?: string
+    paid_at?: string
+    paid_by?: number
 }
 
 export interface InvoiceStats {
@@ -64,6 +73,14 @@ const invoiceApi = {
     },
     send: async (id: number) => {
         const response = await apiClient.post(`/invoices/${id}/send`)
+        return response.data
+    },
+    markAsPaid: async (id: number, data: FormData) => {
+        const response = await apiClient.post(`/invoices/${id}/mark-paid`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
         return response.data
     }
 }
@@ -117,5 +134,35 @@ export function useSendInvoice() {
             // Re-throw with proper structure for UI handling
             throw error
         }
+    })
+}
+
+export interface MarkAsPaidData {
+    payment_date: string
+    payment_description?: string
+    receipt_number?: string
+    proof_image?: File
+}
+
+export function useMarkInvoiceAsPaid() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: MarkAsPaidData }) => {
+            const formData = new FormData()
+            formData.append('payment_date', data.payment_date)
+            if (data.payment_description) {
+                formData.append('payment_description', data.payment_description)
+            }
+            if (data.receipt_number) {
+                formData.append('receipt_number', data.receipt_number)
+            }
+            if (data.proof_image) {
+                formData.append('proof_image', data.proof_image)
+            }
+            return invoiceApi.markAsPaid(id, formData)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: invoiceKeys.all })
+        },
     })
 }
