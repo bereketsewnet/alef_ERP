@@ -12,7 +12,7 @@ import { useGPS } from '@/hooks/useGPS'
 import { useClockIn, useClockOut } from '@/hooks/useAttendance'
 import { useOfflineQueue } from '@/hooks/useOfflineQueue'
 import { haversineDistance, formatDistance } from '@/utils/haversine'
-import type { ShiftSchedule } from '@/types'
+import type { ShiftSchedule, ClockInPayload } from '@/types'
 
 export function DashboardPage() {
     const { t } = useTranslation()
@@ -20,7 +20,7 @@ export function DashboardPage() {
     const { position, requestPosition, isLoading: isGPSLoading, error: gpsError } = useGPS()
     const { mutateAsync: clockIn, isPending: isClockingIn } = useClockIn()
     const { mutateAsync: clockOut, isPending: isClockingOut } = useClockOut()
-    const { addClockIn, addClockOut, isOnline } = useOfflineQueue()
+    const { addClockIn, addClockOut, isOnline, syncAll } = useOfflineQueue()
 
     const [selfie, setSelfie] = useState<File | null>(null)
     const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
@@ -63,12 +63,24 @@ export function DashboardPage() {
             return
         }
 
-        const payload = {
+        // Prepare payload - exclude selfie when storing offline (File objects can't be serialized)
+        const payload: ClockInPayload = {
             schedule_id: todayShift.id,
             latitude: pos.latitude,
             longitude: pos.longitude,
-            accuracy: pos.accuracy,
-            selfie: selfie || undefined,
+            accuracy: pos.accuracy || 0,
+            // Only include selfie when online and sending immediately
+            // File objects can't be stored in IndexedDB, so exclude for offline queue
+            selfie: (isOnline && selfie) ? selfie : undefined,
+        }
+        
+        // For offline storage, create a clean payload without File objects
+        const offlinePayload = {
+            schedule_id: payload.schedule_id,
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+            accuracy: payload.accuracy,
+            // No selfie - File objects can't be stored
         }
 
         try {
@@ -80,26 +92,52 @@ export function DashboardPage() {
 
                 if (response.success) {
                     setResult({ success: true, message: isClockedIn ? t('attendance.clockOutSuccess') : t('attendance.clockInSuccess') })
+                    // Try to sync any pending actions after successful check-in/out
+                    setTimeout(() => syncAll(), 2000)
                 } else {
                     setResult({ success: false, message: response.message || t('attendance.tooFar') })
                 }
             } else {
-                // Queue for offline
+                // Queue for offline - use clean payload without File objects
                 if (isClockedIn) {
-                    await addClockOut(payload)
+                    await addClockOut(offlinePayload as ClockInPayload)
                 } else {
-                    await addClockIn(payload)
+                    await addClockIn(offlinePayload as ClockInPayload)
                 }
                 setResult({ success: true, message: t('attendance.queued') })
             }
-        } catch {
-            // Network error - queue offline
-            if (isClockedIn) {
-                await addClockOut(payload)
-            } else {
-                await addClockIn(payload)
+        } catch (error: any) {
+            // Network error or API error - show error message
+            console.error('Check-in error:', error)
+            
+            // Extract error message from response
+            let errorMessage = t('attendance.clockInFailed') || 'Clock in failed'
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error?.response?.data?.error) {
+                errorMessage = error.response.data.error
+            } else if (error?.message) {
+                errorMessage = error.message
             }
-            setResult({ success: true, message: t('attendance.queued') })
+            
+            // If it's a GPS/distance error, show it
+            if (error?.response?.data?.distance !== undefined) {
+                const distance = Math.round(error.response.data.distance)
+                errorMessage = `${errorMessage} (Distance: ${distance}m)`
+            }
+            
+            // If offline or network error, queue for later
+            if (!isOnline || error?.code === 'ERR_NETWORK' || error?.code === 'ERR_INTERNET_DISCONNECTED') {
+                if (isClockedIn) {
+                    await addClockOut(offlinePayload as ClockInPayload)
+                } else {
+                    await addClockIn(offlinePayload as ClockInPayload)
+                }
+                setResult({ success: true, message: t('attendance.queued') })
+            } else {
+                // Show the actual error message
+                setResult({ success: false, message: errorMessage })
+            }
         }
 
         // Clear result after 3 seconds

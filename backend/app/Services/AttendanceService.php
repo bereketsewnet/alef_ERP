@@ -45,37 +45,78 @@ class AttendanceService
             return ['success' => false, 'message' => 'Schedule does not belong to this employee', 'attendance' => null];
         }
 
-        // Check if already clocked in
+        // Check if already clocked in (only verified clock-ins count)
         $existing = AttendanceLog::where('schedule_id', $scheduleId)
             ->where('employee_id', $employeeId)
             ->whereNotNull('clock_in_time')
+            ->where('is_verified', true)
+            ->whereNull('clock_out_time')
             ->first();
 
         if ($existing) {
-            return ['success' => false, 'message' => 'Already clocked in for this shift', 'attendance' => null];
+            return ['success' => false, 'message' => 'Already clocked in for this shift', 'attendance' => $existing];
         }
+
+        // Check if there's an unverified clock-in (from previous failed attempt)
+        $unverified = AttendanceLog::where('schedule_id', $scheduleId)
+            ->where('employee_id', $employeeId)
+            ->whereNotNull('clock_in_time')
+            ->where('is_verified', false)
+            ->whereNull('clock_out_time')
+            ->first();
 
         // Validate GPS
         $gpsValidation = $this->gpsService->isWithinRadius($latitude, $longitude, $schedule->site);
 
         if (!$gpsValidation['withinRadius']) {
-            // Log the attempt anyway for audit purposes
-            AttendanceLog::create([
-                'schedule_id' => $scheduleId,
-                'employee_id' => $employeeId,
-                'clock_in_time' => now(),
-                'clock_in_lat' => $latitude,
-                'clock_in_long' => $longitude,
-                'is_verified' => false,
-                'verification_method' => 'GPS',
-                'flagged_late' => false,
-                'raw_initdata' => $rawInitData ? json_encode($rawInitData) : null,
-            ]);
+            // If there's an unverified attempt, update it instead of creating a new one
+            if ($unverified) {
+                $unverified->update([
+                    'clock_in_time' => now(),
+                    'clock_in_lat' => $latitude,
+                    'clock_in_long' => $longitude,
+                ]);
+            } else {
+                // Log the attempt for audit purposes (only if no previous unverified attempt)
+                AttendanceLog::create([
+                    'schedule_id' => $scheduleId,
+                    'employee_id' => $employeeId,
+                    'clock_in_time' => now(),
+                    'clock_in_lat' => $latitude,
+                    'clock_in_long' => $longitude,
+                    'is_verified' => false,
+                    'verification_method' => 'GPS',
+                    'flagged_late' => false,
+                    'raw_initdata' => $rawInitData ? json_encode($rawInitData) : null,
+                ]);
+            }
 
             return [
                 'success' => false,
-                'message' => 'Location verification failed. You are ' . round($gpsValidation['distanceMeters']) . ' meters from the site (allowed: ' . $schedule->site->geo_radius_meters . ' meters)',
+                'message' => 'Location verification failed. You are ' . round($gpsValidation['distanceMeters']) . ' meters from the site (allowed: ' . $schedule->site->geo_radius_meters . ' meters). Please move closer to the site location.',
                 'attendance' => null,
+                'distance' => $gpsValidation['distanceMeters'],
+            ];
+        }
+
+        // If GPS is valid and there's an unverified attempt, update it to verified
+        if ($unverified) {
+            $shiftStart = Carbon::parse($schedule->shift_start);
+            $now = now();
+            $flaggedLate = $now->gt($shiftStart->copy()->addMinutes(30));
+
+            $unverified->update([
+                'clock_in_time' => $now,
+                'clock_in_lat' => $latitude,
+                'clock_in_long' => $longitude,
+                'is_verified' => true,
+                'flagged_late' => $flaggedLate,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Clocked in successfully!',
+                'attendance' => $unverified->fresh(),
                 'distance' => $gpsValidation['distanceMeters'],
             ];
         }

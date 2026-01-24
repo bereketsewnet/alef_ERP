@@ -15,12 +15,42 @@ interface UseOfflineQueueReturn {
     addClockOut: (payload: ClockInPayload) => Promise<void>
     addIncident: (payload: IncidentPayload) => Promise<void>
     clearFailed: () => Promise<void>
+    clearAllPending: () => Promise<void>
 }
 
 export function useOfflineQueue(): UseOfflineQueueReturn {
     const [queue, setQueue] = useState<QueuedAction[]>([])
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [isSyncing, setIsSyncing] = useState(false)
+
+    // Test actual API connectivity, not just navigator.onLine
+    const checkOnlineStatus = useCallback(async () => {
+        // First check navigator.onLine
+        if (!navigator.onLine) {
+            setIsOnline(false)
+            return false
+        }
+
+        // Then test actual API connectivity
+        try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+            
+            const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/health`, {
+                method: 'GET',
+                signal: controller.signal,
+                cache: 'no-cache',
+            })
+            
+            clearTimeout(timeoutId)
+            const isActuallyOnline = response.ok
+            setIsOnline(isActuallyOnline)
+            return isActuallyOnline
+        } catch {
+            setIsOnline(false)
+            return false
+        }
+    }, [])
 
     // Load queue from storage
     const loadQueue = useCallback(async () => {
@@ -32,12 +62,24 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
         loadQueue()
     }, [loadQueue])
 
+    // Check online status on mount and periodically
+    useEffect(() => {
+        checkOnlineStatus()
+        const interval = setInterval(checkOnlineStatus, 10000) // Check every 10 seconds
+        return () => clearInterval(interval)
+    }, [checkOnlineStatus])
+
     // Listen for online/offline events
     useEffect(() => {
-        const handleOnline = () => {
-            setIsOnline(true)
-            // Auto-sync when back online
-            syncAll()
+        const handleOnline = async () => {
+            // Wait a bit then check actual connectivity
+            setTimeout(async () => {
+                const isActuallyOnline = await checkOnlineStatus()
+                if (isActuallyOnline) {
+                    // Auto-sync when back online
+                    syncAll()
+                }
+            }, 1000)
         }
         const handleOffline = () => setIsOnline(false)
 
@@ -93,23 +135,61 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     }, [loadQueue])
 
     const syncAll = useCallback(async () => {
-        if (isSyncing || !isOnline) return
+        // Check online status before syncing
+        const actuallyOnline = await checkOnlineStatus()
+        if (isSyncing || !actuallyOnline) {
+            if (!actuallyOnline) {
+                console.log('[OfflineQueue] Not online, skipping sync')
+            }
+            return
+        }
 
         setIsSyncing(true)
         const currentQueue = await getQueuedActions()
         const pendingActions = currentQueue.filter((a) => a.status === 'PENDING')
+
+        console.log(`[OfflineQueue] Syncing ${pendingActions.length} pending actions`)
 
         for (const action of pendingActions) {
             try {
                 await updateQueueItem(action.id, { status: 'SYNCING' })
 
                 switch (action.type) {
-                    case 'CLOCK_IN':
-                        await attendanceApi.clockIn(action.payload as ClockInPayload)
+                    case 'CLOCK_IN': {
+                        const payload = action.payload as any
+                        // Validate payload has required fields
+                        if (!payload || !payload.schedule_id || payload.latitude === undefined || payload.longitude === undefined) {
+                            throw new Error(`Missing required fields: schedule_id=${payload?.schedule_id}, latitude=${payload?.latitude}, longitude=${payload?.longitude}`)
+                        }
+                        // Ensure all values are numbers (IndexedDB might store them as strings)
+                        const syncPayload: ClockInPayload = {
+                            schedule_id: Number(payload.schedule_id),
+                            latitude: Number(payload.latitude),
+                            longitude: Number(payload.longitude),
+                            accuracy: payload.accuracy ? Number(payload.accuracy) : 0,
+                            // Don't include selfie when syncing from offline queue (File objects can't be stored in IndexedDB)
+                        }
+                        console.log('[OfflineQueue] Syncing CLOCK_IN with payload:', syncPayload)
+                        await attendanceApi.clockIn(syncPayload)
                         break
-                    case 'CLOCK_OUT':
-                        await attendanceApi.clockOut(action.payload as ClockInPayload)
+                    }
+                    case 'CLOCK_OUT': {
+                        const payload = action.payload as any
+                        // Validate payload has required fields
+                        if (!payload || !payload.schedule_id || payload.latitude === undefined || payload.longitude === undefined) {
+                            throw new Error(`Missing required fields: schedule_id=${payload?.schedule_id}, latitude=${payload?.latitude}, longitude=${payload?.longitude}`)
+                        }
+                        // Ensure all values are numbers
+                        const syncPayload: ClockInPayload = {
+                            schedule_id: Number(payload.schedule_id),
+                            latitude: Number(payload.latitude),
+                            longitude: Number(payload.longitude),
+                            accuracy: payload.accuracy ? Number(payload.accuracy) : 0,
+                        }
+                        console.log('[OfflineQueue] Syncing CLOCK_OUT with payload:', syncPayload)
+                        await attendanceApi.clockOut(syncPayload)
                         break
+                    }
                     case 'INCIDENT':
                         await incidentApi.create(action.payload as IncidentPayload)
                         break
@@ -117,25 +197,40 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
                 // Success - remove from queue
                 await removeFromQueue(action.id)
+                console.log(`[OfflineQueue] Synced ${action.type} successfully`)
             } catch (error) {
                 // Failed - mark as failed
                 const errorMessage = error instanceof Error ? error.message : 'Sync failed'
+                const errorDetails = error instanceof Error && 'response' in error 
+                    ? (error as any).response?.data?.message || errorMessage
+                    : errorMessage
                 await updateQueueItem(action.id, {
                     status: 'FAILED',
                     retryCount: action.retryCount + 1,
-                    error: errorMessage,
+                    error: errorDetails,
                 })
+                console.error(`[OfflineQueue] Failed to sync ${action.type}:`, errorDetails, action.payload)
             }
         }
 
         await loadQueue()
         setIsSyncing(false)
-    }, [isOnline, isSyncing, loadQueue])
+    }, [isOnline, isSyncing, loadQueue, checkOnlineStatus])
 
     const clearFailed = useCallback(async () => {
         const currentQueue = await getQueuedActions()
         for (const action of currentQueue) {
             if (action.status === 'FAILED') {
+                await removeFromQueue(action.id)
+            }
+        }
+        await loadQueue()
+    }, [loadQueue])
+
+    const clearAllPending = useCallback(async () => {
+        const currentQueue = await getQueuedActions()
+        for (const action of currentQueue) {
+            if (action.status === 'PENDING') {
                 await removeFromQueue(action.id)
             }
         }
@@ -156,5 +251,6 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
         addClockOut,
         addIncident,
         clearFailed,
+        clearAllPending,
     }
 }

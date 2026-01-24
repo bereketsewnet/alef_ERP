@@ -38,6 +38,7 @@ class SampleDataSeeder extends Seeder
                 [
                     'employee_id' => $employee1->id,
                     'username' => 'johndoe',
+                    'phone_number' => $employee1->phone_number, // Copy phone from employee
                     'password' => Hash::make('password123'),
                     'role' => 'FIELD_STAFF',
                     'is_active' => true,
@@ -76,6 +77,7 @@ class SampleDataSeeder extends Seeder
                 [
                     'employee_id' => $employee2->id,
                     'username' => 'janesmith',
+                    'phone_number' => $employee2->phone_number, // Copy phone from employee
                     'password' => Hash::make('password123'),
                     'role' => 'FIELD_STAFF',
                     'is_active' => true,
@@ -163,6 +165,7 @@ class SampleDataSeeder extends Seeder
                 [
                     'employee_id' => $employee->id,
                     'username' => $empData['username'],
+                    'phone_number' => $employee->phone_number, // Copy phone from employee
                     'password' => Hash::make('password123'),
                     'role' => 'FIELD_STAFF',
                     'is_active' => true,

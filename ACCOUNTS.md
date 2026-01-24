@@ -30,7 +30,7 @@ These accounts are created by `SampleDataSeeder` for testing purposes.
 
 ### Member Portal Login
 
-The **Member Portal** (`http://localhost:7070`) uses **phone number** for login:
+The **Member Portal** (`http://102.211.186.118:7071` or `http://localhost:7070` for local) uses **phone number** for login:
 
 **Example credentials:**
 - **Phone:** `+251911234567`
@@ -73,7 +73,7 @@ The login endpoint accepts a `login` field that can be:
 
 **Example API Request:**
 ```json
-POST http://localhost:4001/api/auth/login
+POST http://102.211.186.118:4002/api/auth/login
 Content-Type: application/json
 
 {
@@ -92,7 +92,7 @@ Content-Type: application/json
 
 ### Using the Frontend
 
-1. Navigate to: `http://localhost:5175/login`
+1. Navigate to: `http://102.211.186.118:5176/login` (VPS) or `http://localhost:5175/login` (local)
 2. Enter your **username OR email** in the login field
 3. Enter your password
 4. Click "Login"

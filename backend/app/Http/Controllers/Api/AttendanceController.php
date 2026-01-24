@@ -76,6 +76,7 @@ class AttendanceController extends Controller
                 'success' => false,
                 'message' => $result['message'],
                 'distance' => $result['distance'] ?? null,
+                'error' => $result['message'], // Add error field for consistency
             ], 400);
         }
 

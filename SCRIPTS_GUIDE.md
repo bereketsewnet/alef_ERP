@@ -119,10 +119,10 @@ start_app.bat
 
 ## Service URLs
 
-- **Backend API**: http://localhost:4001
-- **Staff Portal**: http://localhost:5175
-- **Member Portal**: http://localhost:7070
-- **Adminer (DB)**: http://localhost:8082
+- **Backend API**: http://102.211.186.118:4002
+- **Staff Portal**: http://102.211.186.118:5176
+- **Member Portal**: http://102.211.186.118:7071
+- **Adminer (DB)**: http://102.211.186.118:8083
 
 ## Notes
 

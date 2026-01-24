@@ -40,6 +40,9 @@ class DatabaseSeeder extends Seeder
             
             // Attendance logs (needs schedules)
             AttendanceSeeder::class,
+            
+            // Sync phone numbers from employees to users (must be last)
+            SyncUserPhones::class,
         ]);
     }
 }

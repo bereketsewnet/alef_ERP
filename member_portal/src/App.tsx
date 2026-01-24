@@ -6,6 +6,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { RosterPage } from '@/pages/RosterPage'
 import { HistoryPage } from '@/pages/HistoryPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { PendingActionsPage } from '@/pages/PendingActionsPage'
 import { LoadingScreen } from '@/components/ui/Spinner'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -47,6 +48,7 @@ function AppRoutes() {
                 <Route path="roster" element={<RosterPage />} />
                 <Route path="history" element={<HistoryPage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="pending" element={<PendingActionsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

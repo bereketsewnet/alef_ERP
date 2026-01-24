@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, Link } from 'react-router-dom'
 import { BottomNav } from '@/components/BottomNav'
 import { PanicButton } from '@/components/PanicButton'
 import { useOfflineQueue } from '@/hooks/useOfflineQueue'
@@ -26,10 +26,10 @@ export function MainLayout() {
                     </div>
 
                     {pendingCount > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-warning">
+                        <Link to="/pending" className="flex items-center gap-1 text-xs text-warning hover:underline">
                             <Cloud className="h-4 w-4" />
                             <span>{pendingCount} {t('home.pendingSync')}</span>
-                        </div>
+                        </Link>
                     )}
                 </div>
             </div>
