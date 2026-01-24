@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Client;
+use App\Models\ClientSite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
@@ -73,7 +75,7 @@ class InvoiceController extends Controller
             $invoice->invoice_number = $invoiceNumber;
             $invoice->invoice_date = $request->invoice_date;
             $invoice->due_date = $request->due_date;
-            $invoice->status = 'SENT'; // Default to SENT when created manually
+            $invoice->status = 'DRAFT'; // Default to DRAFT when created manually
             $invoice->total_amount = 0; // Will update after items
             $invoice->save();
 
@@ -165,5 +167,110 @@ class InvoiceController extends Controller
             'Content-Type' => 'text/plain',
             'Content-Disposition' => 'attachment; filename="invoice-' . $invoice->invoice_number . '.txt"'
         ]);
+    }
+
+    /**
+     * Send invoice via email
+     */
+    public function send($id)
+    {
+        try {
+            $invoice = Invoice::with(['items', 'client.sites'])->find($id);
+
+            if (!$invoice) {
+                return response()->json(['message' => 'Invoice not found'], 404);
+            }
+
+            // Get client email
+            $client = Client::find($invoice->client_id);
+            if (!$client) {
+                return response()->json(['message' => 'Client not found'], 404);
+            }
+
+            if (!$client->email || trim($client->email) === '') {
+                return response()->json([
+                    'message' => 'Email not configured',
+                    'error' => 'Please set an email address for this client before sending the invoice.'
+                ], 400);
+            }
+
+            // Generate invoice content
+            $invoiceContent = $this->generateInvoiceContent($invoice);
+
+            // Send email
+            try {
+                Mail::raw($invoiceContent, function ($message) use ($invoice, $client) {
+                    $message->to($client->email)
+                        ->subject('Invoice #' . $invoice->invoice_number . ' - ' . $invoice->client->company_name)
+                        ->from(config('mail.from.address'), config('mail.from.name'));
+                });
+
+                // Update invoice status to SENT
+                $invoice->status = 'SENT';
+                $invoice->save();
+
+                return response()->json([
+                    'message' => 'Invoice sent successfully to ' . $client->email,
+                    'data' => $invoice
+                ]);
+            } catch (\Exception $e) {
+                // Email sending failed, but don't change status
+                // Extract a user-friendly error message
+                $errorMessage = $e->getMessage();
+                
+                // If it's a permission error, provide a clearer message
+                if (strpos($errorMessage, 'Permission denied') !== false) {
+                    $errorMessage = 'Email sending failed due to server configuration. Please contact administrator.';
+                } elseif (strpos($errorMessage, 'Connection') !== false || strpos($errorMessage, 'SMTP') !== false) {
+                    $errorMessage = 'Failed to connect to email server. Please check mail configuration.';
+                }
+                
+                \Log::error('Invoice email send failed: ' . $e->getMessage());
+                
+                return response()->json([
+                    'message' => 'Failed to send email',
+                    'error' => $errorMessage
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to send invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate invoice content for email
+     */
+    private function generateInvoiceContent(Invoice $invoice): string
+    {
+        $content = "INVOICE #{$invoice->invoice_number}\n";
+        $content .= "================================\n\n";
+        $content .= "Client: {$invoice->client->company_name}\n";
+        $content .= "Invoice Date: {$invoice->invoice_date}\n";
+        $content .= "Due Date: {$invoice->due_date}\n";
+        $content .= "Status: {$invoice->status}\n\n";
+        $content .= "--------------------------------\n";
+        $content .= "ITEMS:\n";
+        $content .= "--------------------------------\n";
+        
+        foreach ($invoice->items as $item) {
+            $content .= sprintf(
+                "%-30s %5d x %10.2f = %10.2f ETB\n",
+                substr($item->description, 0, 30),
+                $item->quantity,
+                $item->unit_price,
+                $item->total
+            );
+        }
+        
+        $content .= "--------------------------------\n";
+        $content .= sprintf("TOTAL AMOUNT: %10.2f ETB\n", $invoice->total_amount);
+        $content .= "================================\n\n";
+        $content .= "Thank you for your business!\n";
+
+        return $content;
     }
 }

@@ -60,9 +60,10 @@ export function InvoiceDetailsModal({ invoiceId, onClose }: InvoiceDetailsModalP
                                 <Badge
                                     variant={
                                         invoice.status === "PAID" ? "default" :
-                                            invoice.status === "SENT" ? "secondary" : "destructive"
+                                            invoice.status === "SENT" ? "secondary" :
+                                                invoice.status === "DRAFT" ? "outline" : "destructive"
                                     }
-                                    className={invoice.status === 'PAID' ? 'bg-green-600' : ''}
+                                    className={invoice.status === 'PAID' ? 'bg-green-600' : invoice.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' : ''}
                                 >
                                     {invoice.status}
                                 </Badge>

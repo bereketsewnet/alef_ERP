@@ -5,6 +5,7 @@ export interface Client {
     company_name: string
     contact_person: string
     contact_phone: string
+    email?: string
     billing_cycle?: string
     tin_number?: string
     address_details?: Record<string, any>
@@ -22,6 +23,7 @@ export interface ClientSite {
     longitude: number
     geo_radius_meters: number
     site_contact_phone?: string
+    email?: string
     created_at: string
     updated_at: string
 }
@@ -45,6 +47,7 @@ export interface CreateClientRequest {
     company_name: string
     contact_person: string
     contact_phone: string
+    email?: string
     billing_cycle?: string
     tin_number?: string
     address_details?: Record<string, any>
@@ -56,6 +59,7 @@ export interface CreateSiteRequest {
     longitude: number
     geo_radius_meters?: number
     site_contact_phone?: string
+    email?: string
 }
 
 export const clientsApi = {

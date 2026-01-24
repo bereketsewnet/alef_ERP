@@ -9,6 +9,10 @@ mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure log file is writable
+touch /var/www/html/storage/logs/laravel.log
+chown www-data:www-data /var/www/html/storage/logs/laravel.log
+chmod 664 /var/www/html/storage/logs/laravel.log
 
 # Ensure .env file is writable
 if [ -f /var/www/html/.env ]; then

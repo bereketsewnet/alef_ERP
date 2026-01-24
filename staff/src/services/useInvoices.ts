@@ -61,6 +61,10 @@ const invoiceApi = {
     download: async (id: number) => {
         const response = await apiClient.get(`/invoices/${id}/download`, { responseType: 'blob' })
         return response.data
+    },
+    send: async (id: number) => {
+        const response = await apiClient.post(`/invoices/${id}/send`)
+        return response.data
     }
 }
 
@@ -99,5 +103,19 @@ export function useCreateInvoice() {
 export function useDownloadInvoice() {
     return useMutation({
         mutationFn: (id: number) => invoiceApi.download(id),
+    })
+}
+
+export function useSendInvoice() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => invoiceApi.send(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: invoiceKeys.all })
+        },
+        onError: (error: any) => {
+            // Re-throw with proper structure for UI handling
+            throw error
+        }
     })
 }

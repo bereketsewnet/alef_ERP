@@ -179,6 +179,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [\App\Http\Controllers\Api\InvoiceController::class, 'store']);
         Route::get('/{id}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
         Route::get('/{id}/download', [\App\Http\Controllers\Api\InvoiceController::class, 'download']);
+        Route::post('/{id}/send', [\App\Http\Controllers\Api\InvoiceController::class, 'send']);
     });
 
     // Report Routes

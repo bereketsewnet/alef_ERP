@@ -65,6 +65,7 @@ class ClientController extends Controller
             'company_name' => 'required|string',
             'contact_person' => 'required|string',
             'contact_phone' => 'required|string',
+            'email' => 'nullable|email',
             'billing_cycle' => 'sometimes|string',
             'tin_number' => 'nullable|string',
             'address_details' => 'nullable|array',
@@ -161,6 +162,7 @@ class ClientController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'geo_radius_meters' => 'sometimes|integer|min:10',
             'site_contact_phone' => 'nullable|string',
+            'email' => 'nullable|email',
         ]);
 
         $client = Client::findOrFail($clientId);

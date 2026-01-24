@@ -16,6 +16,7 @@ class ClientSite extends Model
         'longitude',
         'geo_radius_meters',
         'site_contact_phone',
+        'email',
     ];
 
     protected $casts = [

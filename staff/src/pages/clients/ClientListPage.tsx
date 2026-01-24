@@ -39,6 +39,7 @@ const clientSchema = z.object({
     company_name: z.string().min(2, 'Company name is required'),
     contact_person: z.string().min(2, 'Contact person is required'),
     contact_phone: z.string().min(10, 'Valid phone number required'),
+    email: z.string().email('Invalid email address').optional().or(z.literal('')),
     billing_cycle: z.string().optional(),
     tin_number: z.string().optional(),
 })
@@ -49,6 +50,7 @@ const siteSchema = z.object({
     longitude: z.string().min(1, 'Longitude is required'),
     geo_radius_meters: z.string().optional(),
     site_contact_phone: z.string().optional(),
+    email: z.string().email('Invalid email address').optional().or(z.literal('')),
 })
 
 export function ClientListPage() {
@@ -74,6 +76,7 @@ export function ClientListPage() {
             company_name: '',
             contact_person: '',
             contact_phone: '',
+            email: '',
             billing_cycle: '',
             tin_number: '',
         },
@@ -87,6 +90,7 @@ export function ClientListPage() {
             longitude: '',
             geo_radius_meters: '100',
             site_contact_phone: '',
+            email: '',
         },
     })
 
@@ -98,6 +102,9 @@ export function ClientListPage() {
             contact_phone: values.contact_phone,
         }
 
+        if (values.email && values.email.trim()) {
+            cleanedData.email = values.email.trim()
+        }
         if (values.billing_cycle && values.billing_cycle.trim()) {
             cleanedData.billing_cycle = values.billing_cycle
         }
@@ -124,6 +131,7 @@ export function ClientListPage() {
                 longitude: parseFloat(values.longitude),
                 geo_radius_meters: values.geo_radius_meters ? parseInt(values.geo_radius_meters) : 100,
                 site_contact_phone: values.site_contact_phone,
+                email: values.email || undefined,
             },
         }, {
             onSuccess: () => {
@@ -501,6 +509,19 @@ export function ClientListPage() {
                             />
                             <FormField
                                 control={clientForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email (Optional)</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} type="email" placeholder="client@example.com" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={clientForm.control}
                                 name="billing_cycle"
                                 render={({ field }) => (
                                     <FormItem>
@@ -546,7 +567,7 @@ export function ClientListPage() {
 
             {/* Add Site Modal */}
             <Dialog open={siteModalOpen} onOpenChange={setSiteModalOpen}>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add New Site</DialogTitle>
                         <DialogDescription>
@@ -617,6 +638,19 @@ export function ClientListPage() {
                                         <FormLabel>Site Contact Phone (Optional)</FormLabel>
                                         <FormControl>
                                             <Input {...field} placeholder="+251911234567" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={siteForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email (Optional)</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} type="email" placeholder="site@example.com" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

@@ -14,6 +14,7 @@ class Client extends Model
         'tin_number',
         'contact_person',
         'contact_phone',
+        'email',
         'billing_cycle',
         'address_details',
     ];
