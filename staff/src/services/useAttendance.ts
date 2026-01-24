@@ -41,17 +41,19 @@ export const useUnverifyAttendance = () => {
 
 export const useExportAttendance = () => {
     return useMutation({
-        mutationFn: (filters: Omit<AttendanceFilters, 'page'>) => attendanceApi.export(filters),
-        onSuccess: (blob) => {
+        mutationFn: ({ filters, format }: { filters: Omit<AttendanceFilters, 'page'>; format: 'pdf' | 'csv' }) => 
+            attendanceApi.export(filters, format),
+        onSuccess: (blob, variables) => {
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = `attendance_${new Date().toISOString().split('T')[0]}.xlsx`
+            const extension = variables.format === 'pdf' ? 'pdf' : 'xlsx'
+            link.download = `attendance_${new Date().toISOString().split('T')[0]}.${extension}`
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
             window.URL.revokeObjectURL(url)
-            toast.success('Attendance exported successfully')
+            toast.success(`Attendance exported as ${variables.format.toUpperCase()} successfully`)
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to export attendance')

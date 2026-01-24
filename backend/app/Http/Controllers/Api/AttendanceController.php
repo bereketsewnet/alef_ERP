@@ -308,10 +308,22 @@ class AttendanceController extends Controller
      */
     public function exportAttendance(Request $request)
     {
+        $format = $request->get('format', 'excel'); // excel or pdf
+
+        if ($format === 'pdf') {
+            // Use the report export endpoint for PDF
+            // Pass all request parameters including site_id
+            return app(\App\Http\Controllers\Api\ReportController::class)->exportReport(
+                $request,
+                'attendance'
+            );
+        }
+
+        // Default to Excel export
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $siteId = $request->get('site_id');
-
+        
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\AttendanceExport($startDate, $endDate, $siteId),
             'attendance_logs_' . now()->format('Y-m-d') . '.xlsx'

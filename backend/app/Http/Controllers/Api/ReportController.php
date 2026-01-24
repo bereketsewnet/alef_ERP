@@ -145,24 +145,45 @@ class ReportController extends Controller
         $format = $request->input('format', 'pdf'); // pdf or excel
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        $siteId = $request->input('site_id');
         
         $data = [];
         $title = ucfirst($type) . " Report";
         
         switch ($type) {
             case 'attendance':
-                $data = AttendanceLog::with(['schedule.employee', 'schedule.site'])
-                    ->whereBetween('created_at', [$startDate, $endDate])
-                    ->get()
-                    ->map(function($log) {
-                        return [
-                            'Date' => $log->created_at->format('Y-m-d H:i'),
-                            'Employee' => $log->schedule->employee->first_name . ' ' . $log->schedule->employee->last_name,
-                            'Site' => $log->schedule->site->site_name,
-                            'Type' => 'N/A', // Type not in model
-                            'Status' => $log->flagged_late ? 'LATE' : 'PRESENT'
-                        ];
+                $query = AttendanceLog::with(['employee', 'schedule.employee', 'schedule.site']);
+                
+                // Apply date filter
+                if ($startDate && $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                } elseif ($startDate) {
+                    $query->where('created_at', '>=', $startDate);
+                } elseif ($endDate) {
+                    $query->where('created_at', '<=', $endDate);
+                }
+                
+                // Apply site filter
+                if ($siteId) {
+                    $query->whereHas('schedule', function ($q) use ($siteId) {
+                        $q->where('site_id', $siteId);
                     });
+                }
+                
+                $data = $query->get()->map(function($log) {
+                    $employee = $log->employee ?? $log->schedule->employee ?? null;
+                    $employeeName = $employee ? ($employee->first_name . ' ' . $employee->last_name) : 'N/A';
+                    $siteName = $log->schedule->site->site_name ?? 'N/A';
+                    $verificationMethod = $log->verification_method ?? 'N/A';
+                    
+                    return [
+                        'Date' => $log->created_at->format('Y-m-d H:i'),
+                        'Employee' => $employeeName,
+                        'Site' => $siteName,
+                        'Method' => $verificationMethod, // GPS, MANUAL, TELEGRAM, etc.
+                        'Status' => $log->flagged_late ? 'LATE' : ($log->flagged_early_leave ? 'EARLY' : ($log->clock_out_time ? 'PRESENT' : 'ACTIVE'))
+                    ];
+                });
                 break;
                 
             case 'finance':

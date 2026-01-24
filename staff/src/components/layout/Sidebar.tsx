@@ -41,7 +41,8 @@ export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {
         { title: "Billing", href: "/billing", icon: FileText },
         { title: "Incidents", href: "/incidents", icon: AlertTriangle },
         { title: "Reports", href: "/reports", icon: BarChart3 },
-        { title: "Settings", href: "/settings", icon: Settings },
+        // Settings - Hidden from sidebar (uncomment to enable)
+        // { title: "Settings", href: "/settings", icon: Settings },
     ]
 
     return (

@@ -90,11 +90,12 @@ export const attendanceApi = {
         return response.data
     },
 
-    export: async (filters: Omit<AttendanceFilters, 'page'>): Promise<Blob> => {
+    export: async (filters: Omit<AttendanceFilters, 'page'>, format: 'pdf' | 'csv' = 'csv'): Promise<Blob> => {
         const params = new URLSearchParams()
         if (filters.start_date) params.append('start_date', filters.start_date)
         if (filters.end_date) params.append('end_date', filters.end_date)
         if (filters.site_id) params.append('site_id', filters.site_id.toString())
+        params.append('format', format === 'pdf' ? 'pdf' : 'excel')
 
         const response = await apiClient.get(`/attendance/export?${params.toString()}`, {
             responseType: 'blob'

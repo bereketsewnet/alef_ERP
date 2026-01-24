@@ -18,10 +18,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock } from "lucide-react"
+import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown } from "lucide-react"
 import { useAttendanceLogs, useVerifyAttendance, useUnverifyAttendance, useExportAttendance } from "@/services/useAttendance"
 import { useClients } from "@/services/useClients"
 import type { AttendanceFilters, AttendanceLog } from "@/api/endpoints/attendance"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function AttendanceLogsPage() {
     const [filters, setFilters] = useState<AttendanceFilters>({
@@ -29,6 +35,7 @@ export function AttendanceLogsPage() {
     })
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'csv'>('csv')
 
     const { data, isLoading, error } = useAttendanceLogs(filters)
     const { mutate: verify } = useVerifyAttendance()
@@ -76,11 +83,14 @@ export function AttendanceLogsPage() {
         }
     }
 
-    const handleExport = () => {
+    const handleExport = (format: 'pdf' | 'csv' = exportFormat) => {
         exportData({
-            start_date: filters.start_date,
-            end_date: filters.end_date,
-            site_id: filters.site_id
+            filters: {
+                start_date: filters.start_date,
+                end_date: filters.end_date,
+                site_id: filters.site_id
+            },
+            format
         })
     }
 
@@ -211,10 +221,25 @@ export function AttendanceLogsPage() {
                         </select>
                     </div>
 
-                    <Button onClick={handleExport} disabled={isExporting} variant="outline" className="mb-[1px]">
-                        <Download className="h-4 w-4 mr-2" />
-                        {isExporting ? 'Exporting...' : 'Export CSV'}
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button disabled={isExporting} variant="outline" className="mb-[1px]">
+                                <Download className="h-4 w-4 mr-2" />
+                                {isExporting ? 'Exporting...' : 'Export'}
+                                <ChevronDown className="h-4 w-4 ml-2" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleExport('csv')} disabled={isExporting}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Export as CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={isExporting}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Export as PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
