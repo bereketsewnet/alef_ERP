@@ -1,9 +1,15 @@
 import { KPICard } from "@/components/dashboard/KPICard"
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart"
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed"
+import { RecentRoster } from "@/components/dashboard/RecentRoster"
+import { LiveMap } from "@/components/dashboard/LiveMap"
+import { AssetAvailabilityChart } from "@/components/dashboard/AssetAvailabilityChart"
 import { Users, ClipboardCheck, AlertTriangle, Package } from "lucide-react"
+import { useReportDashboard } from "@/services/useReports"
+import { Loader2 } from "lucide-react"
 
 export function DashboardPage() {
+    const { data: stats, isLoading } = useReportDashboard()
+
     return (
         <div className="space-y-6">
             <div>
@@ -15,70 +21,69 @@ export function DashboardPage() {
                 </p>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                    title="Active Employees"
-                    value="156"
-                    icon={Users}
-                    trend={{ value: 12, isPositive: true }}
-                    subtitle="vs last month"
-                />
-                <KPICard
-                    title="Attendance Today"
-                    value="142/156"
-                    icon={ClipboardCheck}
-                    trend={{ value: 5, isPositive: true }}
-                    subtitle="91% attendance rate"
-                />
-                <KPICard
-                    title="Open Incidents"
-                    value="3"
-                    icon={AlertTriangle}
-                    trend={{ value: 40, isPositive: false }}
-                    subtitle="vs last week"
-                />
-                <KPICard
-                    title="Assets in Use"
-                    value="89%"
-                    icon={Package}
-                    subtitle="248 total assets"
-                />
-            </div>
-
-            {/* Charts and Activity */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <AttendanceTrendChart />
+            {isLoading ? (
+                <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
                 </div>
-                <div>
-                    <ActivityFeed />
-                </div>
-            </div>
-
-            {/* Placeholder for Map and Additional Widgets */}
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="h-[400px] rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center">
-                    <div className="text-center">
-                        <p className="text-neutral-600 mb-2">
-                            Live Map (Leaflet)
-                        </p>
-                        <p className="text-sm text-neutral-500">
-                            Coming soon - will show active clock-ins
-                        </p>
+            ) : (
+                <>
+                    {/* KPI Cards */}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <KPICard
+                            title="Active Employees"
+                            value={stats?.active_employees || 0}
+                            icon={Users}
+                            trend={stats?.employee_growth ? { 
+                                value: Math.abs(stats.employee_growth), 
+                                isPositive: stats.employee_growth >= 0 
+                            } : undefined}
+                            subtitle="vs last month"
+                        />
+                        <KPICard
+                            title="Attendance Today"
+                            value={`${stats?.attendance_today || 0}/${stats?.active_employees || 0}`}
+                            icon={ClipboardCheck}
+                            trend={stats?.attendance_growth ? { 
+                                value: Math.abs(stats.attendance_growth), 
+                                isPositive: stats.attendance_growth >= 0 
+                            } : undefined}
+                            subtitle={`${stats?.attendance_rate || 0}% attendance rate`}
+                        />
+                        <KPICard
+                            title="Open Incidents"
+                            value={stats?.open_incidents || 0}
+                            icon={AlertTriangle}
+                            trend={stats?.incident_change ? { 
+                                value: Math.abs(stats.incident_change), 
+                                isPositive: stats.incident_change <= 0 
+                            } : undefined}
+                            subtitle="vs last week"
+                        />
+                        <KPICard
+                            title="Assets in Use"
+                            value={`${stats?.assets_in_use_percent || 0}%`}
+                            icon={Package}
+                            subtitle={`${stats?.total_assets || 0} total assets`}
+                        />
                     </div>
-                </div>
-                <div className="h-[400px] rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center">
-                    <div className="text-center">
-                        <p className="text-neutral-600 mb-2">
-                            Asset Availability Chart
-                        </p>
-                        <p className="text-sm text-neutral-500">
-                            Coming soon - pie chart by category
-                        </p>
+
+                    {/* Charts and Roster */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="lg:col-span-2">
+                            <AttendanceTrendChart data={stats?.attendance_trend} />
+                        </div>
+                        <div>
+                            <RecentRoster />
+                        </div>
                     </div>
-                </div>
-            </div>
+
+                    {/* Map and Asset Chart */}
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <LiveMap />
+                        <AssetAvailabilityChart />
+                    </div>
+                </>
+            )}
         </div>
     )
 }

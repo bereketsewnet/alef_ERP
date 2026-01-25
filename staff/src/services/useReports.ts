@@ -6,6 +6,7 @@ export function useReportDashboard(params?: ReportParams) {
     return useQuery({
         queryKey: ['reports', 'dashboard', params],
         queryFn: () => reportsApi.getDashboardStats(params).then((res: AxiosResponse<ReportDashboardStats>) => res.data),
+        refetchInterval: 60000, // Refetch every minute for live data
     })
 }
 

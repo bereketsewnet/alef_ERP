@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\ShiftSchedule;
 use App\Models\OperationalReport;
 use App\Models\Employee;
+use App\Models\Asset;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel; // We might need a generic export class
@@ -17,14 +18,107 @@ use Carbon\Carbon;
 class ReportController extends Controller
 {
     /**
-     * Get high-level dashboard stats for reports
+     * Get comprehensive dashboard stats
      */
     public function getDashboardStats(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth());
+        try {
+            $startDate = $request->input('start_date', Carbon::now()->startOfMonth());
+            $endDate = $request->input('end_date', Carbon::now()->endOfMonth());
 
-        // Attendance Stats
+        // Active Employees Count
+        $activeEmployees = \App\Models\Employee::where('status', 'ACTIVE')->count();
+        $lastMonthActive = \App\Models\Employee::where('status', 'ACTIVE')
+            ->where('created_at', '<', Carbon::now()->subMonth()->startOfMonth())
+            ->count();
+        $employeeGrowth = $lastMonthActive > 0 
+            ? round((($activeEmployees - $lastMonthActive) / $lastMonthActive) * 100, 1)
+            : 0;
+
+        // Attendance Today
+        $today = Carbon::today();
+        $attendanceToday = AttendanceLog::whereDate('clock_in_time', $today)->count();
+        $attendanceRate = $activeEmployees > 0 ? round(($attendanceToday / $activeEmployees) * 100, 1) : 0;
+        
+        // Yesterday's attendance for comparison
+        $yesterday = Carbon::yesterday();
+        $attendanceYesterday = AttendanceLog::whereDate('clock_in_time', $yesterday)->count();
+        $attendanceGrowth = $attendanceYesterday > 0
+            ? round((($attendanceToday - $attendanceYesterday) / $attendanceYesterday) * 100, 1)
+            : 0;
+
+        // Open Incidents (all incidents, since there's no status column)
+        // For now, we'll count all incidents as "open"
+        $openIncidents = OperationalReport::count();
+        
+        // Last week's open incidents
+        $lastWeekOpen = OperationalReport::where('created_at', '<', Carbon::now()->subWeek())
+            ->count();
+        $incidentChange = $lastWeekOpen > 0
+            ? round((($openIncidents - $lastWeekOpen) / $lastWeekOpen) * 100, 1)
+            : ($openIncidents > 0 ? 100 : 0);
+
+        // Assets Stats
+        $totalAssets = \App\Models\Asset::count();
+        $assignedAssets = \App\Models\Asset::assigned()->count();
+        $assetsInUsePercent = $totalAssets > 0 ? round(($assignedAssets / $totalAssets) * 100, 0) : 0;
+
+        // Attendance Trend (Last 7 Days)
+        $attendanceTrend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $clockIns = AttendanceLog::whereDate('clock_in_time', $date)->count();
+            $clockOuts = AttendanceLog::whereDate('clock_out_time', $date)->count();
+            $attendanceTrend[] = [
+                'date' => $date->format('D'),
+                'clockIns' => $clockIns,
+                'clockOuts' => $clockOuts,
+            ];
+        }
+
+        // Active Clock-ins (for map)
+        $activeClockIns = AttendanceLog::with(['employee', 'schedule.site'])
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
+            ->whereDate('clock_in_time', Carbon::today())
+            ->get()
+            ->map(function($log) {
+                $siteName = 'Unknown';
+                if ($log->schedule && $log->schedule->site) {
+                    $siteName = $log->schedule->site->site_name;
+                }
+                
+                return [
+                    'id' => $log->id,
+                    'employee_name' => $log->employee ? ($log->employee->first_name . ' ' . $log->employee->last_name) : 'Unknown',
+                    'site_name' => $siteName,
+                    'latitude' => $log->clock_in_latitude,
+                    'longitude' => $log->clock_in_longitude,
+                    'clock_in_time' => $log->clock_in_time ? $log->clock_in_time->toDateTimeString() : null,
+                ];
+            });
+
+        // Asset Availability by Category
+        $assetCategories = \App\Models\Asset::select('category', DB::raw('count(*) as total'))
+            ->whereNotNull('category')
+            ->groupBy('category')
+            ->get()
+            ->map(function($item) {
+                $category = $item->category ?? 'Uncategorized';
+                $assigned = \App\Models\Asset::where('category', $category)->assigned()->count();
+                return [
+                    'category' => $category,
+                    'total' => (int)$item->total,
+                    'assigned' => (int)$assigned,
+                    'available' => (int)($item->total - $assigned),
+                ];
+            })
+            ->filter(function($item) {
+                return $item['total'] > 0; // Only include categories with assets
+            })
+            ->values(); // Re-index array
+
+        // Attendance Stats (for reports section)
         $attendanceRaw = AttendanceLog::whereBetween('created_at', [$startDate, $endDate])
             ->select('flagged_late', DB::raw('count(*) as count'))
             ->groupBy('flagged_late')
@@ -59,11 +153,34 @@ class ReportController extends Controller
             ->get();
 
         return response()->json([
+            'active_employees' => $activeEmployees,
+            'employee_growth' => $employeeGrowth,
+            'attendance_today' => $attendanceToday,
+            'attendance_rate' => $attendanceRate,
+            'attendance_growth' => $attendanceGrowth,
+            'open_incidents' => $openIncidents,
+            'incident_change' => $incidentChange,
+            'total_assets' => $totalAssets,
+            'assets_in_use_percent' => $assetsInUsePercent,
+            'assigned_assets' => $assignedAssets,
+            'attendance_trend' => $attendanceTrend,
+            'active_clock_ins' => $activeClockIns,
+            'asset_categories' => $assetCategories,
+            // Legacy fields for reports
             'attendance' => $attendanceStats,
             'finance' => $financeStats,
             'incidents' => $incidentStats,
-            'roster' => $rosterStats
+            'roster' => $rosterStats,
         ]);
+        } catch (\Exception $e) {
+            \Log::error('Dashboard stats error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Failed to fetch dashboard stats',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

@@ -10,18 +10,33 @@ import {
     Legend,
 } from "recharts"
 
-// Mock data - replace with actual API data
-const mockData = [
-    { date: "Mon", clockIns: 45, clockOuts: 43 },
-    { date: "Tue", clockIns: 52, clockOuts: 50 },
-    { date: "Wed", clockIns: 49, clockOuts: 49 },
-    { date: "Thu", clockIns: 48, clockOuts: 46 },
-    { date: "Fri", clockIns: 54, clockOuts: 53 },
-    { date: "Sat", clockIns: 38, clockOuts: 37 },
-    { date: "Sun", clockIns: 30, clockOuts: 29 },
-]
+interface AttendanceTrendChartProps {
+    data?: Array<{
+        date: string
+        clockIns: number
+        clockOuts: number
+    }>
+}
 
-export function AttendanceTrendChart() {
+export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+    // Use provided data or empty array
+    const chartData = data || []
+
+    if (chartData.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Attendance Trend (Last 7 Days)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[300px] flex items-center justify-center text-neutral-500">
+                        No attendance data available
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -29,7 +44,7 @@ export function AttendanceTrendChart() {
             </CardHeader>
             <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={mockData}>
+                    <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200" />
                         <XAxis
                             dataKey="date"
