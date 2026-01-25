@@ -94,6 +94,8 @@ class Employee extends Model
                 'override_tax_percent',
                 'override_late_penalty',
                 'override_absent_penalty',
+                'override_permission_late_penalty',
+                'override_permission_absent_penalty',
                 'override_agency_fee_percent',
                 'override_overtime_multiplier',
             ])
@@ -138,6 +140,8 @@ class Employee extends Model
             'tax_percent' => $job->pivot->override_tax_percent ?? $job->tax_percent,
             'late_penalty' => $job->pivot->override_late_penalty ?? $job->late_penalty,
             'absent_penalty' => $job->pivot->override_absent_penalty ?? $job->absent_penalty,
+            'permission_late_penalty' => $job->pivot->override_permission_late_penalty ?? $job->permission_late_penalty,
+            'permission_absent_penalty' => $job->pivot->override_permission_absent_penalty ?? $job->permission_absent_penalty,
             'agency_fee_percent' => $job->pivot->override_agency_fee_percent ?? $job->agency_fee_percent,
             'overtime_multiplier' => $job->pivot->override_overtime_multiplier ?? $job->overtime_multiplier,
         ];

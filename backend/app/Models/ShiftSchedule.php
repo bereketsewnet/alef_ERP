@@ -18,12 +18,14 @@ class ShiftSchedule extends Model
         'is_overtime_shift',
         'status',
         'created_by_user_id',
+        'working_days_schedule',
     ];
 
     protected $casts = [
         'shift_start' => 'datetime',
         'shift_end' => 'datetime',
         'is_overtime_shift' => 'boolean',
+        'working_days_schedule' => 'array',
     ];
 
     // Relationships

@@ -51,6 +51,16 @@ export interface RosterListResponse {
     total: number
 }
 
+export interface WorkingDaysSchedule {
+    monday?: { enabled: boolean; start_time?: string; end_time?: string }
+    tuesday?: { enabled: boolean; start_time?: string; end_time?: string }
+    wednesday?: { enabled: boolean; start_time?: string; end_time?: string }
+    thursday?: { enabled: boolean; start_time?: string; end_time?: string }
+    friday?: { enabled: boolean; start_time?: string; end_time?: string }
+    saturday?: { enabled: boolean; start_time?: string; end_time?: string }
+    sunday?: { enabled: boolean; start_time?: string; end_time?: string }
+}
+
 export interface BulkAssignRequest {
     site_id: number
     job_id: number
@@ -59,6 +69,7 @@ export interface BulkAssignRequest {
     end_date: string
     start_time: string
     end_time: string
+    working_days_schedule?: WorkingDaysSchedule | null
 }
 
 export const rosterApi = {

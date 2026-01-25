@@ -22,6 +22,8 @@ class Job extends Model
         'tax_percent',
         'late_penalty',
         'absent_penalty',
+        'permission_late_penalty',
+        'permission_absent_penalty',
         'agency_fee_percent',
         'is_active',
     ];
@@ -33,6 +35,8 @@ class Job extends Model
         'tax_percent' => 'decimal:2',
         'late_penalty' => 'decimal:2',
         'absent_penalty' => 'decimal:2',
+        'permission_late_penalty' => 'decimal:2',
+        'permission_absent_penalty' => 'decimal:2',
         'agency_fee_percent' => 'decimal:2',
         'is_active' => 'boolean',
     ];
@@ -92,6 +96,8 @@ class Job extends Model
                 'override_tax_percent',
                 'override_late_penalty',
                 'override_absent_penalty',
+                'override_permission_late_penalty',
+                'override_permission_absent_penalty',
                 'override_agency_fee_percent',
                 'override_overtime_multiplier',
             ])
@@ -137,6 +143,8 @@ class Job extends Model
             'tax_percent' => $this->tax_percent,
             'late_penalty' => $this->late_penalty,
             'absent_penalty' => $this->absent_penalty,
+            'permission_late_penalty' => $this->permission_late_penalty,
+            'permission_absent_penalty' => $this->permission_absent_penalty,
             'agency_fee_percent' => $this->agency_fee_percent,
         ];
     }

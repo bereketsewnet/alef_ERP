@@ -29,6 +29,8 @@ const jobSchema = z.object({
     tax_percent: z.string().optional(),
     late_penalty: z.string().optional(),
     absent_penalty: z.string().optional(),
+    permission_late_penalty: z.string().optional(),
+    permission_absent_penalty: z.string().optional(),
     agency_fee_percent: z.string().optional(),
 })
 
@@ -76,6 +78,8 @@ export function JobsPage() {
             tax_percent: "0",
             late_penalty: "100",
             absent_penalty: "500",
+            permission_late_penalty: "0",
+            permission_absent_penalty: "0",
             agency_fee_percent: "0",
         },
     })
@@ -92,6 +96,8 @@ export function JobsPage() {
             tax_percent: Number(data.tax_percent) || 0,
             late_penalty: Number(data.late_penalty) || 100,
             absent_penalty: Number(data.absent_penalty) || 500,
+            permission_late_penalty: Number(data.permission_late_penalty) || 0,
+            permission_absent_penalty: Number(data.permission_absent_penalty) || 0,
             agency_fee_percent: Number(data.agency_fee_percent) || 0,
         }
 
@@ -126,6 +132,8 @@ export function JobsPage() {
             tax_percent: String(job.tax_percent),
             late_penalty: String(job.late_penalty),
             absent_penalty: String(job.absent_penalty),
+            permission_late_penalty: String(job.permission_late_penalty || 0),
+            permission_absent_penalty: String(job.permission_absent_penalty || 0),
             agency_fee_percent: String(job.agency_fee_percent),
         })
         setIsCreateOpen(true)
@@ -290,6 +298,27 @@ export function JobsPage() {
                                                 <FormControl>
                                                     <Input type="number" step="0.01" {...field} />
                                                 </FormControl>
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="permission_late_penalty" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Permission Late Penalty (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" step="0.01" placeholder="0" {...field} />
+                                                </FormControl>
+                                                <p className="text-xs text-neutral-500">Penalty for late arrival with permission</p>
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="permission_absent_penalty" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Permission Absent Penalty (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" step="0.01" placeholder="0" {...field} />
+                                                </FormControl>
+                                                <p className="text-xs text-neutral-500">Penalty for absence with permission</p>
                                             </FormItem>
                                         )} />
                                     </div>

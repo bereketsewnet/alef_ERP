@@ -32,6 +32,8 @@ export interface Job {
     tax_percent: number;
     late_penalty: number;
     absent_penalty: number;
+    permission_late_penalty: number;
+    permission_absent_penalty: number;
     agency_fee_percent: number;
     is_active: boolean;
     category?: JobCategory;
@@ -46,9 +48,11 @@ export interface EmployeeJob extends Job {
         override_salary: number | null;
         override_hourly_rate: number | null;
         override_tax_percent: number | null;
-        override_late_penalty: number | null;
-        override_absent_penalty: number | null;
-        override_agency_fee_percent: number | null;
+    override_late_penalty: number | null;
+    override_absent_penalty: number | null;
+    override_permission_late_penalty: number | null;
+    override_permission_absent_penalty: number | null;
+    override_agency_fee_percent: number | null;
         override_overtime_multiplier: number | null;
     };
 }
@@ -78,6 +82,8 @@ export interface CreateJobRequest {
     tax_percent?: number;
     late_penalty?: number;
     absent_penalty?: number;
+    permission_late_penalty?: number;
+    permission_absent_penalty?: number;
     agency_fee_percent?: number;
     is_active?: boolean;
 }
@@ -90,6 +96,8 @@ export interface AssignJobRequest {
     override_tax_percent?: number;
     override_late_penalty?: number;
     override_absent_penalty?: number;
+    override_permission_late_penalty?: number;
+    override_permission_absent_penalty?: number;
     override_agency_fee_percent?: number;
     override_overtime_multiplier?: number;
 }

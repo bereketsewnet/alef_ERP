@@ -113,12 +113,15 @@ class RosterService
      * Bulk assign shifts for date range
      *
      * @param int $siteId
+     * @param int $jobId
      * @param array $employeeIds
      * @param string $startDate
      * @param string $endDate
-     * @param string $startTime
-     * @param string $endTime
+     * @param string $startTime Default start time (used if working_days_schedule not provided)
+     * @param string $endTime Default end time (used if working_days_schedule not provided)
      * @param int $createdByUserId
+     * @param array|null $workingDaysSchedule Optional: Day-specific schedules
+     *   Format: ['monday' => ['enabled' => true, 'start_time' => '08:00', 'end_time' => '17:00'], ...]
      * @return array
      */
     public function bulkAssignShifts(
@@ -129,30 +132,74 @@ class RosterService
         string $endDate,
         string $startTime,
         string $endTime,
-        int $createdByUserId
+        int $createdByUserId,
+        ?array $workingDaysSchedule = null
     ): array {
         $created = 0;
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
         
+        // Normalize day names to lowercase
+        $dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
         // Loop through each day in the range
         while ($start->lte($end)) {
             $currentDate = $start->format('Y-m-d');
+            $dayName = strtolower($start->format('l')); // e.g., 'monday', 'tuesday'
             
-            // Create shift for each employee
-            foreach ($employeeIds as $employeeId) {
-                ShiftSchedule::create([
-                    'employee_id' => $employeeId,
-                    'site_id' => $siteId,
-                    'job_id' => $jobId,
-                    'shift_start' => $currentDate . ' ' . $startTime,
-                    'shift_end' => $currentDate . ' ' . $endTime,
-                    'is_overtime_shift' => false,
-                    'status' => 'SCHEDULED',
-                    'created_by_user_id' => $createdByUserId,
-                ]);
+            // Determine if this day should have a shift
+            $shouldCreateShift = true;
+            $dayStartTime = $startTime;
+            $dayEndTime = $endTime;
+            
+            // If working_days_schedule is provided, check day-specific settings
+            if ($workingDaysSchedule !== null && is_array($workingDaysSchedule)) {
+                $daySchedule = $workingDaysSchedule[$dayName] ?? null;
                 
-                $created++;
+                if ($daySchedule === null || !isset($daySchedule['enabled']) || !$daySchedule['enabled']) {
+                    // This day is not enabled, skip it
+                    $shouldCreateShift = false;
+                } else {
+                    // Use day-specific times if provided
+                    if (isset($daySchedule['start_time']) && !empty($daySchedule['start_time'])) {
+                        $dayStartTime = $daySchedule['start_time'];
+                    }
+                    if (isset($daySchedule['end_time']) && !empty($daySchedule['end_time'])) {
+                        $dayEndTime = $daySchedule['end_time'];
+                    }
+                }
+            }
+            
+            // Create shift for each employee if day is enabled
+            if ($shouldCreateShift) {
+                foreach ($employeeIds as $employeeId) {
+                    // Check for conflicts before creating
+                    $shiftStart = Carbon::parse($currentDate . ' ' . $dayStartTime);
+                    $shiftEnd = Carbon::parse($currentDate . ' ' . $dayEndTime);
+                    
+                    // Ensure end time is after start time (handle overnight shifts)
+                    if ($shiftEnd->lte($shiftStart)) {
+                        $shiftEnd->addDay(); // Shift goes to next day
+                    }
+                    
+                    if ($this->hasConflict($employeeId, $shiftStart, $shiftEnd)) {
+                        continue; // Skip conflicting shifts
+                    }
+                    
+                    ShiftSchedule::create([
+                        'employee_id' => $employeeId,
+                        'site_id' => $siteId,
+                        'job_id' => $jobId,
+                        'shift_start' => $shiftStart,
+                        'shift_end' => $shiftEnd,
+                        'is_overtime_shift' => false,
+                        'status' => 'SCHEDULED',
+                        'created_by_user_id' => $createdByUserId,
+                        'working_days_schedule' => $workingDaysSchedule, // Store the pattern used
+                    ]);
+                    
+                    $created++;
+                }
             }
             
             $start->addDay();

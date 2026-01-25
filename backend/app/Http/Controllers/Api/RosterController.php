@@ -50,6 +50,10 @@ class RosterController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required',
             'end_time' => 'required',
+            'working_days_schedule' => 'nullable|array',
+            'working_days_schedule.*.enabled' => 'boolean',
+            'working_days_schedule.*.start_time' => 'nullable|string',
+            'working_days_schedule.*.end_time' => 'nullable|string',
         ]);
 
         $site = \App\Models\ClientSite::findOrFail($validated['site_id']);
@@ -98,7 +102,8 @@ class RosterController extends Controller
             $validated['end_date'],
             $validated['start_time'],
             $validated['end_time'],
-            auth()->id()
+            auth()->id(),
+            $validated['working_days_schedule'] ?? null
         );
 
         return response()->json($result);

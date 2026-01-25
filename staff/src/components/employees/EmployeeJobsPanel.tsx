@@ -34,6 +34,8 @@ export function EmployeeJobsPanel({ employeeId, employeeName }: EmployeeJobsPane
     const [overrideTax, setOverrideTax] = useState<string>('')
     const [overrideLatePenalty, setOverrideLatePenalty] = useState<string>('')
     const [overrideAbsentPenalty, setOverrideAbsentPenalty] = useState<string>('')
+    const [overridePermissionLatePenalty, setOverridePermissionLatePenalty] = useState<string>('')
+    const [overridePermissionAbsentPenalty, setOverridePermissionAbsentPenalty] = useState<string>('')
     const [overrideAgencyFee, setOverrideAgencyFee] = useState<string>('')
     const [overrideOvertimeMultiplier, setOverrideOvertimeMultiplier] = useState<string>('')
 
@@ -85,6 +87,8 @@ export function EmployeeJobsPanel({ employeeId, employeeName }: EmployeeJobsPane
         setOverrideTax(job.pivot.override_tax_percent?.toString() || '')
         setOverrideLatePenalty(job.pivot.override_late_penalty?.toString() || '')
         setOverrideAbsentPenalty(job.pivot.override_absent_penalty?.toString() || '')
+        setOverridePermissionLatePenalty(job.pivot.override_permission_late_penalty?.toString() || '')
+        setOverridePermissionAbsentPenalty(job.pivot.override_permission_absent_penalty?.toString() || '')
         setOverrideAgencyFee(job.pivot.override_agency_fee_percent?.toString() || '')
         setOverrideOvertimeMultiplier(job.pivot.override_overtime_multiplier?.toString() || '')
         setOverrideModalOpen(true)
@@ -102,6 +106,8 @@ export function EmployeeJobsPanel({ employeeId, employeeName }: EmployeeJobsPane
                 override_tax_percent: overrideTax ? parseFloat(overrideTax) : undefined,
                 override_late_penalty: overrideLatePenalty ? parseFloat(overrideLatePenalty) : undefined,
                 override_absent_penalty: overrideAbsentPenalty ? parseFloat(overrideAbsentPenalty) : undefined,
+                override_permission_late_penalty: overridePermissionLatePenalty ? parseFloat(overridePermissionLatePenalty) : undefined,
+                override_permission_absent_penalty: overridePermissionAbsentPenalty ? parseFloat(overridePermissionAbsentPenalty) : undefined,
                 override_agency_fee_percent: overrideAgencyFee ? parseFloat(overrideAgencyFee) : undefined,
                 override_overtime_multiplier: overrideOvertimeMultiplier ? parseFloat(overrideOvertimeMultiplier) : undefined,
             }
@@ -119,6 +125,8 @@ export function EmployeeJobsPanel({ employeeId, employeeName }: EmployeeJobsPane
             job.pivot.override_tax_percent != null ||
             job.pivot.override_late_penalty != null ||
             job.pivot.override_absent_penalty != null ||
+            job.pivot.override_permission_late_penalty != null ||
+            job.pivot.override_permission_absent_penalty != null ||
             job.pivot.override_agency_fee_percent != null ||
             job.pivot.override_overtime_multiplier != null
     }
@@ -348,6 +356,26 @@ export function EmployeeJobsPanel({ employeeId, employeeName }: EmployeeJobsPane
                                 value={overrideAbsentPenalty}
                                 onChange={e => setOverrideAbsentPenalty(e.target.value)}
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Permission Late Penalty (ETB)</Label>
+                            <Input
+                                type="number"
+                                placeholder={selectedJob?.permission_late_penalty?.toString() || 'Default'}
+                                value={overridePermissionLatePenalty}
+                                onChange={e => setOverridePermissionLatePenalty(e.target.value)}
+                            />
+                            <p className="text-xs text-neutral-500">For late with permission</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Permission Absent Penalty (ETB)</Label>
+                            <Input
+                                type="number"
+                                placeholder={selectedJob?.permission_absent_penalty?.toString() || 'Default'}
+                                value={overridePermissionAbsentPenalty}
+                                onChange={e => setOverridePermissionAbsentPenalty(e.target.value)}
+                            />
+                            <p className="text-xs text-neutral-500">For absence with permission</p>
                         </div>
                         <div className="space-y-2 col-span-2">
                             <Label>Overtime Multiplier</Label>

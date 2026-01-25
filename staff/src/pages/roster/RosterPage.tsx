@@ -42,6 +42,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import type { ShiftSchedule } from "@/api/endpoints/roster"
+import { WorkingDaysSelector } from "@/components/roster/WorkingDaysSelector"
 
 const bulkAssignSchema = z.object({
     site_id: z.string().min(1, 'Site is required'),
@@ -51,6 +52,7 @@ const bulkAssignSchema = z.object({
     end_date: z.string().min(1, 'End date is required'),
     start_time: z.string().min(1, 'Start time is required'),
     end_time: z.string().min(1, 'End time is required'),
+    working_days_schedule: z.any().nullable().optional(),
 })
 
 interface GroupedShift {
@@ -87,6 +89,7 @@ export function RosterPage() {
             end_date: '',
             start_time: '08:00',
             end_time: '17:00',
+            working_days_schedule: null,
         },
     })
 
@@ -99,6 +102,7 @@ export function RosterPage() {
             end_date: values.end_date,
             start_time: values.start_time,
             end_time: values.end_time,
+            working_days_schedule: values.working_days_schedule || null,
         }, {
             onSuccess: () => {
                 setBulkAssignOpen(false)
@@ -470,7 +474,7 @@ export function RosterPage() {
 
             {/* Bulk Assign Modal */}
             <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Bulk Assign Shifts</DialogTitle>
                         <DialogDescription>
@@ -594,10 +598,11 @@ export function RosterPage() {
                                     name="start_time"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Start Time</FormLabel>
+                                            <FormLabel>Default Start Time</FormLabel>
                                             <FormControl>
                                                 <Input type="time" {...field} />
                                             </FormControl>
+                                            <p className="text-xs text-neutral-500">Used if advanced schedule is disabled</p>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -607,17 +612,36 @@ export function RosterPage() {
                                     name="end_time"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>End Time</FormLabel>
+                                            <FormLabel>Default End Time</FormLabel>
                                             <FormControl>
                                                 <Input type="time" {...field} />
                                             </FormControl>
+                                            <p className="text-xs text-neutral-500">Used if advanced schedule is disabled</p>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
 
-                            {/* Job Selection - Added right after time fields */}
+                            <FormField
+                                control={form.control}
+                                name="working_days_schedule"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <WorkingDaysSelector
+                                                defaultStartTime={form.watch('start_time') || '08:00'}
+                                                defaultEndTime={form.watch('end_time') || '17:00'}
+                                                value={field.value}
+                                                onChange={(schedule) => {
+                                                    field.onChange(schedule)
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setBulkAssignOpen(false)}>

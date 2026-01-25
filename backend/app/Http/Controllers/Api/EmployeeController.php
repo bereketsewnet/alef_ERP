@@ -328,6 +328,8 @@ class EmployeeController extends Controller
             'override_tax_percent' => 'nullable|numeric|min:0|max:100',
             'override_late_penalty' => 'nullable|numeric|min:0',
             'override_absent_penalty' => 'nullable|numeric|min:0',
+            'override_permission_late_penalty' => 'nullable|numeric|min:0',
+            'override_permission_absent_penalty' => 'nullable|numeric|min:0',
             'override_agency_fee_percent' => 'nullable|numeric|min:0|max:100',
             'override_overtime_multiplier' => 'nullable|numeric|min:1|max:5',
         ]);
@@ -359,6 +361,8 @@ class EmployeeController extends Controller
             'override_tax_percent' => $validated['override_tax_percent'] ?? null,
             'override_late_penalty' => $validated['override_late_penalty'] ?? null,
             'override_absent_penalty' => $validated['override_absent_penalty'] ?? null,
+            'override_permission_late_penalty' => $validated['override_permission_late_penalty'] ?? null,
+            'override_permission_absent_penalty' => $validated['override_permission_absent_penalty'] ?? null,
             'override_agency_fee_percent' => $validated['override_agency_fee_percent'] ?? null,
             'override_overtime_multiplier' => $validated['override_overtime_multiplier'] ?? null,
         ]);
@@ -388,6 +392,8 @@ class EmployeeController extends Controller
             'override_tax_percent' => 'nullable|numeric|min:0|max:100',
             'override_late_penalty' => 'nullable|numeric|min:0',
             'override_absent_penalty' => 'nullable|numeric|min:0',
+            'override_permission_late_penalty' => 'nullable|numeric|min:0',
+            'override_permission_absent_penalty' => 'nullable|numeric|min:0',
             'override_agency_fee_percent' => 'nullable|numeric|min:0|max:100',
             'override_overtime_multiplier' => 'nullable|numeric|min:1|max:5',
         ]);

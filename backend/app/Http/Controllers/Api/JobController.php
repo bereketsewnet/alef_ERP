@@ -63,6 +63,8 @@ class JobController extends Controller
             'tax_percent' => 'nullable|numeric|min:0|max:100',
             'late_penalty' => 'nullable|numeric|min:0',
             'absent_penalty' => 'nullable|numeric|min:0',
+            'permission_late_penalty' => 'nullable|numeric|min:0',
+            'permission_absent_penalty' => 'nullable|numeric|min:0',
             'agency_fee_percent' => 'nullable|numeric|min:0|max:100',
             'is_active' => 'nullable|boolean',
         ]);
@@ -110,6 +112,8 @@ class JobController extends Controller
             'tax_percent' => 'numeric|min:0|max:100',
             'late_penalty' => 'numeric|min:0',
             'absent_penalty' => 'numeric|min:0',
+            'permission_late_penalty' => 'nullable|numeric|min:0',
+            'permission_absent_penalty' => 'nullable|numeric|min:0',
             'agency_fee_percent' => 'numeric|min:0|max:100',
             'is_active' => 'boolean',
         ]);
