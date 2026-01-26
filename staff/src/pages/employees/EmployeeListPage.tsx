@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Eye } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Eye, DollarSign } from 'lucide-react'
 import { useEmployees, useDeleteEmployee } from '@/services/useEmployees'
 import type { Employee } from '@/api/endpoints/employees'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ export function EmployeeListPage() {
     const [page, setPage] = useState(1)
     const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null)
     const [employeeToView, setEmployeeToView] = useState<Employee | null>(null)
+    const [viewTab, setViewTab] = useState<'info' | 'jobs' | 'salary'>('info')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
     const { data, isLoading } = useEmployees({ page, search: search || undefined })
@@ -124,7 +125,21 @@ export function EmployeeListPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => setEmployeeToView(employee)}
+                                                onClick={() => {
+                                                    setViewTab('salary')
+                                                    setEmployeeToView(employee)
+                                                }}
+                                                title="View Salary History"
+                                            >
+                                                <DollarSign className="h-4 w-4 text-green-600" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => {
+                                                    setViewTab('info')
+                                                    setEmployeeToView(employee)
+                                                }}
                                                 title="View Details"
                                             >
                                                 <Eye className="h-4 w-4" />
@@ -194,8 +209,12 @@ export function EmployeeListPage() {
             {/* View Details Modal */}
             <EmployeeDetailsModal
                 open={!!employeeToView}
-                onClose={() => setEmployeeToView(null)}
+                onClose={() => {
+                    setEmployeeToView(null)
+                    setViewTab('info')
+                }}
                 employee={employeeToView}
+                defaultTab={viewTab}
             />
         </div>
     )

@@ -94,10 +94,10 @@ export function JobsPage() {
             hourly_rate: Number(data.hourly_rate),
             overtime_multiplier: Number(data.overtime_multiplier) || 1.5,
             tax_percent: Number(data.tax_percent) || 0,
-            late_penalty: Number(data.late_penalty) || 100,
-            absent_penalty: Number(data.absent_penalty) || 500,
-            permission_late_penalty: Number(data.permission_late_penalty) || 0,
-            permission_absent_penalty: Number(data.permission_absent_penalty) || 0,
+            late_penalty: data.late_penalty !== undefined && data.late_penalty !== '' ? Number(data.late_penalty) : (editingJob ? (editingJob.late_penalty ?? 100) : 100),
+            absent_penalty: data.absent_penalty !== undefined && data.absent_penalty !== '' ? Number(data.absent_penalty) : (editingJob ? (editingJob.absent_penalty ?? 500) : 500),
+            permission_late_penalty: data.permission_late_penalty !== undefined && data.permission_late_penalty !== '' ? Number(data.permission_late_penalty) : (editingJob ? (editingJob.permission_late_penalty ?? 0) : 0),
+            permission_absent_penalty: data.permission_absent_penalty !== undefined && data.permission_absent_penalty !== '' ? Number(data.permission_absent_penalty) : (editingJob ? (editingJob.permission_absent_penalty ?? 0) : 0),
             agency_fee_percent: Number(data.agency_fee_percent) || 0,
         }
 

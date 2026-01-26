@@ -39,6 +39,22 @@ export const useUnverifyAttendance = () => {
     })
 }
 
+export const useMarkAttendancePermission = () => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: ({ id, with_permission }: { id: number; with_permission?: boolean }) =>
+            attendanceApi.markPermission(id, with_permission),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            toast.success('Permission status updated')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update permission status')
+        },
+    })
+}
+
 export const useExportAttendance = () => {
     return useMutation({
         mutationFn: ({ filters, format }: { filters: Omit<AttendanceFilters, 'page'>; format: 'pdf' | 'csv' }) => 
@@ -57,6 +73,65 @@ export const useExportAttendance = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to export attendance')
+        },
+    })
+}
+
+export const useSetPermission = () => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (data: { employee_id: number; date: string; reason?: string }) =>
+            attendanceApi.setPermission(data),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            const message = data.updated_logs 
+                ? `Permission set and ${data.updated_logs} attendance log(s) updated`
+                : 'Permission set successfully'
+            toast.success(message)
+        },
+        onError: (error: any) => {
+            // Handle Laravel validation errors
+            if (error.response?.data?.errors) {
+                const errors = error.response.data.errors
+                const errorMessages = Object.values(errors).flat().join(', ')
+                toast.error(errorMessages || 'Validation failed')
+            } else {
+                // Handle custom error messages
+                const errorMessage = error.response?.data?.message 
+                    || error.response?.data?.error 
+                    || error.message 
+                    || 'Failed to set permission'
+                toast.error(errorMessage)
+            }
+        },
+    })
+}
+
+export const useRemovePermission = () => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (data: { employee_id: number; date: string }) =>
+            attendanceApi.removePermission(data),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            toast.success(`Permission removed. ${data.updated_logs} attendance log(s) updated`)
+        },
+        onError: (error: any) => {
+            // Handle Laravel validation errors
+            if (error.response?.data?.errors) {
+                const errors = error.response.data.errors
+                const errorMessages = Object.values(errors).flat().join(', ')
+                toast.error(errorMessages || 'Validation failed')
+            } else {
+                // Handle custom error messages
+                const errorMessage = error.response?.data?.message 
+                    || error.response?.data?.error 
+                    || error.message 
+                    || 'Failed to remove permission'
+                toast.error(errorMessage)
+            }
         },
     })
 }

@@ -57,12 +57,20 @@ export function useGeneratePayroll() {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (id: number) => generatePayroll(id),
-        onSuccess: (_data, id) => {
-            toast.success('Payroll generated successfully')
+        onSuccess: (data, id) => {
+            if (data.details?.generated_count === 0) {
+                const errorMsg = data.details?.errors?.join(' ') || data.error || 'No employees found for this client and date range'
+                toast.error(errorMsg, { duration: 10000 })
+            } else {
+                toast.success(`Payroll generated successfully for ${data.details?.generated_count || 0} employees`)
+            }
             queryClient.invalidateQueries({ queryKey: ['payroll-period', id] })
             queryClient.invalidateQueries({ queryKey: ['payroll-periods'] })
         },
-        onError: (err: any) => toast.error(err.message || 'Failed to generate payroll'),
+        onError: (err: any) => {
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate payroll'
+            toast.error(errorMsg, { duration: 10000 })
+        },
     })
 }
 

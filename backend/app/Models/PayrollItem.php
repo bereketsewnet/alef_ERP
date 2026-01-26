@@ -12,6 +12,7 @@ class PayrollItem extends Model
     protected $fillable = [
         'payroll_period_id',
         'employee_id',
+        'client_id',
         'base_salary',
         'shift_allowance',
         'overtime_pay',
@@ -21,6 +22,7 @@ class PayrollItem extends Model
         'pension_contribution',
         'pension_employer_contribution',
         'penalties',
+        'manual_penalties',
         'bonuses',
         'asset_deductions',
         'agency_deductions',
@@ -28,10 +30,15 @@ class PayrollItem extends Model
         'total_deductions',
         'net_pay',
         'worked_days',
+        'expected_days',
         'worked_hours',
         'overtime_hours',
         'late_days',
+        'normal_late_count',
+        'permission_late_count',
         'absent_days',
+        'normal_absent_count',
+        'permission_absent_count',
         'status',
     ];
 
@@ -63,5 +70,10 @@ class PayrollItem extends Model
     public function payrollPeriod()
     {
         return $this->belongsTo(PayrollPeriod::class);
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 }

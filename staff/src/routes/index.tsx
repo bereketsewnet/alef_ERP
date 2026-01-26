@@ -8,7 +8,6 @@ import { RosterPage } from '@/pages/roster/RosterPage'
 import { ClientListPage } from '@/pages/clients/ClientListPage'
 import { AssetListPage } from '@/pages/assets/AssetListPage'
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
-import { PayrollSettingsPage } from '@/pages/payroll/PayrollSettingsPage'
 import { BillingPage } from '@/pages/billing/BillingPage'
 import { UserManagementPage } from '@/pages/settings/UserManagementPage'
 import { JobsPage } from '@/pages/jobs/JobsPage'
@@ -43,7 +42,6 @@ export function AppRoutes() {
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/jobs/categories" element={<JobCategoriesPage />} />
                 <Route path="/payroll" element={<PayrollPage />} />
-                <Route path="/payroll/settings" element={<PayrollSettingsPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/incidents" element={<IncidentsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

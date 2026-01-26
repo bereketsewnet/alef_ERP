@@ -16,6 +16,7 @@ export interface AttendanceLog {
     flagged_late: boolean
     flagged_early_leave: boolean
     notes: string | null
+    with_permission?: boolean
     created_at: string
     updated_at: string
     employee?: {
@@ -101,5 +102,56 @@ export const attendanceApi = {
             responseType: 'blob'
         })
         return response.data
-    }
+    },
+
+    markPermission: async (id: number, withPermission?: boolean): Promise<{ message: string; data: AttendanceLog }> => {
+        const response = await apiClient.post(`/attendance/${id}/mark-permission`, {
+            with_permission: typeof withPermission === 'boolean' ? withPermission : undefined,
+        })
+        return response.data
+    },
+
+    setPermission: async (data: {
+        employee_id: number
+        date: string
+        reason?: string
+    }): Promise<{ message: string; updated_logs?: number; shift?: any }> => {
+        try {
+            const response = await apiClient.post('/attendance/permission/set', {
+                employee_id: data.employee_id,
+                date: data.date,
+                reason: data.reason || null,
+            })
+            return response.data
+        } catch (error: any) {
+            // Log the full error for debugging
+            console.error('Set permission API error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            })
+            throw error
+        }
+    },
+
+    removePermission: async (data: {
+        employee_id: number
+        date: string
+    }): Promise<{ message: string; updated_logs: number }> => {
+        try {
+            const response = await apiClient.post('/attendance/permission/remove', {
+                employee_id: data.employee_id,
+                date: data.date,
+            })
+            return response.data
+        } catch (error: any) {
+            // Log the full error for debugging
+            console.error('Remove permission API error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            })
+            throw error
+        }
+    },
 }

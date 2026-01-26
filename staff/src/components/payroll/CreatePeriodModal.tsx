@@ -6,11 +6,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCreatePayrollPeriod } from "@/services/usePayroll"
+import { useQuery } from "@tanstack/react-query"
+import { clientsApi } from "@/api/endpoints/clients"
+import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
     start_date: z.string().min(1, "Start date is required"),
     end_date: z.string().min(1, "End date is required"),
+    client_id: z.string().min(1, "Client is required"),
 })
 
 interface CreatePeriodModalProps {
@@ -21,16 +26,25 @@ interface CreatePeriodModalProps {
 export function CreatePeriodModal({ open, onOpenChange }: CreatePeriodModalProps) {
     const { mutate: createPeriod, isPending } = useCreatePayrollPeriod()
 
+    const { data: clientsData, isLoading: clientsLoading } = useQuery({
+        queryKey: ['clients', 'all'],
+        queryFn: () => clientsApi.list({ per_page: 1000 }),
+    })
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             start_date: '',
-            end_date: ''
+            end_date: '',
+            client_id: '',
         }
     })
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        createPeriod(values, {
+        createPeriod({
+            ...values,
+            client_id: parseInt(values.client_id),
+        }, {
             onSuccess: () => {
                 onOpenChange(false)
                 form.reset()
@@ -46,6 +60,34 @@ export function CreatePeriodModal({ open, onOpenChange }: CreatePeriodModalProps
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="client_id"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Client *</FormLabel>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value?.toString() || ''}
+                                        disabled={clientsLoading}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={clientsLoading ? "Loading clients..." : "Select client"} />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {clientsData?.data?.map((client) => (
+                                                <SelectItem key={client.id} value={client.id.toString()}>
+                                                    {client.company_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="start_date"

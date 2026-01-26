@@ -456,4 +456,143 @@ class EmployeeController extends Controller
         
         return response()->json(['message' => 'Primary job updated']);
     }
+
+    /**
+     * Get employee salary details for a specific period
+     */
+    public function getSalary($id, Request $request)
+    {
+        $employee = Employee::findOrFail($id);
+        
+        $periodId = $request->get('period_id');
+        if (!$periodId) {
+            return response()->json(['error' => 'period_id is required'], 400);
+        }
+
+        $payrollItem = \App\Models\PayrollItem::with(['payrollPeriod.client', 'employee'])
+            ->where('employee_id', $id)
+            ->where('payroll_period_id', $periodId)
+            ->first();
+
+        if (!$payrollItem) {
+            return response()->json(['error' => 'Payroll item not found for this period'], 404);
+        }
+
+        // Get detailed breakdown
+        $period = $payrollItem->payrollPeriod;
+        
+        // Get attendance logs for this period
+        $attendanceLogs = \App\Models\AttendanceLog::with('schedule.site.client')
+            ->where('employee_id', $id)
+            ->whereBetween('clock_in_time', [$period->start_date, $period->end_date])
+            ->get();
+
+        // Get bonuses and penalties (including adjustments)
+        $bonuses = \App\Models\Bonus::where('employee_id', $id)
+            ->where('payroll_period_id', $payrollItem->payroll_period_id)
+            ->where('status', '!=', 'CANCELLED')
+            ->get();
+
+        $penalties = \App\Models\Penalty::where('employee_id', $id)
+            ->where('payroll_period_id', $payrollItem->payroll_period_id)
+            ->where('status', '!=', 'CANCELLED')
+            ->get();
+
+        return response()->json([
+            'payroll_item' => $payrollItem,
+            'attendance_logs' => $attendanceLogs,
+            'bonuses' => $bonuses,
+            'penalties' => $penalties,
+        ]);
+    }
+
+    /**
+     * Get employee salary history
+     */
+    public function getSalaryHistory($id, Request $request)
+    {
+        $employee = Employee::findOrFail($id);
+        
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        // Default to last year if not provided
+        if (!$startDate) {
+            $startDate = now()->subYear()->startOfMonth()->toDateString();
+        }
+        if (!$endDate) {
+            $endDate = now()->toDateString();
+        }
+
+        $payrollItems = \App\Models\PayrollItem::with(['payrollPeriod.client'])
+            ->where('employee_id', $id)
+            ->where('status', 'APPROVED') // Only show approved payroll items to employees
+            ->whereHas('payrollPeriod', function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('start_date', [$startDate, $endDate]);
+            })
+            ->orderBy('payroll_period_id', 'desc')
+            ->get();
+
+        return response()->json($payrollItems);
+    }
+
+    /**
+     * Add salary adjustment for an employee
+     */
+    public function addSalaryAdjustment($id, Request $request)
+    {
+        $request->validate([
+            'payroll_period_id' => 'required|exists:payroll_periods,id',
+            'amount' => 'required|numeric',
+            'reason' => 'required|string|max:500',
+            'adjustment_date' => 'required|date',
+        ]);
+
+        $employee = Employee::findOrFail($id);
+        $period = \App\Models\PayrollPeriod::findOrFail($request->payroll_period_id);
+
+        // Verify the employee has a payroll item for this period
+        $payrollItem = \App\Models\PayrollItem::where('employee_id', $id)
+            ->where('payroll_period_id', $request->payroll_period_id)
+            ->firstOrFail();
+
+        // Create adjustment as a bonus (positive) or penalty (negative)
+        $amount = $request->amount;
+        $adjustmentDate = $request->adjustment_date;
+
+        if ($amount > 0) {
+            // Positive adjustment = bonus
+            $adjustment = \App\Models\Bonus::create([
+                'employee_id' => $id,
+                'amount' => abs($amount),
+                'reason' => $request->reason,
+                'bonus_date' => $adjustmentDate,
+                'type' => 'ADJUSTMENT',
+                'status' => 'PROCESSED',
+                'payroll_period_id' => $request->payroll_period_id,
+                'approved_by_user_id' => auth()->id(),
+            ]);
+        } else {
+            // Negative adjustment = penalty
+            $adjustment = \App\Models\Penalty::create([
+                'employee_id' => $id,
+                'payroll_period_id' => $request->payroll_period_id,
+                'penalty_type' => 'ADJUSTMENT',
+                'amount' => abs($amount),
+                'penalty_date' => $adjustmentDate,
+                'reason' => $request->reason,
+                'status' => 'PROCESSED',
+                'approved_by_user_id' => auth()->id(),
+            ]);
+        }
+
+        // Recalculate payroll item to include the adjustment
+        $payrollService = app(\App\Services\PayrollService::class);
+        $updatedPayrollItem = $payrollService->recalculatePayrollItem($payrollItem->id);
+
+        return response()->json([
+            'message' => 'Salary adjustment added successfully',
+            'data' => $adjustment,
+        ], 201);
+    }
 }

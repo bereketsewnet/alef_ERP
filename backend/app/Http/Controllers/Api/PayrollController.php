@@ -26,7 +26,9 @@ class PayrollController extends Controller
      */
     public function index(Request $request)
     {
-        $periods = PayrollPeriod::orderBy('start_date', 'desc')->paginate($request->per_page ?? 10);
+        $periods = PayrollPeriod::with('client:id,company_name')
+            ->orderBy('start_date', 'desc')
+            ->paginate($request->per_page ?? 10);
         return response()->json($periods);
     }
 
@@ -38,11 +40,13 @@ class PayrollController extends Controller
         $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
+            'client_id' => 'required|exists:clients,id',
         ]);
 
         $period = PayrollPeriod::create([
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
+            'client_id' => $request->client_id,
             'status' => 'DRAFT'
         ]);
 
@@ -69,14 +73,39 @@ class PayrollController extends Controller
             return response()->json(['message' => 'Cannot regenerate completed payroll'], 400);
         }
 
+        if (!$period->client_id) {
+            return response()->json(['message' => 'Payroll period must have a client assigned'], 400);
+        }
+
         try {
-            $result = $this->payrollService->generatePayroll($period);
+            $result = $this->payrollService->generatePayroll($period, $period->client_id);
+            
+            if ($result['generated_count'] === 0) {
+                $errorMessage = !empty($result['errors']) 
+                    ? implode(' ', $result['errors'])
+                    : 'No employees found for this client and date range. Please ensure shifts are created for employees at the client\'s sites during this period.';
+                
+                return response()->json([
+                    'message' => 'No payroll items generated',
+                    'error' => $errorMessage,
+                    'details' => $result
+                ], 400);
+            }
+            
             return response()->json([
                 'message' => 'Payroll generated successfully',
                 'details' => $result
             ]);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            \Log::error('Payroll generation error', [
+                'period_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Failed to generate payroll',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

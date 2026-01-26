@@ -4,12 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DollarSign, Settings, Plus, Loader2 } from "lucide-react"
+import { DollarSign, Plus, Loader2 } from "lucide-react"
 import { usePayrollPeriods, usePayrollStats } from "@/services/usePayroll"
 import { CreatePeriodModal } from "@/components/payroll/CreatePeriodModal"
 import { PayrollDetailsModal } from "@/components/payroll/PayrollDetailsModal"
 import { format } from "date-fns"
-import { Link } from "react-router-dom"
 import { formatCurrency } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BonusesPanel } from "./BonusesPanel"
@@ -35,18 +34,10 @@ export function PayrollPage() {
                     <h1 className="text-3xl font-bold text-neutral-900">Payroll</h1>
                     <p className="text-neutral-600 mt-1">Process payroll, manage bonuses, and generate payslips</p>
                 </div>
-                <div className="flex gap-2">
-                    <Link to="/payroll/settings">
-                        <Button variant="outline">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Settings
-                        </Button>
-                    </Link>
-                    <Button onClick={() => setCreateModalOpen(true)} className="bg-primary-600 hover:bg-primary-700">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Run Payroll
-                    </Button>
-                </div>
+                <Button onClick={() => setCreateModalOpen(true)} className="bg-primary-600 hover:bg-primary-700">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Run Payroll
+                </Button>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
@@ -103,6 +94,7 @@ export function PayrollPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Period</TableHead>
+                                            <TableHead>Client</TableHead>
                                             <TableHead>Start Date</TableHead>
                                             <TableHead>End Date</TableHead>
                                             <TableHead>Processed Date</TableHead>
@@ -123,6 +115,7 @@ export function PayrollPage() {
                                                     <TableCell className="font-medium">
                                                         {format(new Date(period.start_date), 'MMMM yyyy')}
                                                     </TableCell>
+                                                    <TableCell>{period.client?.company_name || '-'}</TableCell>
                                                     <TableCell>{format(new Date(period.start_date), 'MMM d, yyyy')}</TableCell>
                                                     <TableCell>{format(new Date(period.end_date), 'MMM d, yyyy')}</TableCell>
                                                     <TableCell>

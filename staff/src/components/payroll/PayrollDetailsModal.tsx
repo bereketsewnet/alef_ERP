@@ -46,7 +46,7 @@ export function PayrollDetailsModal({ periodId, open, onOpenChange }: PayrollDet
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+            <DialogContent className="max-w-[95vw] w-full h-[85vh] flex flex-col">
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle>
@@ -74,62 +74,85 @@ export function PayrollDetailsModal({ periodId, open, onOpenChange }: PayrollDet
                     {isLoading ? (
                         <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Employee</TableHead>
-                                    <TableHead>Days</TableHead>
-                                    <TableHead>Shift Pay</TableHead>
-                                    <TableHead>Bonus</TableHead>
-                                    <TableHead>Gross</TableHead>
-                                    <TableHead>Tax</TableHead>
-                                    <TableHead>Pension</TableHead>
-                                    <TableHead>Agcy Fee</TableHead>
-                                    <TableHead>Other Ded.</TableHead>
-                                    <TableHead>Net Pay</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {period?.payroll_items?.length === 0 ? (
+                        <div className="overflow-x-auto border rounded-lg">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
-                                            No payroll items generated yet.
-                                            {period.status === 'DRAFT' && <p>Click "Generate Payroll" to calculate.</p>}
-                                        </TableCell>
+                                        <TableHead className="sticky left-0 bg-white z-10 min-w-[150px]">Employee</TableHead>
+                                        <TableHead className="whitespace-nowrap">Days</TableHead>
+                                        <TableHead className="whitespace-nowrap">Expected</TableHead>
+                                        <TableHead className="whitespace-nowrap">Shift Pay</TableHead>
+                                        <TableHead className="whitespace-nowrap">Bonus</TableHead>
+                                        <TableHead className="whitespace-nowrap text-red-600">Manual Penalty</TableHead>
+                                        <TableHead className="whitespace-nowrap text-orange-600">Late (N)</TableHead>
+                                        <TableHead className="whitespace-nowrap text-yellow-600">Late (P)</TableHead>
+                                        <TableHead className="whitespace-nowrap text-red-600">Absent (N)</TableHead>
+                                        <TableHead className="whitespace-nowrap text-yellow-600">Absent (P)</TableHead>
+                                        <TableHead className="whitespace-nowrap font-semibold">Gross</TableHead>
+                                        <TableHead className="whitespace-nowrap">Tax</TableHead>
+                                        <TableHead className="whitespace-nowrap">Pension</TableHead>
+                                        <TableHead className="whitespace-nowrap">Agcy Fee</TableHead>
+                                        <TableHead className="whitespace-nowrap text-red-600">Penalties</TableHead>
+                                        <TableHead className="whitespace-nowrap">Other Ded.</TableHead>
+                                        <TableHead className="whitespace-nowrap font-bold">Net Pay</TableHead>
+                                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                                        <TableHead className="sticky right-0 bg-white z-10"></TableHead>
                                     </TableRow>
-                                ) : (
-                                    period?.payroll_items?.map((item: any) => (
-                                        <TableRow key={item.id}>
-                                            <TableCell>
-                                                <div className="font-medium">{item.employee.first_name} {item.employee.last_name}</div>
-                                                <div className="text-xs text-muted-foreground">{item.employee.job_role?.name}</div>
-                                            </TableCell>
-                                            <TableCell>{item.worked_days}</TableCell>
-                                            <TableCell>{parseFloat(item.shift_allowance).toLocaleString()}</TableCell>
-                                            <TableCell className="text-green-600">{parseFloat(item.bonuses || 0).toLocaleString()}</TableCell>
-                                            <TableCell className="font-semibold">{parseFloat(item.total_gross).toLocaleString()}</TableCell>
-                                            <TableCell>{parseFloat(item.income_tax).toLocaleString()}</TableCell>
-                                            <TableCell>{parseFloat(item.pension_contribution).toLocaleString()}</TableCell>
-                                            <TableCell className="text-orange-600">{parseFloat(item.agency_deductions || 0).toLocaleString()}</TableCell>
-                                            <TableCell>{(parseFloat(item.total_deductions) - parseFloat(item.income_tax) - parseFloat(item.pension_contribution) - parseFloat(item.agency_deductions || 0)).toLocaleString()}</TableCell>
-                                            <TableCell className="font-bold">{parseFloat(item.net_pay).toLocaleString()} ETB</TableCell>
-                                            <TableCell>
-                                                <Badge variant={item.status === 'APPROVED' ? 'default' : 'secondary'}>
-                                                    {item.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Button size="icon" variant="ghost" onClick={() => handleDownloadPayslip(item.id, item.employee.first_name)}>
-                                                    <Download className="h-4 w-4" />
-                                                </Button>
+                                </TableHeader>
+                                <TableBody>
+                                    {period?.payroll_items?.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={19} className="text-center py-8 text-muted-foreground">
+                                                No payroll items generated yet.
+                                                {period.status === 'DRAFT' && <p>Click "Generate Payroll" to calculate.</p>}
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        period?.payroll_items?.map((item: any) => {
+                                            const penalties = parseFloat(item.penalties || 0)
+                                            const manualPenalties = parseFloat(item.manual_penalties || 0)
+                                            const assetDeductions = parseFloat(item.asset_deductions || 0)
+                                            const otherDeductions = assetDeductions
+                                            
+                                            return (
+                                                <TableRow key={item.id}>
+                                                    <TableCell className="sticky left-0 bg-white z-10 min-w-[150px]">
+                                                        <div className="font-medium">{item.employee?.first_name} {item.employee?.last_name}</div>
+                                                        <div className="text-xs text-muted-foreground">{item.employee?.job_role?.name || '-'}</div>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-nowrap">{item.worked_days || 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{item.expected_days || 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{parseFloat(item.shift_allowance || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-green-600">{parseFloat(item.bonuses || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-red-600">{manualPenalties > 0 ? manualPenalties.toLocaleString() : '-'}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-orange-600">{item.normal_late_count ?? 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-yellow-600">{item.permission_late_count ?? 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-red-600">{item.normal_absent_count ?? 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-yellow-600">{item.permission_absent_count ?? 0}</TableCell>
+                                                    <TableCell className="whitespace-nowrap font-semibold">{parseFloat(item.total_gross || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{parseFloat(item.income_tax || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{parseFloat(item.pension_contribution || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-orange-600">{parseFloat(item.agency_deductions || 0).toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap text-red-600">{penalties.toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{otherDeductions.toLocaleString()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap font-bold">{parseFloat(item.net_pay || 0).toLocaleString()} ETB</TableCell>
+                                                    <TableCell className="whitespace-nowrap">
+                                                        <Badge variant={item.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                                            {item.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="sticky right-0 bg-white z-10">
+                                                        <Button size="icon" variant="ghost" onClick={() => handleDownloadPayslip(item.id, item.employee?.first_name || 'employee')}>
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </div>
             </DialogContent>

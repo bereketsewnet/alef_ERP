@@ -54,6 +54,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/logs', [AttendanceController::class, 'index']);
         Route::put('/logs/{id}/verify', [AttendanceController::class, 'verify']);
         Route::put('/logs/{id}/unverify', [AttendanceController::class, 'unverify']);
+        Route::post('/{id}/mark-permission', [AttendanceController::class, 'markPermission']);
+        Route::post('/permission/set', [AttendanceController::class, 'setPermission']);
+        Route::post('/permission/remove', [AttendanceController::class, 'removePermission']);
         Route::get('/my-logs', [AttendanceController::class, 'myLogs']);
         Route::get('/export', [AttendanceController::class, 'exportAttendance']);
     });
@@ -80,6 +83,11 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{employeeId}/jobs/{jobId}', [EmployeeController::class, 'updateJob']);
         Route::delete('/{employeeId}/jobs/{jobId}', [EmployeeController::class, 'removeJob']);
         Route::put('/{employeeId}/jobs/{jobId}/primary', [EmployeeController::class, 'setPrimaryJob']);
+        
+        // Employee Salary
+        Route::get('/{id}/salary', [EmployeeController::class, 'getSalary']);
+        Route::get('/{id}/salary/history', [EmployeeController::class, 'getSalaryHistory']);
+        Route::post('/{id}/salary/adjustment', [EmployeeController::class, 'addSalaryAdjustment']);
     });
 
     // Client & Site Routes

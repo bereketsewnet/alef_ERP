@@ -76,4 +76,29 @@ export const employeesApi = {
     delete: async (id: number): Promise<void> => {
         await apiClient.delete(`/employees/${id}`)
     },
+
+    // Get employee salary details for a period
+    getSalary: async (id: number, periodId: number) => {
+        const response = await apiClient.get(`/employees/${id}/salary`, {
+            params: { period_id: periodId }
+        })
+        return response.data
+    },
+
+    // Get employee salary history
+    getSalaryHistory: async (id: number, params?: { start_date?: string, end_date?: string }) => {
+        const response = await apiClient.get(`/employees/${id}/salary/history`, { params })
+        return response.data
+    },
+
+    // Add salary adjustment
+    addSalaryAdjustment: async (id: number, data: {
+        payroll_period_id: number
+        amount: number
+        reason: string
+        adjustment_date: string
+    }) => {
+        const response = await apiClient.post(`/employees/${id}/salary/adjustment`, data)
+        return response.data
+    },
 }

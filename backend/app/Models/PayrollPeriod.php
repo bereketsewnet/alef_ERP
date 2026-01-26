@@ -14,6 +14,7 @@ class PayrollPeriod extends Model
         'end_date',
         'processed_date',
         'status', // DRAFT, PROCESSING, COMPLETED
+        'client_id',
     ];
 
     protected $casts = [
@@ -31,6 +32,11 @@ class PayrollPeriod extends Model
     public function payrollItems()
     {
         return $this->hasMany(PayrollItem::class);
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 
     // Scopes

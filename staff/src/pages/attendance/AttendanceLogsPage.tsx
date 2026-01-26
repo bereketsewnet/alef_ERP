@@ -18,8 +18,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown } from "lucide-react"
-import { useAttendanceLogs, useVerifyAttendance, useUnverifyAttendance, useExportAttendance } from "@/services/useAttendance"
+import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown, Shield } from "lucide-react"
+import { useAttendanceLogs, useVerifyAttendance, useUnverifyAttendance, useExportAttendance, useMarkAttendancePermission } from "@/services/useAttendance"
+import { PermissionManagementModal } from "@/components/attendance/PermissionManagementModal"
 import { useClients } from "@/services/useClients"
 import type { AttendanceFilters, AttendanceLog } from "@/api/endpoints/attendance"
 import {
@@ -36,11 +37,14 @@ export function AttendanceLogsPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
     const [exportFormat, setExportFormat] = useState<'pdf' | 'csv'>('csv')
+    const [permissionModalOpen, setPermissionModalOpen] = useState(false)
+    const [permissionModalMode, setPermissionModalMode] = useState<'set' | 'remove'>('set')
 
     const { data, isLoading, error } = useAttendanceLogs(filters)
     const { mutate: verify } = useVerifyAttendance()
     const { mutate: unverify } = useUnverifyAttendance()
     const { mutate: exportData, isPending: isExporting } = useExportAttendance()
+    const { mutate: markPermission } = useMarkAttendancePermission()
 
     // Load sites (via clients) for site filter dropdown
     const { data: clientsData } = useClients({ page: 1, per_page: 500 })
@@ -221,25 +225,52 @@ export function AttendanceLogsPage() {
                         </select>
                     </div>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button disabled={isExporting} variant="outline" className="mb-[1px]">
-                                <Download className="h-4 w-4 mr-2" />
-                                {isExporting ? 'Exporting...' : 'Export'}
-                                <ChevronDown className="h-4 w-4 ml-2" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleExport('csv')} disabled={isExporting}>
-                                <Download className="h-4 w-4 mr-2" />
-                                Export as CSV
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={isExporting}>
-                                <Download className="h-4 w-4 mr-2" />
-                                Export as PDF
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button disabled={isExporting} variant="outline" className="mb-[1px]">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    {isExporting ? 'Exporting...' : 'Export'}
+                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleExport('csv')} disabled={isExporting}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export as CSV
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={isExporting}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export as PDF
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="mb-[1px]">
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Permission
+                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => {
+                                    setPermissionModalMode('set')
+                                    setPermissionModalOpen(true)
+                                }}>
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Set Permission
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                    setPermissionModalMode('remove')
+                                    setPermissionModalOpen(true)
+                                }}>
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Remove Permission
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
@@ -304,15 +335,22 @@ export function AttendanceLogsPage() {
                                     {calculateHours(log.clock_in_time, log.clock_out_time)}
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex gap-1">
-                                        {log.clock_out_time ? (
-                                            <>
-                                                {log.flagged_late && <Badge variant="destructive">Late</Badge>}
-                                                {log.flagged_early_leave && <Badge variant="warning">Early</Badge>}
-                                                {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
-                                            </>
-                                        ) : (
-                                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">Active</Badge>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex gap-1">
+                                            {log.clock_out_time ? (
+                                                <>
+                                                    {log.flagged_late && <Badge variant="destructive">Late</Badge>}
+                                                    {log.flagged_early_leave && <Badge variant="warning">Early</Badge>}
+                                                    {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
+                                                </>
+                                            ) : (
+                                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">Active</Badge>
+                                            )}
+                                        </div>
+                                        {log.with_permission && (
+                                            <Badge variant="outline" className="text-xs text-blue-700 border-blue-300">
+                                                With Permission
+                                            </Badge>
                                         )}
                                     </div>
                                 </TableCell>
@@ -328,6 +366,21 @@ export function AttendanceLogsPage() {
                                             <CheckCircle className="h-5 w-5 text-green-600" />
                                         ) : (
                                             <div className="h-5 w-5 rounded-full border-2 border-gray-300"></div>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-1 h-8 w-8 p-0 ml-1"
+                                        title={log.with_permission ? "Remove Permission" : "Mark With Permission"}
+                                        onClick={() => markPermission({ id: log.id })}
+                                    >
+                                        {log.with_permission ? (
+                                            <Badge variant="outline" className="text-[10px] px-1 py-0 border-blue-400 text-blue-700">
+                                                P
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-xs text-gray-400">P?</span>
                                         )}
                                     </Button>
                                 </TableCell>
@@ -457,6 +510,13 @@ export function AttendanceLogsPage() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Permission Management Modal */}
+            <PermissionManagementModal
+                open={permissionModalOpen}
+                onOpenChange={setPermissionModalOpen}
+                mode={permissionModalMode}
+            />
         </div>
     )
 }

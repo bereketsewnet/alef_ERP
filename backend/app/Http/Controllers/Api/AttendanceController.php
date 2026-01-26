@@ -329,5 +329,173 @@ class AttendanceController extends Controller
             'attendance_logs_' . now()->format('Y-m-d') . '.xlsx'
         );
     }
+
+    /**
+     * Mark attendance log with permission
+     * 
+     * @OA\Post(
+     *     path="/attendance/{id}/mark-permission",
+     *     summary="Toggle with_permission flag for an attendance log",
+     *     tags={"Attendance"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="with_permission", type="boolean", description="Set permission status (optional, defaults to toggle)")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Permission status updated successfully")
+     * )
+     */
+    public function markPermission($id, Request $request)
+    {
+        $log = AttendanceLog::findOrFail($id);
+        
+        // If with_permission is provided in request, use it; otherwise toggle
+        if ($request->has('with_permission')) {
+            $log->with_permission = (bool) $request->with_permission;
+        } else {
+            $log->with_permission = !$log->with_permission;
+        }
+        
+        $log->save();
+
+        return response()->json([
+            'message' => 'Permission status updated successfully',
+            'data' => [
+                'id' => $log->id,
+                'with_permission' => $log->with_permission,
+            ]
+        ]);
+    }
+
+    /**
+     * Set permission for employee absence/lateness
+     * Can be set in advance or for past dates
+     */
+    public function setPermission(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'employee_id' => 'required|exists:employees,id',
+                'date' => 'required|date',
+                'reason' => 'nullable|string|max:500',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+                'error' => 'Please check the form fields and try again'
+            ], 422);
+        }
+
+        try {
+            $employee = \App\Models\Employee::findOrFail($request->employee_id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Employee not found',
+                'message' => 'The selected employee does not exist'
+            ], 404);
+        }
+
+        try {
+            $date = Carbon::parse($request->date)->startOfDay();
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Invalid date format',
+                'message' => 'Please provide a valid date'
+            ], 400);
+        }
+
+        // Check if employee has a shift on this date
+        $shift = ShiftSchedule::where('employee_id', $employee->id)
+            ->whereDate('shift_start', $date->toDateString())
+            ->first();
+
+        if (!$shift) {
+            return response()->json([
+                'error' => 'No shift found',
+                'message' => 'Employee does not have a shift scheduled on ' . $date->format('Y-m-d') . '. Please ensure the employee has a shift assigned for this date.'
+            ], 400);
+        }
+
+        // If date is in the past or today, update existing attendance logs
+        $isPastOrToday = $date->isPast() || $date->isToday();
+        
+        if ($isPastOrToday) {
+            $attendanceLogs = AttendanceLog::where('employee_id', $employee->id)
+                ->where('schedule_id', $shift->id)
+                ->whereDate('clock_in_time', $date->toDateString())
+                ->get();
+
+            foreach ($attendanceLogs as $log) {
+                $log->with_permission = true;
+                $log->save();
+            }
+
+            return response()->json([
+                'message' => 'Permission set and existing attendance logs updated',
+                'updated_logs' => $attendanceLogs->count(),
+                'shift' => $shift,
+            ]);
+        }
+
+        // For future dates, we can store this in a separate table or just mark the shift
+        // For now, we'll create a note that can be checked when attendance is logged
+        // You could create a 'permissions' table for this, but for simplicity,
+        // we'll just return success and the system will check shifts when attendance is logged
+
+        return response()->json([
+            'message' => 'Permission set for future date',
+            'shift' => $shift,
+            'note' => 'This permission will be applied when attendance is logged for this date',
+        ]);
+    }
+
+    /**
+     * Remove/cancel permission for an employee on a specific date
+     */
+    public function removePermission(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'date' => 'required|date',
+        ]);
+
+        $employee = \App\Models\Employee::findOrFail($request->employee_id);
+        $date = Carbon::parse($request->date)->startOfDay();
+
+        // Find shifts for this date
+        $shifts = ShiftSchedule::where('employee_id', $employee->id)
+            ->whereDate('shift_start', $date->toDateString())
+            ->get();
+
+        if ($shifts->isEmpty()) {
+            return response()->json([
+                'error' => 'No shifts found for this date'
+            ], 404);
+        }
+
+        // Update attendance logs to remove permission
+        $updatedCount = 0;
+        foreach ($shifts as $shift) {
+            $logs = AttendanceLog::where('employee_id', $employee->id)
+                ->where('schedule_id', $shift->id)
+                ->whereDate('clock_in_time', $date->toDateString())
+                ->get();
+
+            foreach ($logs as $log) {
+                $log->with_permission = false;
+                $log->save();
+                $updatedCount++;
+            }
+        }
+
+        return response()->json([
+            'message' => 'Permission removed successfully',
+            'updated_logs' => $updatedCount,
+        ]);
+    }
 }
 

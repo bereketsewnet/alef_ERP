@@ -8,6 +8,11 @@ export interface PayrollPeriod {
     end_date: string
     status: 'DRAFT' | 'PROCESSING' | 'COMPLETED'
     processed_date: string | null
+    client_id: number | null
+    client?: {
+        id: number
+        company_name: string
+    }
     created_at: string
     updated_at: string
 }
@@ -16,6 +21,7 @@ export interface PayrollItem {
     id: number
     payroll_period_id: number
     employee_id: number
+    client_id?: number | null
     employee?: Employee
     base_salary: number
     shift_allowance: number
@@ -33,11 +39,18 @@ export interface PayrollItem {
     total_deductions: number
     net_pay: number
     worked_days: number
+    expected_days?: number
     worked_hours: number
     overtime_hours: number
     late_days: number
+    normal_late_count?: number
+    permission_late_count?: number
     absent_days: number
+    normal_absent_count?: number
+    permission_absent_count?: number
+    manual_penalties?: number
     status: string
+    payroll_period?: PayrollPeriod
 }
 
 export interface PayrollStats {
@@ -105,14 +118,21 @@ export interface CreatePenaltyRequest {
 export const getPayrollPeriods = (params?: any) =>
     client.get<any>('/payroll/periods', { params }).then(res => res.data)
 
-export const createPayrollPeriod = (data: { start_date: string, end_date: string }) =>
+export const createPayrollPeriod = (data: { start_date: string, end_date: string, client_id: number }) =>
     client.post<PayrollPeriod>('/payroll/periods', data).then(res => res.data)
 
 export const getPayrollPeriod = (id: number) =>
     client.get<PayrollPeriod & { payroll_items: PayrollItem[] }>(`/payroll/periods/${id}`).then(res => res.data)
 
 export const generatePayroll = (id: number) =>
-    client.post<GenericResponse>(`/payroll/periods/${id}/generate`).then(res => res.data)
+    client.post<any>(`/payroll/periods/${id}/generate`).then(res => res.data).catch(err => {
+        // Re-throw with better error structure
+        throw {
+            response: {
+                data: err.response?.data || { message: err.message || 'Failed to generate payroll' }
+            }
+        }
+    })
 
 export const approvePayroll = (id: number) =>
     client.post<GenericResponse>(`/payroll/periods/${id}/approve`).then(res => res.data)
