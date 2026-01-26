@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateEmployee, useUpdateEmployee } from '@/services/useEmployees'
 import type { Employee } from '@/api/endpoints/employees'
+import { EmployeeCredentialsModal } from './EmployeeCredentialsModal'
 import {
     Dialog,
     DialogContent,
@@ -175,6 +176,8 @@ function EmployeeFormFields({ form, isSubmitting, employee, onClose }: {
 export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModalProps) {
     const { mutate: createEmployee, isPending: isCreating } = useCreateEmployee()
     const { mutate: updateEmployee, isPending: isUpdating } = useUpdateEmployee()
+    const [credentials, setCredentials] = useState<{ username: string; email: string; password: string; message: string } | null>(null)
+    const [showCredentialsModal, setShowCredentialsModal] = useState(false)
 
     const form = useForm<EmployeeFormValues>({
         resolver: zodResolver(employeeSchema),
@@ -223,9 +226,16 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
             )
         } else {
             createEmployee(data, {
-                onSuccess: () => {
-                    onClose()
+                onSuccess: (response) => {
                     form.reset()
+                    // If credentials are provided, show them in a modal
+                    if (response?.login_credentials) {
+                        setCredentials(response.login_credentials)
+                        setShowCredentialsModal(true)
+                        // Don't close the form modal yet - wait for user to acknowledge credentials
+                    } else {
+                        onClose()
+                    }
                 },
             })
         }
@@ -289,6 +299,21 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                     </Form>
                 )}
             </DialogContent>
+
+            {/* Credentials Modal */}
+            {credentials && (
+                <EmployeeCredentialsModal
+                    open={showCredentialsModal}
+                    onOpenChange={(open) => {
+                        setShowCredentialsModal(open)
+                        if (!open) {
+                            setCredentials(null)
+                            onClose() // Close the form modal after credentials are acknowledged
+                        }
+                    }}
+                    credentials={credentials}
+                />
+            )}
         </Dialog>
     )
 }

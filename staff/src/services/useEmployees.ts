@@ -41,12 +41,16 @@ export function useCreateEmployee() {
 
     return useMutation({
         mutationFn: (data: CreateEmployeeRequest) => employeesApi.create(data),
-        onSuccess: () => {
+        onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
             toast({
                 title: 'Employee created',
-                description: 'The employee has been created successfully',
+                description: response.login_credentials 
+                    ? 'Employee created successfully. Please save the login credentials.'
+                    : 'The employee has been created successfully',
             })
+            // Return the full response including credentials
+            return response
         },
         onError: (error: any) => {
             toast({

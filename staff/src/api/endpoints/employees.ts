@@ -61,9 +61,9 @@ export const employeesApi = {
     },
 
     // Create new employee
-    create: async (data: CreateEmployeeRequest): Promise<Employee> => {
-        const response = await apiClient.post<{ data: Employee }>('/employees', data)
-        return response.data.data
+    create: async (data: CreateEmployeeRequest): Promise<{ data: Employee; login_credentials?: { username: string; email: string; password: string; message: string } }> => {
+        const response = await apiClient.post<{ data: Employee; login_credentials?: { username: string; email: string; password: string; message: string } }>('/employees', data)
+        return response.data
     },
 
     // Update employee
