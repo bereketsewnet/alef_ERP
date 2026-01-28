@@ -3,20 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { User, Mail, Phone, Calendar, Briefcase, DollarSign } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Briefcase, DollarSign, AlertTriangle } from 'lucide-react'
 import { EmployeeJobsPanel } from './EmployeeJobsPanel'
 import { EmployeeSalaryHistory } from './EmployeeSalaryHistory'
+import { EmployeeAlertsPanel } from './EmployeeAlertsPanel'
 import type { Employee } from '@/api/endpoints/employees'
+
+type EmployeeDetailsTab = 'info' | 'jobs' | 'salary' | 'alerts'
 
 interface EmployeeDetailsModalProps {
     open: boolean
     onClose: () => void
     employee: Employee | null
-    defaultTab?: 'info' | 'jobs' | 'salary'
+    defaultTab?: EmployeeDetailsTab
 }
 
 export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'info' }: EmployeeDetailsModalProps) {
-    const [activeTab, setActiveTab] = useState(defaultTab)
+    const [activeTab, setActiveTab] = useState<EmployeeDetailsTab>(defaultTab)
 
     useEffect(() => {
         if (open && defaultTab) {
@@ -53,8 +56,12 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
                     </DialogTitle>
                 </DialogHeader>
 
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'info' | 'jobs' | 'salary')} className="mt-4 flex-1 flex flex-col overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-3">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={(value) => setActiveTab(value as EmployeeDetailsTab)}
+                    className="mt-4 flex-1 flex flex-col overflow-hidden"
+                >
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="info" className="flex items-center gap-2">
                             <User className="h-4 w-4" />
                             Information
@@ -66,6 +73,10 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
                         <TabsTrigger value="salary" className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4" />
                             Salary
+                        </TabsTrigger>
+                        <TabsTrigger value="alerts" className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Alerts
                         </TabsTrigger>
                     </TabsList>
 
@@ -134,6 +145,10 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
 
                     <TabsContent value="salary" className="mt-4 overflow-y-auto flex-1 min-h-0">
                         <EmployeeSalaryHistory employeeId={employee.id} />
+                    </TabsContent>
+
+                    <TabsContent value="alerts" className="mt-4 overflow-y-auto flex-1 min-h-0">
+                        <EmployeeAlertsPanel employeeId={employee.id} />
                     </TabsContent>
                 </Tabs>
             </DialogContent>

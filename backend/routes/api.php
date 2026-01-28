@@ -88,6 +88,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}/salary', [EmployeeController::class, 'getSalary']);
         Route::get('/{id}/salary/history', [EmployeeController::class, 'getSalaryHistory']);
         Route::post('/{id}/salary/adjustment', [EmployeeController::class, 'addSalaryAdjustment']);
+
+        // Employee Alerts (panic / incidents)
+        Route::get('/{id}/alerts', [EmployeeController::class, 'getAlerts']);
     });
 
     // Client & Site Routes

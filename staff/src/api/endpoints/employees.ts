@@ -18,6 +18,20 @@ export interface Employee {
     updated_at: string
 }
 
+export interface EmployeeAlert {
+    id: number
+    site_id: number
+    reported_by_employee_id: number | null
+    report_type: 'INCIDENT' | 'PANIC' | 'OBSERVATION' | 'MAINTENANCE'
+    description: string
+    severity_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    created_at: string
+    site?: {
+        id: number
+        site_name: string
+    }
+}
+
 export interface CreateEmployeeRequest {
     first_name: string
     last_name: string
@@ -99,6 +113,12 @@ export const employeesApi = {
         adjustment_date: string
     }) => {
         const response = await apiClient.post(`/employees/${id}/salary/adjustment`, data)
+        return response.data
+    },
+
+    // Get employee alerts (panic / incidents)
+    getAlerts: async (id: number, params?: { type?: string; start_date?: string; end_date?: string }): Promise<EmployeeAlert[]> => {
+        const response = await apiClient.get<EmployeeAlert[]>(`/employees/${id}/alerts`, { params })
         return response.data
     },
 }

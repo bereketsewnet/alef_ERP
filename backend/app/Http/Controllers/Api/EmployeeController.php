@@ -537,6 +537,37 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Get panic / incident alerts for a specific employee
+     */
+    public function getAlerts($id, Request $request)
+    {
+        $employee = Employee::findOrFail($id);
+
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+
+        if (!$startDate) {
+            $startDate = now()->subMonth()->startOfDay()->toDateTimeString();
+        }
+        if (!$endDate) {
+            $endDate = now()->endOfDay()->toDateTimeString();
+        }
+
+        $query = \App\Models\OperationalReport::with(['site'])
+            ->where('reported_by_employee_id', $employee->id)
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        // Optional filter: only PANIC alerts or all types
+        if ($request->get('type') === 'panic') {
+            $query->where('report_type', 'PANIC');
+        }
+
+        $alerts = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json($alerts);
+    }
+
+    /**
      * Add salary adjustment for an employee
      */
     public function addSalaryAdjustment($id, Request $request)

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { useGPS } from '@/hooks/useGPS'
 import { incidentApi } from '@/api/endpoints/incidents'
 import { cn } from '@/lib/utils'
+import { useRoster } from '@/hooks/useRoster'
 
 interface PanicButtonProps {
     className?: string
@@ -13,6 +14,7 @@ interface PanicButtonProps {
 export function PanicButton({ className }: PanicButtonProps) {
     const { t } = useTranslation()
     const { requestPosition } = useGPS()
+    const { todayShift } = useRoster()
     const [showConfirm, setShowConfirm] = useState(false)
     const [isSending, setIsSending] = useState(false)
     const [result, setResult] = useState<'success' | 'error' | null>(null)
@@ -21,14 +23,25 @@ export function PanicButton({ className }: PanicButtonProps) {
         setIsSending(true)
         try {
             const position = await requestPosition()
+            const siteId = todayShift?.site_id
+            const descriptionParts: string[] = []
+
             if (position) {
-                await incidentApi.panic(position.latitude, position.longitude)
-                setResult('success')
+                descriptionParts.push(
+                    `PANIC ALERT - GPS: lat=${position.latitude}, lng=${position.longitude}, acc=${position.accuracy}m`
+                )
             } else {
-                // Send without location if GPS fails
-                await incidentApi.panic(0, 0, 'GPS unavailable')
-                setResult('success')
+                descriptionParts.push('PANIC ALERT - GPS unavailable')
             }
+
+            const description = descriptionParts.join(' | ')
+
+            if (!siteId) {
+                throw new Error('No active site for panic alert')
+            }
+
+            await incidentApi.panic(siteId, description)
+            setResult('success')
         } catch {
             setResult('error')
         } finally {

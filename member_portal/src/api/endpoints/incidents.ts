@@ -26,11 +26,14 @@ export const incidentApi = {
         return response.data
     },
 
-    panic: async (latitude: number, longitude: number, note?: string): Promise<{ success: boolean; message: string }> => {
+    /**
+     * Panic alert from member portal.
+     * Backend expects: { site_id, description }
+     */
+    panic: async (site_id: number, description: string): Promise<{ message: string }> => {
         const response = await api.post('/incidents/panic', {
-            latitude,
-            longitude,
-            note,
+            site_id,
+            description,
         })
         return response.data
     },
