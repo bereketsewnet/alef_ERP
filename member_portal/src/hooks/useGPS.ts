@@ -14,6 +14,7 @@ interface UseGPSReturn {
     isSupported: boolean
     permissionStatus: PermissionState | null
     requestPosition: () => Promise<GPSPosition | null>
+    requestPermission: () => Promise<boolean>
     watchPosition: () => void
     stopWatching: () => void
 }
@@ -35,15 +36,89 @@ export function useGPS(options: UseGPSOptions = {}): UseGPSReturn {
 
     // Check permission status
     useEffect(() => {
-        if ('permissions' in navigator) {
-            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-                setPermissionStatus(result.state)
-                result.addEventListener('change', () => {
+        const checkPermission = async () => {
+            if ('permissions' in navigator) {
+                try {
+                    const result = await navigator.permissions.query({ name: 'geolocation' })
                     setPermissionStatus(result.state)
-                })
-            })
+                    result.addEventListener('change', () => {
+                        setPermissionStatus(result.state)
+                    })
+                } catch (error) {
+                    // If query fails, try to get position to trigger permission prompt
+                    console.log('Permission query failed, will request on first use')
+                    setPermissionStatus('prompt')
+                }
+            } else {
+                // Fallback: try to detect permission state by attempting to get position
+                // This will trigger the permission prompt if not already set
+                setPermissionStatus('prompt')
+            }
         }
+        checkPermission()
     }, [])
+
+    const requestPermission = useCallback(async (): Promise<boolean> => {
+        if (!isSupported) {
+            setError('Geolocation is not supported by your browser')
+            return false
+        }
+
+        return new Promise((resolve) => {
+            // Use a longer timeout to give the browser time to show the permission prompt
+            const timeoutId = setTimeout(() => {
+                // If timeout, check if permission was actually denied or just taking time
+                if (permissionStatus === 'denied') {
+                    setError('Location permission denied. Please enable it in browser settings.')
+                    resolve(false)
+                } else {
+                    // Permission might be granted but location unavailable
+                    resolve(true)
+                }
+            }, 5000) // Increased timeout to 5 seconds
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    clearTimeout(timeoutId)
+                    setError(null)
+                    setPermissionStatus('granted')
+                    // Update position immediately
+                    setPosition({
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        timestamp: pos.timestamp,
+                    })
+                    resolve(true)
+                },
+                (err) => {
+                    clearTimeout(timeoutId)
+                    if (err.code === err.PERMISSION_DENIED) {
+                        setError('Location permission denied. Please enable it in browser settings.')
+                        setPermissionStatus('denied')
+                        resolve(false)
+                    } else {
+                        // Other errors (timeout, unavailable) - permission might be granted
+                        // Update permission status if we can query it
+                        if ('permissions' in navigator) {
+                            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+                                setPermissionStatus(result.state)
+                            }).catch(() => {
+                                // If query fails, assume it might be granted but location unavailable
+                                setPermissionStatus('prompt')
+                            })
+                        }
+                        resolve(true) // Permission granted, but location unavailable
+                    }
+                },
+                { 
+                    timeout: 5000, // Increased timeout
+                    maximumAge: 0,
+                    enableHighAccuracy: true
+                }
+            )
+        })
+    }, [isSupported, permissionStatus])
 
     const requestPosition = useCallback(async (): Promise<GPSPosition | null> => {
         if (!isSupported) {
@@ -65,19 +140,29 @@ export function useGPS(options: UseGPSOptions = {}): UseGPSReturn {
                     }
                     setPosition(gpsPosition)
                     setIsLoading(false)
+                    setError(null)
                     resolve(gpsPosition)
                 },
                 (err) => {
                     let errorMessage = 'Failed to get location'
                     switch (err.code) {
                         case err.PERMISSION_DENIED:
-                            errorMessage = 'Location permission denied'
+                            errorMessage = 'Location permission denied. Please enable location access in your browser settings and try again.'
+                            // Update permission status
+                            if ('permissions' in navigator) {
+                                navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+                                    setPermissionStatus(result.state)
+                                }).catch(() => {
+                                    // If query fails, assume denied
+                                    setPermissionStatus('denied')
+                                })
+                            }
                             break
                         case err.POSITION_UNAVAILABLE:
-                            errorMessage = 'Location unavailable'
+                            errorMessage = 'Location unavailable. Please check your GPS settings.'
                             break
                         case err.TIMEOUT:
-                            errorMessage = 'Location request timed out'
+                            errorMessage = 'Location request timed out. Please try again.'
                             break
                     }
                     setError(errorMessage)
@@ -144,6 +229,7 @@ export function useGPS(options: UseGPSOptions = {}): UseGPSReturn {
         isSupported,
         permissionStatus,
         requestPosition,
+        requestPermission,
         watchPosition,
         stopWatching,
     }

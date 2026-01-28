@@ -1,0 +1,31 @@
+# Development override file - use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up staff member_portal
+# This allows hot-reloading without removing volumes
+# Note: Backend is excluded to avoid recreation issues - it uses the base docker-compose.yml
+
+services:
+  staff:
+    build:
+      context: ./staff
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://102.211.186.118:4002/api}
+    volumes:
+      - ./staff:/app:cached
+      - /app/node_modules
+    ports:
+      - "5176:5176"
+    command: npm run dev
+
+  member_portal:
+    build:
+      context: ./member_portal
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://102.211.186.118:4002/api}
+    volumes:
+      - ./member_portal:/app:cached
+      - /app/node_modules
+    ports:
+      - "7071:7070"
+    command: npm run dev
+

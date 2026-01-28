@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Clock, Camera, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -17,7 +17,7 @@ import type { ShiftSchedule, ClockInPayload } from '@/types'
 export function DashboardPage() {
     const { t } = useTranslation()
     const { todayShift, isLoading: isLoadingRoster } = useRoster()
-    const { position, requestPosition, isLoading: isGPSLoading, error: gpsError } = useGPS()
+    const { position, requestPosition, requestPermission, permissionStatus, isLoading: isGPSLoading, error: gpsError } = useGPS()
     const { mutateAsync: clockIn, isPending: isClockingIn } = useClockIn()
     const { mutateAsync: clockOut, isPending: isClockingOut } = useClockOut()
     const { addClockIn, addClockOut, isOnline, syncAll } = useOfflineQueue()
@@ -25,7 +25,29 @@ export function DashboardPage() {
     const [selfie, setSelfie] = useState<File | null>(null)
     const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [hasRequestedPermission, setHasRequestedPermission] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Automatically request permission on page load if not already granted
+    // Note: This only works on HTTPS or localhost (Chrome blocks location on HTTP)
+    useEffect(() => {
+        if (todayShift && !hasRequestedPermission && permissionStatus === 'prompt') {
+            // Small delay to ensure page is fully loaded
+            const timer = setTimeout(async () => {
+                setHasRequestedPermission(true)
+                try {
+                    const granted = await requestPermission()
+                    // If permission was granted, try to get position
+                    if (granted) {
+                        await requestPosition()
+                    }
+                } catch (error) {
+                    console.log('Permission request failed:', error)
+                }
+            }, 1500)
+            return () => clearTimeout(timer)
+        }
+    }, [todayShift, hasRequestedPermission, permissionStatus, requestPermission, requestPosition])
 
     const isClockedIn = todayShift?.attendance_logs?.some(log => log.clock_in_time && !log.clock_out_time)
 
@@ -59,7 +81,11 @@ export function DashboardPage() {
         // Request GPS position
         const pos = await requestPosition()
         if (!pos) {
-            setResult({ success: false, message: t('attendance.gpsRequired') })
+            // Provide more helpful error message
+            const errorMsg = gpsError?.includes('permission denied') 
+                ? t('attendance.locationPermissionDenied') || 'Location permission is required. Please enable location access in your browser settings and try again.'
+                : t('attendance.gpsRequired') || 'GPS location is required'
+            setResult({ success: false, message: errorMsg })
             return
         }
 
@@ -247,7 +273,13 @@ export function DashboardPage() {
                             </Button>
                         </div>
                         {gpsError && (
-                            <p className="text-xs text-error mt-2">{gpsError}</p>
+                            <div className="mt-2">
+                                <p className="text-xs text-error">
+                                    {gpsError.includes('permission denied') || permissionStatus === 'denied'
+                                        ? t('attendance.locationPermissionDenied') || 'Location permission denied.'
+                                        : gpsError}
+                                </p>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
