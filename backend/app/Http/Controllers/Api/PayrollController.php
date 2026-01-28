@@ -26,9 +26,20 @@ class PayrollController extends Controller
      */
     public function index(Request $request)
     {
-        $periods = PayrollPeriod::with('client:id,company_name')
-            ->orderBy('start_date', 'desc')
-            ->paginate($request->per_page ?? 10);
+        $query = PayrollPeriod::with('client:id,company_name')
+            ->orderBy('start_date', 'desc');
+
+        // Optional status filter (e.g. for member portal salary history)
+        // Usage: /payroll/periods?status=APPROVED or status[]=APPROVED&status[]=PAID
+        if ($request->has('status')) {
+            $statuses = $request->get('status');
+            if (!is_array($statuses)) {
+                $statuses = [$statuses];
+            }
+            $query->whereIn('status', $statuses);
+        }
+
+        $periods = $query->paginate($request->per_page ?? 10);
         return response()->json($periods);
     }
 

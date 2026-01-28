@@ -5,6 +5,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { RosterPage } from '@/pages/RosterPage'
 import { HistoryPage } from '@/pages/HistoryPage'
+import { SalaryHistoryPage } from '@/pages/SalaryHistoryPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { PendingActionsPage } from '@/pages/PendingActionsPage'
 import { LoadingScreen } from '@/components/ui/Spinner'
@@ -47,6 +48,7 @@ function AppRoutes() {
                 <Route index element={<DashboardPage />} />
                 <Route path="roster" element={<RosterPage />} />
                 <Route path="history" element={<HistoryPage />} />
+                <Route path="salary" element={<SalaryHistoryPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="pending" element={<PendingActionsPage />} />
             </Route>

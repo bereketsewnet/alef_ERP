@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Calendar, Clock, User } from 'lucide-react'
+import { Home, Calendar, Clock, User, CreditCard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
@@ -7,6 +7,7 @@ const navItems = [
     { path: '/', icon: Home, labelKey: 'nav.home' },
     { path: '/roster', icon: Calendar, labelKey: 'nav.roster' },
     { path: '/history', icon: Clock, labelKey: 'nav.history' },
+    { path: '/salary', icon: CreditCard, labelKey: 'nav.salary' },
     { path: '/profile', icon: User, labelKey: 'nav.profile' },
 ]
 
