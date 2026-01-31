@@ -1,187 +1,59 @@
-# ALEF DELTA ERP - Telegram Bot Starter
+# Alef ERP Telegram Bot
 
-Node.js Telegram bot for the ALEF DELTA ERP Mini App.
+Starts the **Member Portal** as a Telegram Mini App (Web App).
 
-## Features
-
-- `/start` - Welcome message and open Mini App
-- `/help` - Show available commands
-- `/roster` - Quick access to roster view
-- `/clockin` - Quick clock-in with location sharing
-- Webhook support for production deployment
+- **Menu button (“Open”)**: The bot sets the **menu button** to your Mini App URL, so the purple **Open** button appears next to the message box (and in the bot list) as soon as the user opens the chat – no need to send /start first.
+- **/start**: Welcome message, optional image from the internet, and an “Open Member Portal” button.
 
 ## Setup
 
-### 1. Install Dependencies
+1. Create a bot with [@BotFather](https://t.me/BotFather), get the token.
+2. Copy `.env.example` to `.env` and set:
+   - `telegram_bot_token` – token from BotFather
+   - `telegram_mini_app_url` – Member Portal URL (e.g. `https://erp-member.alefdelta.com`)
+   - `telegram_bot_username` – bot username (e.g. `aleferp_bot`)
+   - `telegram_welcome_image_url` (optional) – HTTPS URL of a welcome image shown when user sends /start
+
+## Run with Docker (recommended)
+
+From the project root:
 
 ```bash
-npm install
+docker-compose up -d telegram_bot
 ```
 
-### 2. Configure Environment
+The service uses `./telegram-bot-starter/.env` via `env_file` and mounts the same file at `/app/.env`.
 
-Copy `.env.example` to `.env`:
+**If you get a `'ContainerConfig'` error** when recreating the bot (e.g. after changing config):
 
 ```bash
-cp .env.example .env
+docker rm -f alef_erp_telegram_bot
+docker-compose up -d telegram_bot
 ```
 
-Edit `.env` and add your configuration:
-
-```env
-BOT_TOKEN=your_bot_token_from_botfather
-MINI_APP_URL=https://your-mini-app-url.com
-BACKEND_API_URL=https://your-backend-api.com/api
-PORT=3000
-```
-
-### 3. Get Bot Token
-
-1. Open Telegram and search for [@BotFather](https://t.me/botfather)
-2. Send `/newbot` and follow the instructions
-3. Copy the bot token and add it to `.env`
-
-### 4. Setup Mini App
-
-1. Send `/newapp` to BotFather
-2. Select your bot
-3. Provide app title, description, and URL
-4. Upload an icon (640x360 pixels)
-5. Copy the Mini App URL and add it to `.env`
-
-### 5. Run the Bot
-
-**Development:**
+## Run locally
 
 ```bash
-npm run dev
+cd telegram-bot-starter
+pip install -r requirements.txt
+python bot.py
 ```
 
-**Production:**
+## Commands
 
-```bash
-npm start
-```
+- **Open** (menu button) – Set by the bot; opens the Mini App without sending a message.
+- **/start** – Welcome message (+ optional image) and “Open Member Portal” button.
+- **/menu** – Same as /start.
 
-## Production Deployment (VPS)
+## Menu button (Open)
 
-### Using PM2 (Recommended)
+The bot calls Telegram’s `setChatMenuButton` at startup so the **Open** button (like in BotFather) appears in the chat and in the bot list. To get the **Open** button in the **chat list** (next to "Alef ERP" so users can tap it without opening the chat), also set the menu button in **BotFather**:
 
-```bash
-# Install PM2
-npm install -g pm2
+1. Open [@BotFather](https://t.me/BotFather) in Telegram.
+2. Send: **`/setmenubutton`**
+3. Choose your bot (e.g. **@aleferp_bot**).
+4. Choose **Configure menu button** (or **Web app**).
+5. When asked for the URL, enter your Member Portal URL, e.g. **`https://erp-member.alefdelta.com`**
+6. When asked for the button text, enter **`Open`**
 
-# Start bot
-pm2 start index.js --name alef-erp-bot
-
-# Save PM2 configuration
-pm2 save
-
-# Setup auto-start on reboot
-pm2 startup
-```
-
-### Using Systemd
-
-Create `/etc/systemd/system/alef-erp-bot.service`:
-
-```ini
-[Unit]
-Description=ALEF DELTA ERP Telegram Bot
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/path/to/telegram-bot-starter
-ExecStart=/usr/bin/node index.js
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-
-```bash
-sudo systemctl enable alef-erp-bot
-sudo systemctl start alef-erp-bot
-sudo systemctl status alef-erp-bot
-```
-
-## Webhook Setup (Optional)
-
-For production, you can use webhooks instead of polling:
-
-1. Setup HTTPS endpoint (required by Telegram)
-2. Set webhook URL:
-
-```javascript
-const WEBHOOK_URL = 'https://yourdomain.com/webhook';
-bot.setWebHook(WEBHOOK_URL);
-```
-
-3. Remove polling:
-
-```javascript
-// Remove: { polling: true }
-const bot = new TelegramBot(BOT_TOKEN);
-```
-
-## Integration with Laravel Backend
-
-The bot can make requests to the Laravel API:
-
-```javascript
-const axios = require('axios');
-
-// Example: Fetch user roster
-const response = await axios.get(`${BACKEND_API_URL}/roster/my-roster`, {
-  headers: {
-    'Authorization': `Bearer ${userToken}`
-  }
-});
-```
-
-## Commands Reference
-
-| Command | Description |
-|---------|-------------|
-| `/start` | Start the bot and open Mini App |
-| `/help` | Show help message |
-| `/roster` | View upcoming shifts |
-| `/clockin` | Clock in with location |
-
-## File Structure
-
-```
-telegram-bot-starter/
-├── index.js          # Main bot file
-├── package.json      # Dependencies
-├── .env.example      # Environment template
-└── README.md         # This file
-```
-
-## Troubleshooting
-
-### Bot not responding
-
-- Check bot token in `.env`
-- Ensure bot is running (`pm2 status`)
-- Check logs (`pm2 logs alef-erp-bot`)
-
-### Mini App not opening
-
-- Verify MINI_APP_URL in `.env`
-- Ensure HTTPS is enabled on Mini App URL
-- Check domain is accessible
-
-### API requests failing
-
-- Check BACKEND_API_URL in `.env`
-- Verify API is running and accessible
-- Check authentication tokens
-
-## License
-
-Proprietary - ALEF DELTA
+After this, the purple **Open** button should appear in the chat list next to your bot so users can open the Mini App with one tap without opening the chat.

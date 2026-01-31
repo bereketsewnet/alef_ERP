@@ -21,6 +21,8 @@ All services are accessible via public IP: **102.211.186.118**
 - **Member Portal**: http://102.211.186.118:7071
 - **Adminer (DB)**: http://102.211.186.118:8083
 
+**Telegram Bot** (no port): runs in the background; configure `telegram-bot-starter/.env` with bot token and Mini App URL. See `telegram-bot-starter/README.md`.
+
 ## 🔧 Port Changes (No Conflicts)
 
 | Service | Old Port | New Port |

@@ -93,6 +93,22 @@ services:
     networks:
       - alef-erp-network
 
+  # telegram_bot:
+  #   build:
+  #     context: ./telegram-bot-starter
+  #     dockerfile: Dockerfile
+  #   container_name: alef_erp_telegram_bot
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./telegram-bot-starter/.env
+  #   # Optional: mount .env if env_file doesn't apply (e.g. run from another path).
+  #   # If you get 'ContainerConfig' error on recreate, run: docker rm -f alef_erp_telegram_bot
+  #   # then: docker-compose up -d telegram_bot
+  #   volumes:
+  #     - ./telegram-bot-starter/.env:/app/.env:ro
+  #   networks:
+  #     - alef-erp-network
+
 networks:
   alef-erp-network:
     driver: bridge
