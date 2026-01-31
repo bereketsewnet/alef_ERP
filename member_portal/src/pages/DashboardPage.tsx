@@ -20,7 +20,7 @@ export function DashboardPage() {
     const { position, requestPosition, requestPermission, permissionStatus, isLoading: isGPSLoading, error: gpsError } = useGPS()
     const { mutateAsync: clockIn, isPending: isClockingIn } = useClockIn()
     const { mutateAsync: clockOut, isPending: isClockingOut } = useClockOut()
-    const { addClockIn, addClockOut, isOnline, syncAll } = useOfflineQueue()
+    const { addClockIn, addClockOut, isOnline, checkOnlineStatus, syncAll } = useOfflineQueue()
 
     const [selfie, setSelfie] = useState<File | null>(null)
     const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
@@ -81,50 +81,44 @@ export function DashboardPage() {
         // Request GPS position
         const pos = await requestPosition()
         if (!pos) {
-            // Provide more helpful error message
-            const errorMsg = gpsError?.includes('permission denied') 
+            const errorMsg = gpsError?.includes('permission denied')
                 ? t('attendance.locationPermissionDenied') || 'Location permission is required. Please enable location access in your browser settings and try again.'
                 : t('attendance.gpsRequired') || 'GPS location is required'
             setResult({ success: false, message: errorMsg })
             return
         }
 
-        // Prepare payload - exclude selfie when storing offline (File objects can't be serialized)
+        // Re-check online status when user clicks so we don't show "Saved offline" when actually online
+        const actuallyOnline = await checkOnlineStatus()
+
         const payload: ClockInPayload = {
             schedule_id: todayShift.id,
             latitude: pos.latitude,
             longitude: pos.longitude,
             accuracy: pos.accuracy || 0,
-            // Only include selfie when online and sending immediately
-            // File objects can't be stored in IndexedDB, so exclude for offline queue
-            selfie: (isOnline && selfie) ? selfie : undefined,
+            selfie: (actuallyOnline && selfie) ? selfie : undefined,
         }
-        
-        // For offline storage, create a clean payload without File objects
+
         const offlinePayload = {
             schedule_id: payload.schedule_id,
             latitude: payload.latitude,
             longitude: payload.longitude,
             accuracy: payload.accuracy,
-            // No selfie - File objects can't be stored
         }
 
         try {
-            if (isOnline) {
-                // Try online
+            if (actuallyOnline) {
                 const response = isClockedIn
                     ? await clockOut(payload)
                     : await clockIn(payload)
 
                 if (response.success) {
                     setResult({ success: true, message: isClockedIn ? t('attendance.clockOutSuccess') : t('attendance.clockInSuccess') })
-                    // Try to sync any pending actions after successful check-in/out
                     setTimeout(() => syncAll(), 2000)
                 } else {
                     setResult({ success: false, message: response.message || t('attendance.tooFar') })
                 }
             } else {
-                // Queue for offline - use clean payload without File objects
                 if (isClockedIn) {
                     await addClockOut(offlinePayload as ClockInPayload)
                 } else {
@@ -133,10 +127,8 @@ export function DashboardPage() {
                 setResult({ success: true, message: t('attendance.queued') })
             }
         } catch (error: any) {
-            // Network error or API error - show error message
             console.error('Check-in error:', error)
-            
-            // Extract error message from response
+
             let errorMessage = t('attendance.clockInFailed') || 'Clock in failed'
             if (error?.response?.data?.message) {
                 errorMessage = error.response.data.message
@@ -145,15 +137,14 @@ export function DashboardPage() {
             } else if (error?.message) {
                 errorMessage = error.message
             }
-            
-            // If it's a GPS/distance error, show it
+
             if (error?.response?.data?.distance !== undefined) {
                 const distance = Math.round(error.response.data.distance)
                 errorMessage = `${errorMessage} (Distance: ${distance}m)`
             }
-            
-            // If offline or network error, queue for later
-            if (!isOnline || error?.code === 'ERR_NETWORK' || error?.code === 'ERR_INTERNET_DISCONNECTED') {
+
+            const isNetworkError = error?.code === 'ERR_NETWORK' || error?.code === 'ERR_INTERNET_DISCONNECTED' || error?.message?.toLowerCase?.().includes('network')
+            if (!actuallyOnline || isNetworkError) {
                 if (isClockedIn) {
                     await addClockOut(offlinePayload as ClockInPayload)
                 } else {
@@ -161,28 +152,28 @@ export function DashboardPage() {
                 }
                 setResult({ success: true, message: t('attendance.queued') })
             } else {
-                // Show the actual error message
                 setResult({ success: false, message: errorMessage })
             }
         }
 
-        // Clear result after 3 seconds
         setTimeout(() => setResult(null), 3000)
         removeSelfie()
     }
 
-    // Calculate distance if we have position and shift
-    const distance = position && todayShift?.site
-        ? haversineDistance(
-            position.latitude,
-            position.longitude,
-            todayShift.site.latitude,
-            todayShift.site.longitude
-        )
+    // Always use coordinates and radius as numbers (API may return decimals as strings)
+    const siteLat = todayShift?.site ? Number(todayShift.site.latitude) : null
+    const siteLng = todayShift?.site ? Number(todayShift.site.longitude) : null
+    const radiusMeters = todayShift?.site
+        ? Number((todayShift.site as { geo_radius_meters?: number; geo_radius?: number }).geo_radius_meters
+            ?? (todayShift.site as { geo_radius?: number }).geo_radius ?? 100)
+        : 0
+
+    const distance = position && siteLat != null && siteLng != null
+        ? haversineDistance(position.latitude, position.longitude, siteLat, siteLng)
         : null
 
     const isWithinRadius = distance !== null && todayShift?.site
-        ? distance <= todayShift.site.geo_radius
+        ? distance <= radiusMeters
         : null
 
     if (isLoadingRoster) {
@@ -227,14 +218,20 @@ export function DashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* Map Preview */}
-            {todayShift?.site && (
+            {/* Map Preview - always uses stored site coordinates (not site name / geocoding) */}
+            {todayShift?.site && siteLat != null && siteLng != null && (
                 <Card>
                     <CardContent className="p-0 overflow-hidden rounded-xl">
+                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-600">
+                            <span className="font-medium">{t('home.siteCoordinates') || 'Site location (coordinates)'}:</span>{' '}
+                            {siteLat.toFixed(4)}, {siteLng.toFixed(4)}
+                            <span className="mx-2">•</span>
+                            <span className="font-medium">{t('home.clockInRadius') || 'Clock-in radius'}:</span> {radiusMeters} m
+                        </div>
                         <MapPreview
-                            siteLatitude={todayShift.site.latitude}
-                            siteLongitude={todayShift.site.longitude}
-                            siteRadius={todayShift.site.geo_radius}
+                            siteLatitude={siteLat}
+                            siteLongitude={siteLng}
+                            siteRadius={radiusMeters}
                             userLatitude={position?.latitude}
                             userLongitude={position?.longitude}
                             className="h-48"

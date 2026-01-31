@@ -66,6 +66,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/', [RosterController::class, 'index']);
         Route::post('/bulk-assign', [RosterController::class, 'bulkAssign']);
         Route::get('/my-roster', [RosterController::class, 'myRoster']);
+        Route::delete('/by-employee/{employeeId}', [RosterController::class, 'deleteByEmployee']);
+        Route::delete('/{id}', [RosterController::class, 'destroy']);
     });
 
     // Employee Routes

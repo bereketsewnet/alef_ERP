@@ -35,6 +35,7 @@
     "nav": {
         "home": "ዋና",
         "roster": "መርሃ ግብር",
+        "sync": "ማመሳሰል",
         "history": "ታሪክ",
         "salary": "ደመወዝ",
         "profile": "መገለጫ"
@@ -49,7 +50,9 @@
         "within": "በክልል ውስጥ",
         "outside": "ከክልል ውጭ",
         "gpsAccuracy": "የጂፒኤስ ትክክለኛነት",
-        "pendingSync": "ገና ያልተመዘገበ"
+        "pendingSync": "ገና ያልተመዘገበ",
+        "siteCoordinates": "የጣቢያ ቦታ (ኮርዲኔት)",
+        "clockInRadius": "የመግቢያ ርዝመት"
     },
     "attendance": {
         "title": "መገኘት",
@@ -148,12 +151,15 @@
         "confirmPassword": "የይለፍ ቃል አረጋግጥ"
     },
     "sync": {
-        "title": "በመጠባበቅ ላይ ያሉ ድርጊቶች",
+        "title": "ኦንላይን እና ኦፍላይን ማመሳሰል",
+        "subtitle": "ከመስመር ውጭ የተቀመጡ ድርጊቶችን ያስተዳድሩ። ወደ መስመር ሲገናኙ ወደ አገልግሎት ይመዘገባሉ።",
         "pending": "በመጠባበቅ ላይ",
         "syncing": "በመመዝገብ ላይ",
         "failed": "አልተሳካም",
         "syncNow": "አሁን መዝግብ",
         "clearFailed": "ያልተሳኩትን ሰርዝ",
-        "noItems": "በመጠባበቅ ላይ ያሉ ነገሮች የሉም"
+        "noItems": "በመጠባበቅ ላይ ያሉ ነገሮች የሉም",
+        "allSynced": "ሁሉም ድርጊቶች ተመዝግበዋል። አገልግሎት ዘምኗል።",
+        "offlineTryAgain": "ከመስመር ውጭ ነዎት። በኢንተርኔት ይገናኙ እና እንደገና ይሞክሩ።"
     }
 }

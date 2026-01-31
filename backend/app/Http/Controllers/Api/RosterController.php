@@ -131,7 +131,7 @@ class RosterController extends Controller
 
             $shifts = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
                 ->where('shift_start', '>=', now()->startOfDay())
-                ->with('site')
+                ->with(['site', 'attendanceLogs'])
                 ->orderBy('shift_start')
                 ->get();
 
@@ -171,5 +171,43 @@ class RosterController extends Controller
         }
 
         return response()->json($query->paginate(50));
+    }
+
+    /**
+     * Delete a single shift by ID.
+     */
+    public function destroy($id)
+    {
+        $shift = ShiftSchedule::find($id);
+        if (!$shift) {
+            return response()->json(['error' => 'Shift not found'], 404);
+        }
+        $shift->delete();
+        return response()->json(['message' => 'Shift deleted successfully']);
+    }
+
+    /**
+     * Delete all shifts for an employee (optionally filtered by date range).
+     */
+    public function deleteByEmployee(Request $request, $employeeId)
+    {
+        $query = ShiftSchedule::where('employee_id', $employeeId);
+
+        if ($request->has('start_date')) {
+            $start = \Carbon\Carbon::parse($request->start_date)->startOfDay();
+            $query->where('shift_start', '>=', $start);
+        }
+        if ($request->has('end_date')) {
+            $end = \Carbon\Carbon::parse($request->end_date)->endOfDay();
+            $query->where('shift_end', '<=', $end);
+        }
+
+        $count = $query->count();
+        $query->delete();
+
+        return response()->json([
+            'message' => "Deleted {$count} shift(s) for employee.",
+            'deleted_count' => $count,
+        ]);
     }
 }

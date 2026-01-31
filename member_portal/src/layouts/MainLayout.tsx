@@ -25,12 +25,10 @@ export function MainLayout() {
                         </span>
                     </div>
 
-                    {pendingCount > 0 && (
-                        <Link to="/pending" className="flex items-center gap-1 text-xs text-warning hover:underline">
-                            <Cloud className="h-4 w-4" />
-                            <span>{pendingCount} {t('home.pendingSync')}</span>
-                        </Link>
-                    )}
+                    <Link to="/pending" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                        <Cloud className="h-4 w-4" />
+                        <span>{pendingCount > 0 ? `${pendingCount} ${t('home.pendingSync')}` : (t('nav.sync') || 'Sync')}</span>
+                    </Link>
                 </div>
             </div>
 

@@ -35,6 +35,7 @@
     "nav": {
         "home": "Home",
         "roster": "Schedule",
+        "sync": "Sync",
         "history": "History",
         "salary": "Salary",
         "profile": "Profile"
@@ -49,7 +50,9 @@
         "within": "Within range",
         "outside": "Outside range",
         "gpsAccuracy": "GPS Accuracy",
-        "pendingSync": "Pending Sync"
+        "pendingSync": "Pending Sync",
+        "siteCoordinates": "Site location (coordinates)",
+        "clockInRadius": "Clock-in radius"
     },
     "attendance": {
         "title": "Attendance",
@@ -148,12 +151,15 @@
         "confirmPassword": "Confirm Password"
     },
     "sync": {
-        "title": "Pending Actions",
+        "title": "Online & Offline Sync",
+        "subtitle": "Manage actions saved offline. When back online, sync them to the server.",
         "pending": "Pending",
         "syncing": "Syncing",
         "failed": "Failed",
         "syncNow": "Sync Now",
         "clearFailed": "Clear Failed",
-        "noItems": "No pending items"
+        "noItems": "No pending items",
+        "allSynced": "All actions have been synced. Server is up to date.",
+        "offlineTryAgain": "You are offline. Connect to the internet and try again."
     }
 }

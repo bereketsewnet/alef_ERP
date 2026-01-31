@@ -31,8 +31,10 @@ export interface AttendanceLog {
     schedule?: {
         id: number
         site_id: number
-        start_time: string
-        end_time: string
+        start_time?: string
+        end_time?: string
+        shift_start?: string
+        shift_end?: string
         site?: {
             id: number
             site_name: string

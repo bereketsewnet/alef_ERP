@@ -9,6 +9,7 @@ interface UseOfflineQueueReturn {
     pendingCount: number
     failedCount: number
     isOnline: boolean
+    checkOnlineStatus: () => Promise<boolean>
     syncAll: () => Promise<void>
     isSyncing: boolean
     addClockIn: (payload: ClockInPayload) => Promise<void>
@@ -36,7 +37,9 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
             
-            const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/health`, {
+            const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
+            const healthUrl = base.includes('/api') ? `${base}/health` : `${base}/api/health`
+            const response = await fetch(healthUrl, {
                 method: 'GET',
                 signal: controller.signal,
                 cache: 'no-cache',
@@ -245,6 +248,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
         pendingCount,
         failedCount,
         isOnline,
+        checkOnlineStatus,
         syncAll,
         isSyncing,
         addClockIn,

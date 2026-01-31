@@ -624,8 +624,9 @@ export function ClientListPage() {
                                     <FormItem>
                                         <FormLabel>GPS Radius (meters)</FormLabel>
                                         <FormControl>
-                                            <Input {...field} type="number" placeholder="100" />
+                                            <Input {...field} type="number" placeholder="7200" />
                                         </FormControl>
+                                        <p className="text-xs text-muted-foreground">Clock-in allowed within this distance from site. e.g. 7200 = 7.2 km</p>
                                         <FormMessage />
                                     </FormItem>
                                 )}

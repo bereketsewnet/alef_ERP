@@ -21,6 +21,11 @@ All services are accessible via public IP: **102.211.186.118**
 - **Member Portal**: http://102.211.186.118:7071
 - **Adminer (DB)**: http://102.211.186.118:8083
 
+expcted domain
+backend = https://erp-api.alefdelta.com
+staff = https://erp-staff.alefdelta.com
+member =  https://erp-member.alefdelta.com
+
 **Telegram Bot** (no port): runs in the background; configure `telegram-bot-starter/.env` with bot token and Mini App URL. See `telegram-bot-starter/README.md`.
 
 ## 🔧 Port Changes (No Conflicts)
@@ -80,4 +85,7 @@ See `VPS_SETUP.md` for detailed configuration and troubleshooting.
 cd /var/www/Alef_ERP
 docker-compose build backend staff
 docker-compose up -d backend staff
+
+
+docker compose build staff --no-cache && docker compose up -d staff
 

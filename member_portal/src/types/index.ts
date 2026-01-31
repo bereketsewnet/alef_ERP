@@ -52,7 +52,9 @@ export interface ClientSite {
     site_address: string
     latitude: number
     longitude: number
-    geo_radius: number
+    /** Radius in meters (API: geo_radius_meters) */
+    geo_radius?: number
+    geo_radius_meters?: number
     contact_phone?: string
     instructions?: string
 }

@@ -92,4 +92,21 @@ export const rosterApi = {
         const response = await apiClient.get('/roster/my-roster')
         return response.data
     },
+
+    deleteShift: async (id: number): Promise<{ message: string }> => {
+        const response = await apiClient.delete(`/roster/${id}`)
+        return response.data
+    },
+
+    deleteShiftsByEmployee: async (
+        employeeId: number,
+        options?: { start_date?: string; end_date?: string }
+    ): Promise<{ message: string; deleted_count: number }> => {
+        const params = new URLSearchParams()
+        if (options?.start_date) params.append('start_date', options.start_date)
+        if (options?.end_date) params.append('end_date', options.end_date)
+        const qs = params.toString()
+        const response = await apiClient.delete(`/roster/by-employee/${employeeId}${qs ? `?${qs}` : ''}`)
+        return response.data
+    },
 }

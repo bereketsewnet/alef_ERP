@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Clock, AlertCircle, CheckCircle, XCircle, Trash2, RefreshCw, Cloud } from 'lucide-react'
@@ -10,6 +11,7 @@ import { useOfflineQueue } from '@/hooks/useOfflineQueue'
 export function PendingActionsPage() {
     const { t } = useTranslation()
     const { queue, pendingCount, failedCount, isOnline, syncAll, isSyncing, clearFailed, clearAllPending } = useOfflineQueue()
+    const [offlineMessage, setOfflineMessage] = useState<string | null>(null)
 
     const pendingActions = queue.filter(a => a.status === 'PENDING')
     const failedActions = queue.filter(a => a.status === 'FAILED')
@@ -43,8 +45,11 @@ export function PendingActionsPage() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">{t('home.pendingActions') || 'Pending Actions'}</h1>
+            <div>
+                <h1 className="text-2xl font-bold">{t('sync.title') || 'Online & Offline Sync'}</h1>
+                <p className="text-sm text-gray-500 mt-1">{t('sync.subtitle') || 'Manage actions saved offline. When back online, sync them to the server.'}</p>
+            </div>
+            <div className="flex items-center justify-end gap-2">
                 <div className="flex items-center gap-2">
                     {!isOnline && (
                         <Badge variant="error">
@@ -83,11 +88,27 @@ export function PendingActionsPage() {
                 </Card>
             </div>
 
+            {/* Offline message when user clicks Sync All while offline */}
+            {offlineMessage && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{offlineMessage}</span>
+                    <button type="button" onClick={() => setOfflineMessage(null)} className="ml-auto text-amber-600 hover:underline" aria-label="Dismiss">×</button>
+                </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-2">
-                {isOnline && pendingCount > 0 && (
+                {pendingCount > 0 && (
                     <Button
-                        onClick={syncAll}
+                        onClick={async () => {
+                            if (!isOnline) {
+                                setOfflineMessage(t('sync.offlineTryAgain') || 'You are offline. Connect to the internet and try again.')
+                                return
+                            }
+                            setOfflineMessage(null)
+                            await syncAll()
+                        }}
                         disabled={isSyncing}
                         className="flex-1"
                         variant="primary"
@@ -191,8 +212,8 @@ export function PendingActionsPage() {
                 <Card>
                     <CardContent className="py-8 text-center text-gray-500">
                         <Cloud className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>{t('home.noItems') || 'No pending items'}</p>
-                        <p className="text-xs mt-2">All actions have been synced successfully</p>
+                        <p>{t('sync.noItems') || 'No pending items'}</p>
+                        <p className="text-xs mt-2">{t('sync.allSynced') || 'All actions have been synced. Server is up to date.'}</p>
                     </CardContent>
                 </Card>
             )}

@@ -33,8 +33,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Calendar, Users, Clock, ChevronLeft, ChevronRight, Eye } from "lucide-react"
-import { useRoster, useBulkAssignShifts } from "@/services/useRoster"
+import { Calendar, Users, Clock, ChevronLeft, ChevronRight, Eye, Trash2 } from "lucide-react"
+import { useRoster, useBulkAssignShifts, useDeleteShift, useDeleteShiftsByEmployee } from "@/services/useRoster"
 import { useEmployees } from "@/services/useEmployees"
 import { useClients } from "@/services/useClients"
 import { useJobs } from "@/services/useJobs"
@@ -43,6 +43,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import type { ShiftSchedule } from "@/api/endpoints/roster"
 import { WorkingDaysSelector } from "@/components/roster/WorkingDaysSelector"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 const bulkAssignSchema = z.object({
     site_id: z.string().min(1, 'Site is required'),
@@ -72,11 +73,15 @@ export function RosterPage() {
     const [bulkAssignOpen, setBulkAssignOpen] = useState(false)
     const [detailsModalOpen, setDetailsModalOpen] = useState(false)
     const [selectedEmployee, setSelectedEmployee] = useState<GroupedShift | null>(null)
+    const [deleteOneShiftId, setDeleteOneShiftId] = useState<number | null>(null)
+    const [deleteAllEmployeeId, setDeleteAllEmployeeId] = useState<number | null>(null)
 
     const { data: rosterData, isLoading } = useRoster({ page, site_id: siteFilter, date: dateFilter })
     const { data: employeesData } = useEmployees({ per_page: 1000 })
     const { data: clientsData } = useClients({ page: 1 })
     const { mutate: bulkAssign, isPending: isAssigning } = useBulkAssignShifts()
+    const { mutate: deleteShift, isPending: isDeletingShift } = useDeleteShift()
+    const { mutate: deleteShiftsByEmployee, isPending: isDeletingAll } = useDeleteShiftsByEmployee()
     const { data: jobs } = useJobs({ active_only: true })
 
     const form = useForm({
@@ -297,7 +302,7 @@ export function RosterPage() {
                     <TableBody>
                         {isLoading && (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                                <TableCell colSpan={6} className="text-center py-8 text-neutral-500">
                                     Loading shifts...
                                 </TableCell>
                             </TableRow>
@@ -305,7 +310,7 @@ export function RosterPage() {
 
                         {groupedShifts.length === 0 && !isLoading && (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                                <TableCell colSpan={6} className="text-center py-8 text-neutral-500">
                                     No shifts found
                                 </TableCell>
                             </TableRow>
@@ -334,6 +339,16 @@ export function RosterPage() {
                                     >
                                         <Eye className="h-4 w-4 mr-1" />
                                         View Details
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => setDeleteAllEmployeeId(group.employee_id)}
+                                        title="Delete all shifts for this employee"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-1" />
+                                        Delete All
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -388,6 +403,17 @@ export function RosterPage() {
                         </DialogDescription>
                     </DialogHeader>
 
+                    <div className="flex justify-end gap-2 mb-4">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => selectedEmployee && setDeleteAllEmployeeId(selectedEmployee.employee_id)}
+                            disabled={!selectedEmployee?.shifts.length || isDeletingAll}
+                        >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete All Shifts for This Employee
+                        </Button>
+                    </div>
                     <div className="border rounded-lg">
                         <Table>
                             <TableHeader>
@@ -398,6 +424,7 @@ export function RosterPage() {
                                     <TableHead>End Time</TableHead>
                                     <TableHead>Duration</TableHead>
                                     <TableHead>Attended</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -457,6 +484,18 @@ export function RosterPage() {
                                                     </span>
                                                 )}
                                             </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => setDeleteOneShiftId(shift.id)}
+                                                    disabled={isDeletingShift}
+                                                    title="Delete this shift"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     )
                                 })}
@@ -471,6 +510,51 @@ export function RosterPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Confirm delete one shift */}
+            <ConfirmDialog
+                open={deleteOneShiftId != null}
+                onOpenChange={(open) => !open && setDeleteOneShiftId(null)}
+                title="Delete shift"
+                description="Are you sure you want to delete this shift? This cannot be undone."
+                confirmText="Delete"
+                variant="destructive"
+                onConfirm={() => {
+                    if (deleteOneShiftId != null) {
+                        deleteShift(deleteOneShiftId, {
+                            onSuccess: () => {
+                                setDeleteOneShiftId(null)
+                                if (selectedEmployee) {
+                                    const remaining = selectedEmployee.shifts.filter(s => s.id !== deleteOneShiftId)
+                                    if (remaining.length === 0) setDetailsModalOpen(false)
+                                    else setSelectedEmployee({ ...selectedEmployee, shifts: remaining, shift_count: remaining.length, total_hours: remaining.reduce((acc, s) => acc + (new Date(s.shift_end).getTime() - new Date(s.shift_start).getTime()) / (1000 * 60 * 60), 0) })
+                                }
+                            },
+                        })
+                    }
+                }}
+            />
+
+            {/* Confirm delete all shifts for employee */}
+            <ConfirmDialog
+                open={deleteAllEmployeeId != null}
+                onOpenChange={(open) => !open && setDeleteAllEmployeeId(null)}
+                title="Delete all shifts for this employee"
+                description="Are you sure you want to delete all shifts for this employee? This cannot be undone."
+                confirmText="Delete All"
+                variant="destructive"
+                onConfirm={() => {
+                    if (deleteAllEmployeeId != null) {
+                        deleteShiftsByEmployee({ employeeId: deleteAllEmployeeId }, {
+                            onSuccess: () => {
+                                setDeleteAllEmployeeId(null)
+                                setDetailsModalOpen(false)
+                                setSelectedEmployee(null)
+                            },
+                        })
+                    }
+                }}
+            />
 
             {/* Bulk Assign Modal */}
             <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>

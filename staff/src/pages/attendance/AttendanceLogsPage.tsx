@@ -108,12 +108,50 @@ export function AttendanceLogsPage() {
         })
     }
 
-    const calculateHours = (clockIn: string, clockOut: string | null) => {
-        if (!clockOut) return <span className="text-gray-400 italic">In Progress</span>
+    // Must work at least 95% of scheduled shift to count as "finished"
+    const FINISHED_THRESHOLD = 0.95
+
+    const getWorkedHours = (clockIn: string, clockOut: string | null): number | null => {
+        if (!clockOut) return null
         const start = new Date(clockIn)
         const end = new Date(clockOut)
-        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-        return `${hours.toFixed(2)}h`
+        return (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+    }
+
+    const getScheduledHours = (log: AttendanceLog): number | null => {
+        const s = log.schedule
+        if (!s) return null
+        const startStr = (s as { shift_start?: string }).shift_start ?? s.start_time
+        const endStr = (s as { shift_end?: string }).shift_end ?? s.end_time
+        if (!startStr || !endStr) return null
+        const start = new Date(startStr)
+        const end = new Date(endStr)
+        return (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+    }
+
+    const isNotFinished = (log: AttendanceLog): boolean => {
+        if (!log.clock_out_time) return false
+        const worked = getWorkedHours(log.clock_in_time, log.clock_out_time)
+        if (worked === null) return false
+        const scheduled = getScheduledHours(log)
+        if (scheduled === null || scheduled <= 0) {
+            // No schedule: fallback — under 15 min counts as not finished
+            return worked < 15 / 60
+        }
+        return worked < FINISHED_THRESHOLD * scheduled
+    }
+
+    const calculateHours = (clockIn: string, clockOut: string | null, log?: AttendanceLog) => {
+        if (!clockOut) return <span className="text-gray-400 italic">In Progress</span>
+        const hours = getWorkedHours(clockIn, clockOut)
+        if (hours === null) return '--'
+        const notFinished = log ? isNotFinished(log) : false
+        return (
+            <span className={notFinished ? 'text-amber-600 font-medium' : ''}>
+                {hours.toFixed(2)}h
+                {notFinished && <span className="ml-1 text-xs text-amber-600">(Not finished)</span>}
+            </span>
+        )
     }
 
     // Calculate status counts from current page data
@@ -121,7 +159,9 @@ export function AttendanceLogsPage() {
         if (!log.clock_out_time) {
             acc.active++
         } else {
-            if (log.flagged_late) {
+            if (isNotFinished(log)) {
+                acc.notFinished++
+            } else if (log.flagged_late) {
                 acc.late++
             } else if (log.flagged_early_leave) {
                 acc.early++
@@ -130,7 +170,7 @@ export function AttendanceLogsPage() {
             }
         }
         return acc
-    }, { active: 0, late: 0, early: 0, present: 0 }) || { active: 0, late: 0, early: 0, present: 0 }
+    }, { active: 0, late: 0, early: 0, present: 0, notFinished: 0 }) || { active: 0, late: 0, early: 0, present: 0, notFinished: 0 }
 
     return (
         <div className="space-y-6">
@@ -145,11 +185,16 @@ export function AttendanceLogsPage() {
 
             {/* Status Summary */}
             {data && data.data.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="text-sm text-blue-600 font-medium">Active</div>
                         <div className="text-2xl font-bold text-blue-700 mt-1">{statusCounts.active}</div>
                         <div className="text-xs text-blue-500 mt-1">Currently working</div>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="text-sm text-amber-600 font-medium">Not finished</div>
+                        <div className="text-2xl font-bold text-amber-700 mt-1">{statusCounts.notFinished}</div>
+                        <div className="text-xs text-amber-500 mt-1">Clocked out &lt; 15 min</div>
                     </div>
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div className="text-sm text-red-600 font-medium">Late</div>
@@ -332,19 +377,21 @@ export function AttendanceLogsPage() {
                                     {log.clock_out_time ? formatDateTime(log.clock_out_time) : <span className="text-yellow-600 text-sm">--</span>}
                                 </TableCell>
                                 <TableCell>
-                                    {calculateHours(log.clock_in_time, log.clock_out_time)}
+                                    {calculateHours(log.clock_in_time, log.clock_out_time, log)}
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col gap-1">
-                                        <div className="flex gap-1">
-                                            {log.clock_out_time ? (
+                                        <div className="flex flex-wrap gap-1">
+                                            {!log.clock_out_time ? (
+                                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">Active</Badge>
+                                            ) : isNotFinished(log) ? (
+                                                <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300">Not finished</Badge>
+                                            ) : (
                                                 <>
                                                     {log.flagged_late && <Badge variant="destructive">Late</Badge>}
                                                     {log.flagged_early_leave && <Badge variant="warning">Early</Badge>}
                                                     {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
                                                 </>
-                                            ) : (
-                                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">Active</Badge>
                                             )}
                                         </div>
                                         {log.with_permission && (
@@ -458,7 +505,14 @@ export function AttendanceLogsPage() {
                                     <span className="font-medium">{selectedLog.clock_out_time ? formatDateTime(selectedLog.clock_out_time) : 'Active'}</span>
 
                                     <span className="text-gray-500">Duration:</span>
-                                    <span className="font-medium">{calculateHours(selectedLog.clock_in_time, selectedLog.clock_out_time)}</span>
+                                    <span className="font-medium">{calculateHours(selectedLog.clock_in_time, selectedLog.clock_out_time, selectedLog)}</span>
+
+                                    {selectedLog.clock_out_time && isNotFinished(selectedLog) && (
+                                        <>
+                                            <span className="text-gray-500">Status:</span>
+                                            <span className="font-medium text-amber-600">Not finished (under 95% of shift)</span>
+                                        </>
+                                    )}
 
                                     <span className="text-gray-500">Verification:</span>
                                     <span className={selectedLog.is_verified ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
