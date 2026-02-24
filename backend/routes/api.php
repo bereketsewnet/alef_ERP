@@ -126,6 +126,15 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\Api\JobCategoryController::class, 'destroy']);
     });
 
+    // Vacancies (job vacancy management)
+    Route::prefix('vacancies')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\VacancyController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\VacancyController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'destroy']);
+    });
+
     // Jobs
     Route::prefix('jobs')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\JobController::class, 'index']);
