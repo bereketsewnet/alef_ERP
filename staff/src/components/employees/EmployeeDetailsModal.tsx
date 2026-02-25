@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { User, Mail, Phone, Calendar, Briefcase, DollarSign, AlertTriangle } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Briefcase, DollarSign, AlertTriangle, ClipboardCheck } from 'lucide-react'
 import { EmployeeJobsPanel } from './EmployeeJobsPanel'
 import { EmployeeSalaryHistory } from './EmployeeSalaryHistory'
 import { EmployeeAlertsPanel } from './EmployeeAlertsPanel'
+import { EmployeeScreeningPanel } from './EmployeeScreeningPanel'
+import { EmployeeDocumentsPanel } from './EmployeeDocumentsPanel'
 import type { Employee } from '@/api/endpoints/employees'
 
-type EmployeeDetailsTab = 'info' | 'jobs' | 'salary' | 'alerts'
+type EmployeeDetailsTab = 'info' | 'jobs' | 'salary' | 'alerts' | 'screening'
 
 interface EmployeeDetailsModalProps {
     open: boolean
@@ -61,7 +63,7 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
                     onValueChange={(value) => setActiveTab(value as EmployeeDetailsTab)}
                     className="mt-4 flex-1 flex flex-col overflow-hidden"
                 >
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="info" className="flex items-center gap-2">
                             <User className="h-4 w-4" />
                             Information
@@ -77,6 +79,10 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
                         <TabsTrigger value="alerts" className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4" />
                             Alerts
+                        </TabsTrigger>
+                        <TabsTrigger value="screening" className="flex items-center gap-2">
+                            <ClipboardCheck className="h-4 w-4" />
+                            Screening & Docs
                         </TabsTrigger>
                     </TabsList>
 
@@ -149,6 +155,11 @@ export function EmployeeDetailsModal({ open, onClose, employee, defaultTab = 'in
 
                     <TabsContent value="alerts" className="mt-4 overflow-y-auto flex-1 min-h-0">
                         <EmployeeAlertsPanel employeeId={employee.id} />
+                    </TabsContent>
+
+                    <TabsContent value="screening" className="mt-4 overflow-y-auto flex-1 min-h-0 space-y-4">
+                        <EmployeeScreeningPanel employeeId={employee.id} />
+                        <EmployeeDocumentsPanel employeeId={employee.id} />
                     </TabsContent>
                 </Tabs>
             </DialogContent>

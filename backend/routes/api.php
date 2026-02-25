@@ -93,6 +93,17 @@ Route::middleware('auth:api')->group(function () {
 
         // Employee Alerts (panic / incidents)
         Route::get('/{id}/alerts', [EmployeeController::class, 'getAlerts']);
+
+        // Employee screening records
+        Route::get('/{employeeId}/screenings', [\App\Http\Controllers\Api\EmployeeScreeningController::class, 'index']);
+        Route::post('/{employeeId}/screenings', [\App\Http\Controllers\Api\EmployeeScreeningController::class, 'store']);
+        Route::put('/{employeeId}/screenings/{screeningId}', [\App\Http\Controllers\Api\EmployeeScreeningController::class, 'update']);
+        Route::delete('/{employeeId}/screenings/{screeningId}', [\App\Http\Controllers\Api\EmployeeScreeningController::class, 'destroy']);
+
+        // Employee documents (medical paper, police report, guarantor docs, photos, etc.)
+        Route::get('/{employeeId}/documents', [\App\Http\Controllers\Api\EmployeeDocumentController::class, 'index']);
+        Route::post('/{employeeId}/documents', [\App\Http\Controllers\Api\EmployeeDocumentController::class, 'store']);
+        Route::delete('/{employeeId}/documents/{documentId}', [\App\Http\Controllers\Api\EmployeeDocumentController::class, 'destroy']);
     });
 
     // Client & Site Routes
@@ -133,6 +144,21 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\Api\VacancyController::class, 'destroy']);
+    });
+
+    // Job Applications (user/agent-filled applications)
+    Route::prefix('job-applications')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\JobApplicationController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\JobApplicationController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'destroy']);
+
+        // Job Application Screenings (pre-employment interviews & exams)
+        Route::get('/{jobApplicationId}/screenings', [\App\Http\Controllers\Api\JobApplicationScreeningController::class, 'index']);
+        Route::post('/{jobApplicationId}/screenings', [\App\Http\Controllers\Api\JobApplicationScreeningController::class, 'store']);
+        Route::put('/{jobApplicationId}/screenings/{screeningId}', [\App\Http\Controllers\Api\JobApplicationScreeningController::class, 'update']);
+        Route::delete('/{jobApplicationId}/screenings/{screeningId}', [\App\Http\Controllers\Api\JobApplicationScreeningController::class, 'destroy']);
     });
 
     // Jobs

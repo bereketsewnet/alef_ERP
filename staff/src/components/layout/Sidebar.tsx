@@ -34,6 +34,7 @@ export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {
         { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { title: "Jobs", href: "/jobs", icon: Briefcase },
         { title: "Vacancies", href: "/vacancies", icon: Megaphone },
+        { title: "Job Applications", href: "/job-applications", icon: FileText },
         { title: "Roster", href: "/roster", icon: CalendarDays },
         { title: "Employees", href: "/employees", icon: Users },
         { title: "Attendance", href: "/attendance", icon: ClipboardCheck },
