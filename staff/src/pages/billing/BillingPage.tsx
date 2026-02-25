@@ -30,10 +30,10 @@ export function BillingPage() {
     const handleDownload = async (id: number, number: string) => {
         try {
             const blob = await downloadInvoice(id)
-            const url = window.URL.createObjectURL(new Blob([blob]))
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }))
             const link = document.createElement('a')
             link.href = url
-            link.setAttribute('download', `invoice-${number}.txt`) // Changed to .txt as per controller Stub 
+            link.setAttribute('download', `invoice-${number}.pdf`)
             document.body.appendChild(link)
             link.click()
             link.parentNode?.removeChild(link)
@@ -59,36 +59,33 @@ export function BillingPage() {
                 })
             },
             onError: (error: any) => {
-                console.error('Send invoice error:', error)
-                
-                // Extract error message from various possible locations
                 let errorMessage = "Failed to send invoice"
                 let errorTitle = "Error"
-                
-                // Try to get the most specific error message
-                const rawError = error?.error || error?.response?.data?.error || error?.message || error?.response?.data?.message
-                
-                if (rawError) {
-                    // If error contains email content or is too long, extract just the first line or relevant part
-                    if (rawError.includes('Permission denied') || rawError.includes('could not be opened')) {
+                const data = error?.response?.data
+                const raw = (typeof data?.error === "string" ? data.error : null)
+                    ?? (typeof data?.message === "string" ? data.message : null)
+                    ?? (typeof error?.message === "string" ? error.message : null)
+                    ?? (error?.error && typeof error.error === "string" ? error.error : null)
+                const rawError = raw ?? (data && typeof data === "object" ? JSON.stringify(data).slice(0, 200) : null)
+
+                if (rawError && typeof rawError === "string") {
+                    if (rawError.includes("Permission denied") || rawError.includes("could not be opened")) {
                         errorTitle = "Server Configuration Error"
                         errorMessage = "Email sending failed due to server configuration. Please contact administrator."
-                    } else if (rawError.includes('Connection') || rawError.includes('SMTP')) {
+                    } else if (rawError.includes("Connection") || rawError.includes("SMTP")) {
                         errorTitle = "Email Server Error"
                         errorMessage = "Failed to connect to email server. Please check mail configuration."
-                    } else if (rawError.includes('Email not configured') || rawError.includes('set an email address')) {
+                    } else if (rawError.includes("Email not configured") || rawError.includes("set an email address")) {
                         errorTitle = "Email Not Configured"
                         errorMessage = "Please set an email address for this client before sending the invoice."
                     } else if (rawError.length > 150) {
-                        // Extract first meaningful sentence if error is too long
-                        const firstLine = rawError.split('\n')[0] || rawError.split('.')[0]
+                        const firstLine = rawError.split("\n")[0] || rawError.split(".")[0]
                         errorMessage = firstLine.length > 150 ? firstLine.substring(0, 150) + "..." : firstLine
                     } else {
                         errorMessage = rawError
                     }
                 }
-                
-                // Show error toast using shadcn toast system
+
                 toast({
                     title: errorTitle,
                     description: errorMessage,

@@ -91,8 +91,8 @@ export function AssetAvailabilityChart() {
                 <CardTitle>Asset Availability by Category</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-                <div className="w-full" style={{ height: '400px', minHeight: '400px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full" style={{ height: 400, minHeight: 400 }}>
+                    <ResponsiveContainer width="100%" height={400} minHeight={300}>
                         <PieChart>
                             <Pie
                                 data={chartData}

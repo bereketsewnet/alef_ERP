@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Payslip;
+use App\Models\Invoice;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
@@ -62,6 +63,54 @@ class PdfService
         ];
 
         $pdf = Pdf::loadView('pdfs.payslip', $data);
+
+        return $pdf->stream();
+    }
+
+    /**
+     * Generate invoice PDF for download.
+     */
+    public function generateInvoicePdf(Invoice $invoice)
+    {
+        $invoice->loadMissing(['items', 'client']);
+
+        $company = [
+            'name' => 'ALEF DELTA',
+            'address' => 'Addis Ababa, Ethiopia',
+            'phone' => '+251 11 xxx xxxx',
+            'tin' => 'XXXXXXXXXX',
+        ];
+
+        $data = [
+            'invoice' => $invoice,
+            'company' => $company,
+        ];
+
+        $pdf = Pdf::loadView('pdfs.invoice', $data);
+
+        return $pdf->download('invoice_' . $invoice->invoice_number . '.pdf');
+    }
+
+    /**
+     * Stream invoice PDF (for preview or inline view).
+     */
+    public function streamInvoicePdf(Invoice $invoice)
+    {
+        $invoice->loadMissing(['items', 'client']);
+
+        $company = [
+            'name' => 'ALEF DELTA',
+            'address' => 'Addis Ababa, Ethiopia',
+            'phone' => '+251 11 xxx xxxx',
+            'tin' => 'XXXXXXXXXX',
+        ];
+
+        $data = [
+            'invoice' => $invoice,
+            'company' => $company,
+        ];
+
+        $pdf = Pdf::loadView('pdfs.invoice', $data);
 
         return $pdf->stream();
     }

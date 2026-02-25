@@ -33,6 +33,13 @@ export interface Invoice {
     proof_image_url?: string
     paid_at?: string
     paid_by?: number
+    attachments?: {
+        id: number
+        original_name?: string
+        mime_type?: string
+        size_bytes?: number
+        url: string
+    }[]
 }
 
 export interface InvoiceStats {
@@ -142,7 +149,10 @@ export interface MarkAsPaidData {
     payment_date: string
     payment_description?: string
     receipt_number?: string
+    // Legacy single proof image (kept for backward compatibility)
     proof_image?: File
+    // New: multiple attachments (images / PDFs)
+    attachments?: File[]
 }
 
 export function useMarkInvoiceAsPaid() {
@@ -159,6 +169,11 @@ export function useMarkInvoiceAsPaid() {
             }
             if (data.proof_image) {
                 formData.append('proof_image', data.proof_image)
+            }
+            if (data.attachments && data.attachments.length > 0) {
+                data.attachments.forEach((file) => {
+                    formData.append('attachments[]', file)
+                })
             }
             return invoiceApi.markAsPaid(id, formData)
         },

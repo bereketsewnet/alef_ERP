@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useInvoice } from "@/services/useInvoices"
 import { formatDateByCalendar } from "@/utils/ethiopianDate"
-import { Loader2, Calendar, User, FileText, CheckCircle, XCircle, Mail, Receipt, Image as ImageIcon } from "lucide-react"
+import { Loader2, Calendar, User, FileText, CheckCircle, XCircle, Mail, Receipt, Image as ImageIcon, Paperclip } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
     Table,
@@ -119,30 +119,60 @@ export function InvoiceDetailsModal({ invoiceId, onClose }: InvoiceDetailsModalP
                                             <p className="text-sm">{invoice.payment_description}</p>
                                         </div>
                                     )}
-                                    {invoice.proof_image_url && (
-                                        <div className="col-span-2">
-                                            <p className="text-sm font-medium text-neutral-500 mb-2">Proof of Payment</p>
-                                            <div className="border rounded-md p-2 bg-white">
-                                                <a
-                                                    href={invoice.proof_image_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-2 text-sm"
-                                                >
-                                                    <ImageIcon className="h-4 w-4" />
-                                                    <span>View Full Image (Opens in new tab)</span>
-                                                </a>
-                                                <div className="mt-2 overflow-auto max-h-80 border rounded bg-neutral-50 p-2">
-                                                    <img
-                                                        src={invoice.proof_image_url}
-                                                        alt="Proof of payment"
-                                                        className="max-w-full h-auto rounded border mx-auto block"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).style.display = 'none'
-                                                        }}
-                                                    />
+                                    {(invoice.proof_image_url || (invoice.attachments && invoice.attachments.length > 0)) && (
+                                        <div className="col-span-2 space-y-3">
+                                            {invoice.proof_image_url && (
+                                                <div>
+                                                    <p className="text-sm font-medium text-neutral-500 mb-2">Proof of Payment (Image)</p>
+                                                    <div className="border rounded-md p-2 bg-white">
+                                                        <a
+                                                            href={invoice.proof_image_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-2 text-sm"
+                                                        >
+                                                            <ImageIcon className="h-4 w-4" />
+                                                            <span>View Full Image (Opens in new tab)</span>
+                                                        </a>
+                                                        <div className="mt-2 overflow-auto max-h-80 border rounded bg-neutral-50 p-2">
+                                                            <img
+                                                                src={invoice.proof_image_url}
+                                                                alt="Proof of payment"
+                                                                className="max-w-full h-auto rounded border mx-auto block"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).style.display = 'none'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
+                                            {invoice.attachments && invoice.attachments.length > 0 && (
+                                                <div>
+                                                    <p className="text-sm font-medium text-neutral-500 mb-2">Attachments</p>
+                                                    <div className="border rounded-md bg-white divide-y">
+                                                        {invoice.attachments.map((att) => (
+                                                            <a
+                                                                key={att.id}
+                                                                href={att.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center justify-between px-3 py-2 text-sm hover:bg-neutral-50"
+                                                            >
+                                                                <span className="flex items-center gap-2">
+                                                                    <Paperclip className="h-4 w-4 text-neutral-500" />
+                                                                    <span>{att.original_name || `Attachment #${att.id}`}</span>
+                                                                </span>
+                                                                {att.mime_type && (
+                                                                    <span className="text-xs text-neutral-500">
+                                                                        {att.mime_type.includes("pdf") ? "PDF" : "File"}
+                                                                    </span>
+                                                                )}
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

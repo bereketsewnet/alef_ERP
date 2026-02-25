@@ -16,14 +16,16 @@ const formSchema = z.object({
     payment_date: z.string().min(1, "Payment date is required"),
     payment_description: z.string().optional(),
     receipt_number: z.string().optional(),
-    proof_image: z.instanceof(File).optional(),
+    attachments: z.array(z.instanceof(File)).optional(),
 }).refine(
-    (data) => data.receipt_number || data.proof_image,
+    (data) => !!data.receipt_number || (data.attachments && data.attachments.length > 0),
     {
-        message: "Please provide either a receipt number or proof image (or both)",
+        message: "Please provide a receipt number or at least one attachment",
         path: ["receipt_number"],
     }
 )
+
+type FormValues = z.infer<typeof formSchema>
 
 interface MarkAsPaidModalProps {
     open: boolean
@@ -35,37 +37,48 @@ interface MarkAsPaidModalProps {
 export function MarkAsPaidModal({ open, onOpenChange, invoiceId, invoiceNumber }: MarkAsPaidModalProps) {
     const { toast } = useToast()
     const { mutate: markAsPaid, isPending } = useMarkInvoiceAsPaid()
-    const [imagePreview, setImagePreview] = useState<string | null>(null)
+    const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([])
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             payment_date: new Date().toISOString().split('T')[0],
             payment_description: "",
             receipt_number: "",
-            proof_image: undefined,
+            attachments: [],
         },
     })
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            form.setValue("proof_image", file)
-            // Create preview
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string)
-            }
-            reader.readAsDataURL(file)
+    const handleAttachmentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        if (files.length > 0) {
+            form.setValue("attachments", files)
+
+            // Simple previews for image files (truncate to first few)
+            const previews: string[] = []
+            files.slice(0, 3).forEach((file) => {
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader()
+                    reader.onloadend = () => {
+                        previews.push(reader.result as string)
+                        // Force state update as readers finish
+                        setAttachmentPreviews([...previews])
+                    }
+                    reader.readAsDataURL(file)
+                }
+            })
+        } else {
+            form.setValue("attachments", [])
+            setAttachmentPreviews([])
         }
     }
 
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const onSubmit = (values: FormValues) => {
         const data: MarkAsPaidData = {
             payment_date: values.payment_date,
             payment_description: values.payment_description || undefined,
             receipt_number: values.receipt_number || undefined,
-            proof_image: values.proof_image,
+            attachments: values.attachments && values.attachments.length > 0 ? values.attachments : undefined,
         }
 
         markAsPaid(
@@ -77,7 +90,7 @@ export function MarkAsPaidModal({ open, onOpenChange, invoiceId, invoiceNumber }
                         description: response.message || "Invoice marked as paid successfully",
                     })
                     form.reset()
-                    setImagePreview(null)
+                    setAttachmentPreviews([])
                     onOpenChange(false)
                 },
                 onError: (error: any) => {
@@ -136,33 +149,33 @@ export function MarkAsPaidModal({ open, onOpenChange, invoiceId, invoiceNumber }
 
                         <FormField
                             control={form.control}
-                            name="proof_image"
-                            render={({ field: { value, onChange, ...field } }) => (
+                                    name="attachments"
+                                    render={() => (
                                 <FormItem>
-                                    <FormLabel>Proof of Payment (Screenshot/Receipt)</FormLabel>
+                                            <FormLabel>Attachments (Proofs, Installments, Penalty Docs)</FormLabel>
                                     <FormControl>
                                         <Input
                                             type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                handleImageChange(e)
-                                                onChange(e.target.files?.[0])
-                                            }}
-                                            {...field}
+                                                    accept="image/*,application/pdf"
+                                                    multiple
+                                                    onChange={handleAttachmentsChange}
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        Upload a screenshot or receipt image (JPG, PNG, GIF - Max 5MB)
+                                                Upload one or more files (JPG, PNG, GIF, PDF - Max 5MB each)
                                     </FormDescription>
-                                    {imagePreview && (
-                                        <div className="mt-2">
-                                            <img
-                                                src={imagePreview}
-                                                alt="Proof preview"
-                                                className="max-w-full h-auto max-h-48 rounded border"
-                                            />
-                                        </div>
-                                    )}
+                                            {attachmentPreviews.length > 0 && (
+                                                <div className="mt-2 space-y-2">
+                                                    {attachmentPreviews.map((src, idx) => (
+                                                        <img
+                                                            key={idx}
+                                                            src={src}
+                                                            alt={`Attachment preview ${idx + 1}`}
+                                                            className="max-w-full h-auto max-h-40 rounded border"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -197,7 +210,7 @@ export function MarkAsPaidModal({ open, onOpenChange, invoiceId, invoiceNumber }
                                 variant="outline"
                                 onClick={() => {
                                     form.reset()
-                                    setImagePreview(null)
+                                    setAttachmentPreviews([])
                                     onOpenChange(false)
                                 }}
                                 disabled={isPending}

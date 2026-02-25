@@ -2,7 +2,7 @@
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -57,6 +57,7 @@ export function CreatePeriodModal({ open, onOpenChange }: CreatePeriodModalProps
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Create Payroll Period</DialogTitle>
+                    <DialogDescription>Set start and end dates and select client for the new payroll period.</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

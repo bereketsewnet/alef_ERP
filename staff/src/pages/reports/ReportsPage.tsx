@@ -171,8 +171,8 @@ export function ReportsPage() {
                             <CardHeader>
                                 <CardTitle>Attendance Status</CardTitle>
                             </CardHeader>
-                            <CardContent className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                            <CardContent className="h-[300px] min-h-[300px]">
+                                <ResponsiveContainer width="100%" height={300} minWidth={0}>
                                     <RechartsPie>
                                         <Pie
                                             data={stats?.attendance}
@@ -200,8 +200,8 @@ export function ReportsPage() {
                             <CardHeader>
                                 <CardTitle>Incident Severity</CardTitle>
                             </CardHeader>
-                            <CardContent className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                            <CardContent className="h-[300px] min-h-[300px]">
+                                <ResponsiveContainer width="100%" height={300} minWidth={0}>
                                     <RechartsBar
                                         data={stats?.incidents}
                                         layout="vertical"

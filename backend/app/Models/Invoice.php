@@ -17,4 +17,9 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoiceItem::class);
     }
+
+    public function attachments()
+    {
+        return $this->hasMany(InvoiceAttachment::class);
+    }
 }

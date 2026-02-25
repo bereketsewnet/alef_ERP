@@ -7,15 +7,23 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Client;
 use App\Models\ClientSite;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class InvoiceController extends Controller
 {
+    protected PdfService $pdfService;
+
+    public function __construct(PdfService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -115,7 +123,11 @@ class InvoiceController extends Controller
      */
     public function show($id)
     {
-        $invoice = Invoice::with(['items', 'client'])->find($id);
+        $with = ['items', 'client'];
+        if (Schema::hasTable('invoice_attachments')) {
+            $with[] = 'attachments';
+        }
+        $invoice = Invoice::with($with)->find($id);
 
         if (!$invoice) {
             return response()->json(['message' => 'Invoice not found'], 404);
@@ -126,6 +138,20 @@ class InvoiceController extends Controller
         if ($invoice->proof_image_path) {
             // Generate full URL for the proof image using asset() helper
             $invoiceData['proof_image_url'] = asset('storage/' . $invoice->proof_image_path);
+        }
+
+        // Map attachments with full URLs (only if table exists and relation loaded)
+        $invoiceData['attachments'] = [];
+        if ($invoice->relationLoaded('attachments') && $invoice->attachments) {
+            $invoiceData['attachments'] = $invoice->attachments->map(function ($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'original_name' => $attachment->original_name,
+                    'mime_type' => $attachment->mime_type,
+                    'size_bytes' => $attachment->size_bytes,
+                    'url' => asset('storage/' . $attachment->path),
+                ];
+            })->toArray();
         }
 
         return response()->json(['data' => $invoiceData]);
@@ -153,29 +179,14 @@ class InvoiceController extends Controller
      */
     public function download($id)
     {
-         $invoice = Invoice::with(['items', 'client'])->find($id);
+        $invoice = Invoice::with(['items', 'client'])->find($id);
 
         if (!$invoice) {
             return response()->json(['message' => 'Invoice not found'], 404);
         }
 
-        // TODO: Integrate a real PDF library like DomPDF or Snappy
-        // For now, return a basic JSON response simulating a download or a simple text representation
-        
-        $content = "INVOICE #{$invoice->invoice_number}\n";
-        $content .= "Date: {$invoice->invoice_date}\n";
-        $content .= "Client: {$invoice->client->name}\n";
-        $content .= "--------------------------------\n";
-        foreach($invoice->items as $item) {
-            $content .= "{$item->description} x {$item->quantity} @ {$item->unit_price} = {$item->total}\n";
-        }
-        $content .= "--------------------------------\n";
-        $content .= "TOTAL: {$invoice->total_amount}\n";
-
-        return response($content, 200, [
-            'Content-Type' => 'text/plain',
-            'Content-Disposition' => 'attachment; filename="invoice-' . $invoice->invoice_number . '.txt"'
-        ]);
+        // Generate real PDF using PdfService (DomPDF) with letterhead & digital stamp
+        return $this->pdfService->generateInvoicePdf($invoice);
     }
 
     /**
@@ -267,24 +278,52 @@ class InvoiceController extends Controller
                 'payment_date' => 'required|date',
                 'payment_description' => 'nullable|string|max:1000',
                 'receipt_number' => 'nullable|string|max:255',
-                'proof_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+                'proof_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // legacy single image
+                'attachments.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf|max:5120', // new: multiple attachments
             ]);
 
-            // At least one of receipt_number or proof_image must be provided
-            if (empty($validated['receipt_number']) && !$request->hasFile('proof_image')) {
+            // At least one of receipt_number, proof_image or attachments must be provided
+            $hasReceipt = !empty($validated['receipt_number']);
+            $hasLegacyImage = $request->hasFile('proof_image');
+            $hasAttachments = $request->hasFile('attachments');
+
+            if (!$hasReceipt && !$hasLegacyImage && !$hasAttachments) {
                 return response()->json([
                     'message' => 'Validation error',
-                    'error' => 'Please provide either a receipt number or proof image (or both).'
+                    'error' => 'Please provide a receipt number or at least one attachment (image/PDF).'
                 ], 422);
             }
 
-            // Handle image upload
+            // Handle legacy single image upload (kept for backward compatibility)
             $proofImagePath = null;
             if ($request->hasFile('proof_image')) {
                 $image = $request->file('proof_image');
                 $filename = 'invoice_' . $invoice->id . '_' . time() . '.' . $image->getClientOriginalExtension();
                 $path = $image->storeAs('invoice-proofs', $filename, 'public');
                 $proofImagePath = $path;
+            }
+
+            // Handle multiple attachments (only if invoice_attachments table exists)
+            if (Schema::hasTable('invoice_attachments') && $request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    if (!$file) {
+                        continue;
+                    }
+                    $filename = 'invoice_' . $invoice->id . '_' . uniqid('', true) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('invoice-attachments', $filename, 'public');
+
+                    $invoice->attachments()->create([
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getClientMimeType(),
+                        'size_bytes' => $file->getSize(),
+                    ]);
+
+                    // If we don't have a legacy proof image yet and this is an image, also set it for compatibility
+                    if (!$proofImagePath && str_starts_with($file->getClientMimeType(), 'image/')) {
+                        $proofImagePath = $path;
+                    }
+                }
             }
 
             // Update invoice
@@ -296,6 +335,10 @@ class InvoiceController extends Controller
             $invoice->paid_at = now();
             $invoice->paid_by = Auth::id();
             $invoice->save();
+
+            if (Schema::hasTable('invoice_attachments')) {
+                $invoice->load('attachments');
+            }
 
             // Get client email
             $client = $invoice->client;
@@ -403,13 +446,29 @@ class InvoiceController extends Controller
         
         $content .= "\n";
         
-        // Add proof image link if available
+        // Add proof image link if available (legacy)
         if ($invoice->proof_image_path) {
             $imageUrl = url('storage/' . $invoice->proof_image_path);
             $content .= "--------------------------------\n";
             $content .= "PROOF OF PAYMENT:\n";
             $content .= "--------------------------------\n";
             $content .= "View proof image: {$imageUrl}\n\n";
+        }
+
+        // Add attachment links if available (only when relation was loaded; do not trigger query if table missing)
+        if ($invoice->relationLoaded('attachments')) {
+            $attachments = $invoice->attachments;
+            if ($attachments && $attachments->count() > 0) {
+                $content .= "--------------------------------\n";
+                $content .= "ATTACHMENTS:\n";
+                $content .= "--------------------------------\n";
+                foreach ($attachments as $attachment) {
+                    $url = url('storage/' . $attachment->path);
+                    $name = $attachment->original_name ?: basename($attachment->path);
+                    $content .= "- {$name}: {$url}\n";
+                }
+                $content .= "\n";
+            }
         }
         
         $content .= "--------------------------------\n";
