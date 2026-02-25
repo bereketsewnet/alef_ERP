@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Bell, Search, User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,10 +12,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCurrentUser, useLogout } from "@/services/useAuth"
+import { useIncidents } from "@/services/useIncidents"
+import { useNavigate } from "react-router-dom"
 
 export function Topbar() {
     const { data: user } = useCurrentUser()
     const { mutate: logout } = useLogout()
+    const navigate = useNavigate()
+    const [searchQuery, setSearchQuery] = useState("")
+
+    const { data: panicIncidents } = useIncidents({ report_type: 'PANIC' })
+    const panicCount = panicIncidents?.total ?? panicIncidents?.data?.length ?? 0
 
     const getInitials = (name?: string) => {
         if (!name) return 'AD'
@@ -28,25 +36,43 @@ export function Topbar() {
 
     const displayName = user?.name || user?.username || 'Admin User'
 
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        const q = searchQuery.trim()
+        if (!q) return
+        navigate(`/clients?search=${encodeURIComponent(q)}`)
+    }
+
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm">
             <div className="flex flex-1 items-center gap-4">
-                <form className="hidden sm:block lg:w-96">
+                <form className="hidden sm:block lg:w-96" onSubmit={handleSearchSubmit}>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
                         <Input
                             type="search"
                             placeholder="Search employees, sites, assets..."
                             className="w-full bg-neutral-50 pl-9"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </form>
             </div>
 
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="relative">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => navigate('/incidents')}
+                >
                     <Bell className="h-5 w-5" />
-                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
+                    {panicCount > 0 && (
+                        <span className="absolute -right-1 -top-1 min-h-[16px] min-w-[16px] rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center px-1">
+                            {panicCount > 9 ? '9+' : panicCount}
+                        </span>
+                    )}
                     <span className="sr-only">Notifications</span>
                 </Button>
 
@@ -69,11 +95,11 @@ export function Topbar() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
                             <User className="mr-2 h-4 w-4" />
                             <span>Profile</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
                             <Settings className="mr-2 h-4 w-4" />
                             <span>Settings</span>
                         </DropdownMenuItem>

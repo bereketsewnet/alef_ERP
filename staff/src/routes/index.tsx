@@ -10,6 +10,7 @@ import { AssetListPage } from '@/pages/assets/AssetListPage'
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { BillingPage } from '@/pages/billing/BillingPage'
 import { UserManagementPage } from '@/pages/settings/UserManagementPage'
+import { ProfilePage } from '@/pages/settings/ProfilePage'
 import { JobsPage } from '@/pages/jobs/JobsPage'
 import { JobCategoriesPage } from '@/pages/jobs/JobCategoriesPage'
 import { VacanciesPage } from '@/pages/vacancies/VacanciesPage'
@@ -54,6 +55,7 @@ export function AppRoutes() {
                 <Route path="/incidents" element={<IncidentsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings/users" element={<UserManagementPage />} />
+                <Route path="/settings/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Default redirect */}

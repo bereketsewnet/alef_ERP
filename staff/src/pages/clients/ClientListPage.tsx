@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -55,7 +56,9 @@ const siteSchema = z.object({
 
 export function ClientListPage() {
     const [page, setPage] = useState(1)
-    const [search, setSearch] = useState('')
+    const [searchParams] = useSearchParams()
+    const initialSearch = searchParams.get('search') || ''
+    const [search, setSearch] = useState(initialSearch)
     const [clientModalOpen, setClientModalOpen] = useState(false)
     const [siteModalOpen, setSiteModalOpen] = useState(false)
     const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
@@ -204,12 +207,19 @@ export function ClientListPage() {
     const totalSites = data?.data.reduce((acc, client) => acc + (client.sites?.length || 0), 0) || 0
     const avgSites = totalClients > 0 ? (totalSites / totalClients).toFixed(1) : '0'
 
-    // Filter clients by search
-    const filteredClients = data?.data.filter(client =>
-        client.company_name.toLowerCase().includes(search.toLowerCase()) ||
-        client.contact_person.toLowerCase().includes(search.toLowerCase()) ||
-        client.contact_phone.includes(search)
-    ) || []
+    // Filter clients by search (company, contact, phone, or any site name)
+    const filteredClients = data?.data.filter(client => {
+        if (!search) return true
+        const searchLower = search.toLowerCase()
+        const matchesClient =
+            client.company_name.toLowerCase().includes(searchLower) ||
+            client.contact_person.toLowerCase().includes(searchLower) ||
+            client.contact_phone.includes(search)
+        const matchesSite = (client.sites || []).some(site =>
+            site.site_name.toLowerCase().includes(searchLower)
+        )
+        return matchesClient || matchesSite
+    }) || []
 
     return (
         <div className="space-y-6">
@@ -459,7 +469,7 @@ export function ClientListPage() {
 
             {/* Add Client Modal */}
             <Dialog open={clientModalOpen} onOpenChange={setClientModalOpen}>
-                <DialogContent>
+                <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add New Client</DialogTitle>
                         <DialogDescription>

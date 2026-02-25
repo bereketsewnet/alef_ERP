@@ -15,9 +15,12 @@ import {
 } from '@/components/ui/table'
 import { EmployeeFormModal } from '@/components/employees/EmployeeFormModal'
 import { EmployeeDetailsModal } from '@/components/employees/EmployeeDetailsModal'
+import { useSearchParams } from 'react-router-dom'
 
 export function EmployeeListPage() {
-    const [search, setSearch] = useState('')
+    const [searchParams] = useSearchParams()
+    const initialSearch = searchParams.get('search') || ''
+    const [search, setSearch] = useState(initialSearch)
     const [page, setPage] = useState(1)
     const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null)
     const [employeeToView, setEmployeeToView] = useState<Employee | null>(null)

@@ -58,7 +58,7 @@ function EmployeeFormFields({ form, isSubmitting, employee, onClose }: {
 }) {
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                     control={form.control}
                     name="first_name"
@@ -243,7 +243,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{employee ? 'Edit Employee' : 'Create New Employee'}</DialogTitle>
                     <DialogDescription>
@@ -255,7 +255,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
 
                 {employee ? (
                     <Tabs defaultValue="info" className="mt-4">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-2 gap-1 sm:gap-2">
                             <TabsTrigger value="info" className="flex items-center gap-2">
                                 <User className="h-4 w-4" />
                                 Information

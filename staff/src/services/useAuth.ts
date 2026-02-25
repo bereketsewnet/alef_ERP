@@ -97,3 +97,45 @@ export function useForgotPassword() {
         },
     })
 }
+
+// Update profile (email / phone)
+export function useUpdateProfile() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: authApi.updateProfile,
+        onSuccess: (user) => {
+            queryClient.invalidateQueries({ queryKey: authKeys.me() })
+            toast({
+                title: 'Profile updated',
+                description: `Profile updated for ${user.name || user.username}`,
+            })
+        },
+        onError: (error: any) => {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update profile',
+            })
+        },
+    })
+}
+
+// Change password
+export function useChangePassword() {
+    return useMutation({
+        mutationFn: authApi.changePassword,
+        onSuccess: () => {
+            toast({
+                title: 'Password changed',
+                description: 'Your password has been updated successfully.',
+            })
+        },
+        onError: (error: any) => {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to change password',
+            })
+        },
+    })
+}

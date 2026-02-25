@@ -117,9 +117,10 @@
         <div class="logo-block">
             @php
                 $logoPath = public_path('assets/logo.png');
+                $logoData = (is_file($logoPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
             @endphp
-            @if (file_exists($logoPath))
-                <img src="{{ $logoPath }}" class="logo-img" alt="Company Logo">
+            @if ($logoData)
+                <img src="{{ $logoData }}" class="logo-img" alt="Company Logo">
             @endif
         </div>
     </div>
@@ -133,17 +134,17 @@
         </div>
         <div class="info-row">
             <span class="info-label">Invoice Date:</span>
-            <span class="info-value">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('M d, Y') }}</span>
+            <span class="info-value">{{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('M d, Y') : 'N/A' }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Due Date:</span>
-            <span class="info-value">{{ \Carbon\Carbon::parse($invoice->due_date)->format('M d, Y') }}</span>
+            <span class="info-value">{{ $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->format('M d, Y') : 'N/A' }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Client:</span>
-            <span class="info-value">{{ $invoice->client->company_name ?? 'N/A' }}</span>
+            <span class="info-value">{{ $invoice->client?->company_name ?? 'N/A' }}</span>
         </div>
-        @if(!empty($invoice->client->contact_person))
+        @if($invoice->client && !empty($invoice->client->contact_person))
         <div class="info-row">
             <span class="info-label">Contact Person:</span>
             <span class="info-value">{{ $invoice->client->contact_person }}</span>
@@ -161,17 +162,20 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($invoice->items as $item)
+            @foreach($invoice->items ?? [] as $item)
+                @php
+                    $itemTotal = $item->total ?? (($item->quantity ?? 0) * ($item->unit_price ?? 0));
+                @endphp
                 <tr>
-                    <td>{{ $item->description }}</td>
-                    <td class="text-right">{{ $item->quantity }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->total, 2) }}</td>
+                    <td>{{ $item->description ?? '' }}</td>
+                    <td class="text-right">{{ $item->quantity ?? 0 }}</td>
+                    <td class="text-right">{{ number_format($item->unit_price ?? 0, 2) }}</td>
+                    <td class="text-right">{{ number_format($itemTotal, 2) }}</td>
                 </tr>
             @endforeach
             <tr class="totals-row">
                 <td colspan="3" class="text-right">TOTAL AMOUNT</td>
-                <td class="text-right">{{ number_format($invoice->total_amount, 2) }} ETB</td>
+                <td class="text-right">{{ number_format($invoice->total_amount ?? 0, 2) }} ETB</td>
             </tr>
         </tbody>
     </table>
@@ -179,9 +183,10 @@
     <div class="stamp-section">
         @php
             $stampPath = public_path('assets/stap.png');
+            $stampData = (is_file($stampPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($stampPath)) : null;
         @endphp
-        @if (file_exists($stampPath))
-            <img src="{{ $stampPath }}" alt="Digital Stamp" class="stamp-img">
+        @if ($stampData)
+            <img src="{{ $stampData }}" alt="Digital Stamp" class="stamp-img">
         @else
             <div class="stamp-box">
                 DIGITAL STAMP
