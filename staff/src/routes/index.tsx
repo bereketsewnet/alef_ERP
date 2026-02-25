@@ -14,6 +14,8 @@ import { JobsPage } from '@/pages/jobs/JobsPage'
 import { JobCategoriesPage } from '@/pages/jobs/JobCategoriesPage'
 import { VacanciesPage } from '@/pages/vacancies/VacanciesPage'
 import { JobApplicationsPage } from '@/pages/job-applications/JobApplicationsPage'
+import { LeadsPage } from '@/pages/crm/LeadsPage'
+import { BidsPage } from '@/pages/crm/BidsPage'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
@@ -45,6 +47,8 @@ export function AppRoutes() {
                 <Route path="/jobs/categories" element={<JobCategoriesPage />} />
                 <Route path="/vacancies" element={<VacanciesPage />} />
                 <Route path="/job-applications" element={<JobApplicationsPage />} />
+                <Route path="/crm/leads" element={<LeadsPage />} />
+                <Route path="/crm/bids" element={<BidsPage />} />
                 <Route path="/payroll" element={<PayrollPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/incidents" element={<IncidentsPage />} />

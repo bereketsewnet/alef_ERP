@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\CrmLeadController;
+use App\Http\Controllers\Api\BidController;
 
 /*
 |--------------------------------------------------------------------------
@@ -229,6 +231,25 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}/download', [\App\Http\Controllers\Api\InvoiceController::class, 'download']);
         Route::post('/{id}/send', [\App\Http\Controllers\Api\InvoiceController::class, 'send']);
         Route::post('/{id}/mark-paid', [\App\Http\Controllers\Api\InvoiceController::class, 'markAsPaid']);
+    });
+
+    // CRM Leads Routes
+    Route::prefix('crm/leads')->group(function () {
+        Route::get('/', [CrmLeadController::class, 'index']);
+        Route::post('/', [CrmLeadController::class, 'store']);
+        Route::get('/{id}', [CrmLeadController::class, 'show']);
+        Route::put('/{id}', [CrmLeadController::class, 'update']);
+        Route::delete('/{id}', [CrmLeadController::class, 'destroy']);
+        Route::post('/{leadId}/activities', [CrmLeadController::class, 'addActivity']);
+    });
+
+    // Bid Management Routes
+    Route::prefix('bids')->group(function () {
+        Route::get('/', [BidController::class, 'index']);
+        Route::post('/', [BidController::class, 'store']);
+        Route::get('/{id}', [BidController::class, 'show']);
+        Route::put('/{id}', [BidController::class, 'update']);
+        Route::delete('/{id}', [BidController::class, 'destroy']);
     });
 
     // Report Routes

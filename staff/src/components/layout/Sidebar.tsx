@@ -16,7 +16,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Briefcase,
-    Megaphone
+    Megaphone,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLogout } from "@/services/useAuth"
@@ -35,6 +35,8 @@ export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {
         { title: "Jobs", href: "/jobs", icon: Briefcase },
         { title: "Vacancies", href: "/vacancies", icon: Megaphone },
         { title: "Job Applications", href: "/job-applications", icon: FileText },
+        { title: "CRM Leads", href: "/crm/leads", icon: Users },
+        { title: "Bids", href: "/crm/bids", icon: FileText },
         { title: "Roster", href: "/roster", icon: CalendarDays },
         { title: "Employees", href: "/employees", icon: Users },
         { title: "Attendance", href: "/attendance", icon: ClipboardCheck },
