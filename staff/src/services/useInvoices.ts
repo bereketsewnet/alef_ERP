@@ -21,6 +21,7 @@ export interface Invoice {
         id: number
         company_name: string
         email?: string
+        preferred_calendar?: 'EC' | 'GC'
     }
     items?: InvoiceItem[]
     created_at: string

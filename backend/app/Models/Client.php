@@ -16,6 +16,7 @@ class Client extends Model
         'contact_phone',
         'email',
         'billing_cycle',
+        'preferred_calendar', // 'EC' = Ethiopian, 'GC' = Gregorian (for Billing & Invoices)
         'address_details',
     ];
 

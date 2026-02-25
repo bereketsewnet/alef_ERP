@@ -109,6 +109,9 @@ class ClientController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'preferred_calendar' => 'sometimes|in:EC,GC',
+        ]);
         $client = Client::findOrFail($id);
         $client->update($request->all());
         return response()->json($client);

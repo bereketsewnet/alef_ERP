@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useClients } from "@/services/useClients"
+import { useClients, useUpdateClient } from "@/services/useClients"
 import { useCreateInvoice } from "@/services/useInvoices"
+import { toEthiopian, formatEthiopian } from "@/utils/ethiopianDate"
 import { Plus, Trash2, Loader2 } from "lucide-react"
 
 const formSchema = z.object({
@@ -27,8 +28,9 @@ interface CreateInvoiceModalProps {
 }
 
 export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalProps) {
-    const { data: clients, isLoading: clientsLoading } = useClients({ page: 1, per_page: 1000 }) // Fetch all clients for dropdown
+    const { data: clients, isLoading: clientsLoading } = useClients({ page: 1, per_page: 1000 })
     const { mutate: createInvoice, isPending } = useCreateInvoice()
+    const { mutate: updateClient } = useUpdateClient()
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -60,6 +62,20 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
     const calculateTotal = (items: any[]) => {
         return items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
     }
+
+    const clientId = form.watch('client_id')
+    const selectedClient = clientId && clients?.data ? (clients.data as any[]).find((c: any) => c.id === parseInt(clientId, 10)) : null
+    const clientCalendar = (selectedClient?.preferred_calendar === 'EC' ? 'EC' : 'GC') as 'EC' | 'GC'
+
+    const handleCalendarPreferenceChange = (value: string) => {
+        if (!selectedClient?.id || value !== 'EC' && value !== 'GC') return
+        updateClient({ id: selectedClient.id, data: { preferred_calendar: value } })
+    }
+
+    const invoiceDateIso = form.watch('invoice_date')
+    const dueDateIso = form.watch('due_date')
+    const ethInvoiceDate = invoiceDateIso ? formatEthiopian(toEthiopian(new Date(invoiceDateIso + 'T12:00:00Z'))) : null
+    const ethDueDate = dueDateIso ? formatEthiopian(toEthiopian(new Date(dueDateIso + 'T12:00:00Z'))) : null
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,6 +117,21 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
                                     </FormItem>
                                 )}
                             />
+                            {selectedClient && (
+                                <FormItem>
+                                    <FormLabel>Client pays by (calendar)</FormLabel>
+                                    <Select value={clientCalendar} onValueChange={handleCalendarPreferenceChange}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="GC">Gregorian (GC)</SelectItem>
+                                            <SelectItem value="EC">Ethiopian (EC)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-neutral-500">Dates on invoices for this client will be shown in this calendar.</p>
+                                </FormItem>
+                            )}
                             <div className="grid grid-cols-2 gap-2">
                                 <FormField
                                     control={form.control}
@@ -111,6 +142,9 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
                                             <FormControl>
                                                 <Input type="date" {...field} />
                                             </FormControl>
+                                            {clientCalendar === 'EC' && ethInvoiceDate && (
+                                                <p className="text-xs text-neutral-500">In Ethiopian: {ethInvoiceDate}</p>
+                                            )}
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -124,6 +158,9 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
                                             <FormControl>
                                                 <Input type="date" {...field} />
                                             </FormControl>
+                                            {clientCalendar === 'EC' && ethDueDate && (
+                                                <p className="text-xs text-neutral-500">In Ethiopian: {ethDueDate}</p>
+                                            )}
                                             <FormMessage />
                                         </FormItem>
                                     )}

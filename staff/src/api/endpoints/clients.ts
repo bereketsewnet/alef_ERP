@@ -1,5 +1,7 @@
 import apiClient from '../axios'
 
+export type PreferredCalendar = 'EC' | 'GC'
+
 export interface Client {
     id: number
     company_name: string
@@ -7,6 +9,7 @@ export interface Client {
     contact_phone: string
     email?: string
     billing_cycle?: string
+    preferred_calendar?: PreferredCalendar // EC = Ethiopian, GC = Gregorian (Billing & Invoices)
     tin_number?: string
     address_details?: Record<string, any>
     created_at: string
@@ -49,6 +52,7 @@ export interface CreateClientRequest {
     contact_phone: string
     email?: string
     billing_cycle?: string
+    preferred_calendar?: PreferredCalendar
     tin_number?: string
     address_details?: Record<string, any>
 }

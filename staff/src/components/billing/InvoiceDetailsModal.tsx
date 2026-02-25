@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useInvoice } from "@/services/useInvoices"
+import { formatDateByCalendar } from "@/utils/ethiopianDate"
 import { Loader2, Calendar, User, FileText, CheckCircle, XCircle, Mail, Receipt, Image as ImageIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -74,14 +75,14 @@ export function InvoiceDetailsModal({ invoiceId, onClose }: InvoiceDetailsModalP
                                 <p className="text-sm font-medium text-neutral-500 mb-1">Invoice Date</p>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-neutral-400" />
-                                    <span>{new Date(invoice.invoice_date).toLocaleDateString()}</span>
+                                    <span>{formatDateByCalendar(invoice.invoice_date, invoice.client?.preferred_calendar)}</span>
                                 </div>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-neutral-500 mb-1">Due Date</p>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-neutral-400" />
-                                    <span>{new Date(invoice.due_date).toLocaleDateString()}</span>
+                                    <span>{formatDateByCalendar(invoice.due_date, invoice.client?.preferred_calendar)}</span>
                                 </div>
                             </div>
                         </div>
@@ -99,7 +100,7 @@ export function InvoiceDetailsModal({ invoiceId, onClose }: InvoiceDetailsModalP
                                             <p className="text-sm font-medium text-neutral-500 mb-1">Payment Date</p>
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-neutral-400" />
-                                                <span>{new Date(invoice.payment_date).toLocaleDateString()}</span>
+                                                <span>{formatDateByCalendar(invoice.payment_date, invoice.client?.preferred_calendar)}</span>
                                             </div>
                                         </div>
                                     )}

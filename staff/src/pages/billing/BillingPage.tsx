@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, Eye, Download, FileText, Loader2, Send, CheckCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useInvoices, useInvoiceStats, useDownloadInvoice, useSendInvoice } from "@/services/useInvoices"
+import { formatDateByCalendar } from "@/utils/ethiopianDate"
 import { CreateInvoiceModal } from "@/components/billing/CreateInvoiceModal"
 import { InvoiceDetailsModal } from "@/components/billing/InvoiceDetailsModal"
 import { MarkAsPaidModal } from "@/components/billing/MarkAsPaidModal"
@@ -124,7 +125,18 @@ export function BillingPage() {
             accessorKey: "invoice_date",
             header: "Date",
             cell: ({ row }) => {
-                return new Date(row.getValue("invoice_date")).toLocaleDateString()
+                const isoDate = row.getValue("invoice_date") as string
+                const calendar = row.original.client?.preferred_calendar
+                return formatDateByCalendar(isoDate, calendar)
+            },
+        },
+        {
+            accessorKey: "due_date",
+            header: "Due Date",
+            cell: ({ row }) => {
+                const isoDate = row.getValue("due_date") as string
+                const calendar = row.original.client?.preferred_calendar
+                return formatDateByCalendar(isoDate, calendar)
             },
         },
         {
