@@ -72,7 +72,7 @@ class UserController extends Controller
             'email' => 'required|string|email|unique:users',
             'phone_number' => 'nullable|string|unique:users',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:SUPER_ADMIN,OPS_MANAGER,HR_MANAGER,FINANCE,SITE_SUPERVISOR,FIELD_STAFF',
+            'role' => 'required|in:OWNER,GM,HR,FINANCE,OPERATIONS,MARKETING,PROCUREMENT,FIELD_STAFF',
             'employee_id' => 'nullable|exists:employees,id',
         ]);
 
@@ -134,7 +134,7 @@ class UserController extends Controller
         $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'phone_number' => 'nullable|string|unique:users,phone_number,' . $id,
-            'role' => 'sometimes|in:SUPER_ADMIN,OPS_MANAGER,HR_MANAGER,FINANCE,SITE_SUPERVISOR,FIELD_STAFF',
+            'role' => 'sometimes|in:OWNER,GM,HR,FINANCE,OPERATIONS,MARKETING,PROCUREMENT,FIELD_STAFF',
             'employee_id' => 'nullable|exists:employees,id',
             'is_active' => 'sometimes|boolean',
         ]);
@@ -177,7 +177,8 @@ class UserController extends Controller
 
     private function authorizeAdmin()
     {
-        if (auth()->user()->role !== 'SUPER_ADMIN') {
+        $role = auth()->user()->role ?? null;
+        if (!in_array($role, ['OWNER', 'GM'], true)) {
             abort(403, 'Unauthorized action.');
         }
     }

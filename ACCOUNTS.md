@@ -1,296 +1,206 @@
-# ALEF ERP - Default Accounts & Passwords
+# ALEF ERP – Default Accounts & Roles
 
-This document lists all default accounts created when seeding the database.
-
----
-
-## 🔐 Admin Accounts
-
-These accounts have administrative privileges and are created by `AdminSeeder`.
-
-| Role | Username | Email | Password | Description |
-|------|----------|-------|----------|-------------|
-| **Super Admin** | `admin` | `admin@alefdelta.com` | `admin123` | Full system administrator with all permissions |
-| **HR Manager** | `hr_manager` | `hr@alefdelta.com` | `hr123` | Human Resources manager with employee management access |
-| **Finance** | `finance` | `finance@alefdelta.com` | `finance123` | Finance manager with payroll and billing access |
+This document lists all default **admin/office** accounts and their roles. Only these roles can access the **Admin Panel** (staff app). Field staff use the **Member Portal**.
 
 ---
 
-## 👥 Sample Employee Accounts
+## Roles & Access
 
-These accounts are created by `SampleDataSeeder` for testing purposes.
-
-| Username | Email | Phone | Password | Role | Employee Code |
-|----------|-------|-------|----------|------|---------------|
-| `johndoe` | `john.doe@alefdelta.com` | `+251911234567` | `password123` | FIELD_STAFF | EMP001 |
-| `janesmith` | `jane.smith@alefdelta.com` | `+251922345678` | `password123` | FIELD_STAFF | EMP002 |
-| `michaelt` | `michael.tesfaye@alefdelta.com` | `+251933456789` | `password123` | FIELD_STAFF | EMP003 |
-| `sarah` | `sara.hailu@alefdelta.com` | `+251944567890` | `password123` | FIELD_STAFF | EMP004 |
-| `danielk` | `daniel.kebede@alefdelta.com` | `+251955678901` | `password123` | FIELD_STAFF | EMP005 |
-
-### Member Portal Login
-
-The **Member Portal** (`http://102.211.186.118:7071` or `http://localhost:7070` for local) uses **phone number** for login:
-
-**Example credentials:**
-- **Phone:** `+251911234567`
-- **Password:** `password123`
-
-You can use any of the employee phone numbers listed above with password `password123`.
+| Role | Description | Admin panel access |
+|------|-------------|--------------------|
+| **OWNER** | Super Admin – full system access | All modules + User & role management |
+| **GM** | General Manager (admin) | All modules + User & role management |
+| **HR** | Human Resources | Vacancy, recruitment, attendance approval, roster, employees |
+| **FINANCE** | Finance | Expenses, billing, payroll, reports |
+| **OPERATIONS** | Operations | Employee assignment to clients, follow-up, attendance, shift, allocation, incidents, reports |
+| **MARKETING** | Marketing | CRM leads, bids |
+| **PROCUREMENT** | Procurement | Assets (fuel, uniform, office rental, car rental, utility – as implemented) |
+| **FIELD_STAFF** | Field staff | Member portal only (no admin panel) |
 
 ---
 
-## 📋 Quick Reference
+## Default Admin Accounts
 
-### Most Common Accounts
+Created by `AdminSeeder`. Use **username** or **email** to log in.
 
-**Admin Access:**
-- **Login:** `admin` or `admin@alefdelta.com`
-- **Password:** `admin123`
+| Role | Username | Email | Password |
+|------|----------|-------|----------|
+| **Owner** | `owner` | `owner@alefdelta.com` | `owner123` |
+| **GM** | `gm` | `gm@alefdelta.com` | `gm123` |
+| **HR** | `hr` | `hr@alefdelta.com` | `hr123` |
+| **Finance** | `finance` | `finance@alefdelta.com` | `finance123` |
+| **Operations** | `operations` | `operations@alefdelta.com` | `operations123` |
+| **Marketing** | `marketing` | `marketing@alefdelta.com` | `marketing123` |
+| **Procurement** | `procurement` | `procurement@alefdelta.com` | `procurement123` |
 
-**HR Access:**
-- **Login:** `hr_manager` or `hr@alefdelta.com`
-- **Password:** `hr123`
-
-**Finance Access:**
-- **Login:** `finance` or `finance@alefdelta.com`
-- **Password:** `finance123`
-
-**Test Employee:**
-- **Login:** `johndoe` or `john.doe@alefdelta.com`
-- **Password:** `password123`
+**Legacy:** If you had an existing `admin@alefdelta.com` account, it is updated to role **OWNER** and password `owner123` when you run the seeders.
 
 ---
 
-## 🔑 Login Instructions
+## What Each Role Sees in the Admin Panel
 
-### Using the API
+- **OWNER / GM:** Dashboard, Jobs, Vacancies, Job Applications, CRM Leads, Bids, Roster, Employees, Attendance, Clients & Sites, Assets, Payroll, Billing, Incidents, Reports, **User & role management**.
+- **HR:** Dashboard, Vacancies, Job Applications, Roster, Employees, Attendance, Reports.
+- **FINANCE:** Dashboard, Payroll, Billing, Reports.
+- **OPERATIONS:** Dashboard, Jobs, Roster, Employees, Attendance, Clients & Sites, Assets, Incidents, Reports.
+- **MARKETING:** Dashboard, CRM Leads, Bids.
+- **PROCUREMENT:** Dashboard, Assets (and future: fuel, uniform, office rental, car rental, utility as added).
 
-The login endpoint accepts a `login` field that can be:
-- **Username** (e.g., `admin`)
-- **Email** (e.g., `admin@alefdelta.com`)
-- **Phone number** (if configured)
+Only **OWNER** and **GM** can open **User & role management** (`/settings/users`). All admin roles can access **Profile** via the top bar.
 
-**Example API Request:**
-```json
-POST http://102.211.186.118:4002/api/auth/login
+---
+
+## Quick Reference
+
+**Super Admin (Owner):**
+- Login: `owner` or `owner@alefdelta.com`
+- Password: `owner123`
+
+**GM:**
+- Login: `gm` or `gm@alefdelta.com`
+- Password: `gm123`
+
+**HR:**
+- Login: `hr` or `hr@alefdelta.com`
+- Password: `hr123`
+
+**Finance:**
+- Login: `finance` or `finance@alefdelta.com`
+- Password: `finance123`
+
+**Operations:**
+- Login: `operations` or `operations@alefdelta.com`
+- Password: `operations123`
+
+**Marketing:**
+- Login: `marketing` or `marketing@alefdelta.com`
+- Password: `marketing123`
+
+**Procurement:**
+- Login: `procurement` or `procurement@alefdelta.com`
+- Password: `procurement123`
+
+---
+
+## Login Instructions
+
+### API
+
+```http
+POST /api/auth/login
 Content-Type: application/json
 
 {
-  "login": "admin",
-  "password": "admin123"
+  "login": "owner",
+  "password": "owner123"
 }
 ```
 
-**Or using email:**
-```json
-{
-  "login": "admin@alefdelta.com",
-  "password": "admin123"
-}
-```
+`login` can be **username**, **email**, or **phone number** (if set).
 
-### Using the Frontend
+### Admin Panel (Staff App)
 
-1. Navigate to: `http://102.211.186.118:5176/login` (VPS) or `http://localhost:5175/login` (local)
-2. Enter your **username OR email** in the login field
-3. Enter your password
-4. Click "Login"
+1. Open: `http://<host>:5176/login` (or your staff app URL).
+2. Enter **username** or **email** and **password**.
+3. After login, only menu items and pages allowed for your role are shown; direct URL access to other pages returns “Access denied”.
 
 ---
 
-## 🛡️ Account Roles & Permissions
+## Role ↔ Task Mapping (Summary)
 
-### Super Admin
-- ✅ Full system access
-- ✅ User management
-- ✅ All CRUD operations
-- ✅ System configuration
-- ✅ All modules access
-
-### HR Manager
-- ✅ Employee management
-- ✅ Job assignments
-- ✅ Attendance tracking
-- ✅ Roster management
-- ✅ Employee records
-
-### Finance
-- ✅ Payroll management
-- ✅ Invoice creation
-- ✅ Financial reports
-- ✅ Payment processing
-- ✅ Billing management
-
-### Field Staff
-- ✅ View own schedule
-- ✅ Clock in/out
-- ✅ View own attendance
-- ✅ View assigned jobs
-- ✅ View own profile
+| Task / Module | Roles |
+|---------------|--------|
+| User & role management | OWNER, GM |
+| Dashboard | All admin roles |
+| Jobs, Job categories | OWNER, GM, HR, OPERATIONS |
+| Vacancies, Job applications | OWNER, GM, HR |
+| CRM Leads, Bids | OWNER, GM, MARKETING |
+| Roster | OWNER, GM, HR, OPERATIONS |
+| Employees | OWNER, GM, HR, OPERATIONS |
+| Attendance | OWNER, GM, HR, OPERATIONS |
+| Clients & Sites | OWNER, GM, OPERATIONS |
+| Assets | OWNER, GM, OPERATIONS, PROCUREMENT |
+| Payroll | OWNER, GM, FINANCE |
+| Billing | OWNER, GM, FINANCE |
+| Incidents | OWNER, GM, OPERATIONS |
+| Reports | OWNER, GM, HR, FINANCE, OPERATIONS |
 
 ---
 
-## ⚠️ Security Notes
+## Sample Employee Accounts (Member Portal)
 
-**IMPORTANT:** These are default accounts for **development/testing only**!
+These are created by `SampleDataSeeder` for testing the **member portal** (clock in/out, schedule, etc.):
 
-- 🔒 **Change passwords immediately** in production
-- 🚫 **Disable or remove** default accounts in production
-- 🔐 Use strong, unique passwords
-- 🔑 Enable two-factor authentication if available
-- 📊 Regularly audit account access
-- 🛡️ Follow security best practices
+| Username | Email | Password | Role |
+|----------|-------|----------|------|
+| `johndoe` | `john.doe@alefdelta.com` | `password123` | FIELD_STAFF |
+| `janesmith` | `jane.smith@alefdelta.com` | `password123` | FIELD_STAFF |
+| (others) | … | `password123` | FIELD_STAFF |
+
+Member portal login uses **phone number** (or username/email if configured). Field staff do **not** see the admin panel.
 
 ---
 
-## 🔄 Resetting Accounts
+## New Employee Default Password
 
-If you need to reset accounts or create new ones, you can:
+When you create an employee from the admin panel, a user account is created with:
 
-### Re-seed specific seeder:
+- **Username:** `firstname.lastname` (lowercase)
+- **Email:** Provided email or `firstname.lastname@alefdelta.com`
+- **Password:** `EMPLOYEE_CODE-LAST4PHONE` (e.g. `EMP00001-4567`)
+- **Role:** `FIELD_STAFF`
+
+---
+
+## Security Notes
+
+- Default accounts are for **development/testing**. Change passwords in production.
+- Only **OWNER** and **GM** can create/edit users and assign roles (User & role management).
+- Restrict or remove default accounts in production and use strong, unique passwords.
+
+---
+
+## Resetting Accounts
+
+Re-run the admin seeder (creates/updates the 7 role accounts and legacy admin):
+
 ```bash
 docker-compose exec backend php artisan db:seed --class=AdminSeeder --force
-docker-compose exec backend php artisan db:seed --class=SampleDataSeeder --force
 ```
 
-### Re-seed all accounts:
+Run migration first if you changed role enum:
+
 ```bash
-docker-compose exec backend php artisan db:seed --class=AdminSeeder --force
-docker-compose exec backend php artisan db:seed --class=SampleDataSeeder --force
+docker-compose exec backend php artisan migrate --force
 ```
 
-### Reset entire database:
+Full reset:
+
 ```bash
 docker-compose exec backend php artisan migrate:fresh --seed --force
 ```
 
 ---
 
-## 📦 Account Creation
+## All Accounts Summary
 
-Accounts are automatically created when you run:
-- ✅ `start_app.bat` - Automatically seeds all data including accounts
-- ✅ `setup_database.bat` - Seeds database with all accounts
-- ✅ `seed.bat` - Applies all seeders including account seeders
+### Admin / office (7 default + legacy)
 
----
+1. `owner` / `owner@alefdelta.com` / `owner123` (OWNER)
+2. `gm` / `gm@alefdelta.com` / `gm123` (GM)
+3. `hr` / `hr@alefdelta.com` / `hr123` (HR)
+4. `finance` / `finance@alefdelta.com` / `finance123` (FINANCE)
+5. `operations` / `operations@alefdelta.com` / `operations123` (OPERATIONS)
+6. `marketing` / `marketing@alefdelta.com` / `marketing123` (MARKETING)
+7. `procurement` / `procurement@alefdelta.com` / `procurement123` (PROCUREMENT)
 
-## 🆘 Troubleshooting
+Legacy: `admin@alefdelta.com` is updated to OWNER with password `owner123` when seeders run.
 
-If you cannot log in:
+### Field staff (sample)
 
-1. **Verify the account exists:**
-   - Check this file (`ACCOUNTS.md`)
-   - Verify in database: `docker-compose exec backend php artisan tinker` then `User::count()`
-
-2. **Check if services are running:**
-   ```bash
-   docker-compose ps
-   ```
-
-3. **Verify database is seeded:**
-   ```bash
-   docker-compose exec backend php artisan tinker
-   # Then run: User::all(['username', 'email'])->toArray();
-   ```
-
-4. **Check backend logs:**
-   ```bash
-   docker-compose logs backend --tail 50
-   ```
-
-5. **Re-seed accounts:**
-   ```bash
-   docker-compose exec backend php artisan db:seed --class=AdminSeeder --force
-   ```
+- 5 sample employees (see Sample Employee Accounts); default password `password123` for testing.
 
 ---
 
-## 🆕 New Employee Default Password
-
-When you create a new employee through the system, a user account is **automatically created** with:
-
-### Auto-Generated Credentials
-
-- **Username:** `firstname.lastname` (lowercase, e.g., `john.doe`)
-- **Email:** Provided email OR `firstname.lastname@alefdelta.com`
-- **Password:** `EMPLOYEE_CODE-LAST4PHONE` (e.g., `EMP00001-5678`)
-
-### Password Format
-
-The default password is generated as:
-```
-[Employee Code]-[Last 4 digits of phone number]
-```
-
-**Example:**
-- Employee Code: `EMP00001`
-- Phone: `+251911234567`
-- **Default Password:** `EMP00001-4567`
-
-### Important Notes
-
-- ✅ Password is **automatically generated** - you don't need to set it
-- ✅ Login credentials are returned in the API response when creating an employee
-- ✅ Share these credentials with the employee securely
-- ⚠️ Employee should **change password on first login**
-- 📧 Email is auto-generated if not provided: `username@alefdelta.com`
-
-### Example API Response
-
-When you create an employee, the response includes:
-
-```json
-{
-  "data": {
-    "id": 1,
-    "employee_code": "EMP00001",
-    "first_name": "John",
-    "last_name": "Doe",
-    ...
-  },
-  "login_credentials": {
-    "username": "john.doe",
-    "email": "john.doe@alefdelta.com",
-    "password": "EMP00001-4567",
-    "message": "Please share these credentials with the employee..."
-  }
-}
-```
-
----
-
-## 📝 All Accounts Summary
-
-### Admin Accounts (3)
-1. `admin` / `admin@alefdelta.com` / `admin123`
-2. `hr_manager` / `hr@alefdelta.com` / `hr123`
-3. `finance` / `finance@alefdelta.com` / `finance123`
-
-### Employee Accounts (5)
-1. `johndoe` / `john.doe@alefdelta.com` / `password123`
-2. `janesmith` / `jane.smith@alefdelta.com` / `password123`
-3. `michaelt` / `michael.tesfaye@alefdelta.com` / `password123`
-4. `sarah` / `sara.hailu@alefdelta.com` / `password123`
-5. `danielk` / `daniel.kebede@alefdelta.com` / `password123`
-
-**Total: 8 default accounts**
-
-### New Employees
-- **Default Password Format:** `EMPLOYEE_CODE-LAST4PHONE`
-- **Example:** `EMP00001-4567`
-
----
-
-## 📞 Support
-
-For issues with accounts:
-- Check backend logs: `docker-compose logs backend`
-- Verify database connection: `docker-compose exec backend php artisan tinker`
-- Re-run seeders: See "Resetting Accounts" section above
-
----
-
-**Last Updated:** December 2025  
-**Version:** 1.0
+**Last updated:** February 2026  
+**Version:** 2.0 (roles: Owner, GM, HR, Finance, Operations, Marketing, Procurement, Field Staff)

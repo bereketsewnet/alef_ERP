@@ -120,32 +120,39 @@ export function UserManagementPage() {
                 </Table>
             </div>
 
-            {/* Pagination */}
-            {data && data.meta.last_page > 1 && (
-                <div className="flex items-center justify-between">
-                    <p className="text-sm text-neutral-600">
-                        Showing {data.data.length} of {data.meta.total} users
-                    </p>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(page - 1)}
-                            disabled={page === 1}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(page + 1)}
-                            disabled={page === data.meta.last_page}
-                        >
-                            Next
-                        </Button>
+            {/* Pagination - support both Laravel default (top-level) and meta-based shapes */}
+            {(() => {
+                const res = data as (typeof data) & { last_page?: number; total?: number; current_page?: number }
+                const lastPage = res?.meta?.last_page ?? res?.last_page
+                const total = res?.meta?.total ?? res?.total
+                const currentPage = res?.meta?.current_page ?? res?.current_page ?? page
+                if (!data || lastPage == null || lastPage <= 1) return null
+                return (
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-neutral-600">
+                            Showing {data.data?.length ?? 0} of {total ?? 0} users
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(page - 1)}
+                                disabled={page === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(page + 1)}
+                                disabled={page === lastPage}
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            })()}
 
             {/* Create/Edit Modal */}
             <UserFormModal

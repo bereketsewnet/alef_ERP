@@ -20,35 +20,39 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLogout } from "@/services/useAuth"
+import { useCurrentUser } from "@/services/useAuth"
+import { canSeeNav } from "@/config/roles"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
     collapsed: boolean
     setCollapsed: (collapsed: boolean) => void
 }
 
+const ALL_NAV_ITEMS = [
+    { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { title: "Jobs", href: "/jobs", icon: Briefcase },
+    { title: "Vacancies", href: "/vacancies", icon: Megaphone },
+    { title: "Job Applications", href: "/job-applications", icon: FileText },
+    { title: "CRM Leads", href: "/crm/leads", icon: Users },
+    { title: "Bids", href: "/crm/bids", icon: FileText },
+    { title: "Roster", href: "/roster", icon: CalendarDays },
+    { title: "Employees", href: "/employees", icon: Users },
+    { title: "Attendance", href: "/attendance", icon: ClipboardCheck },
+    { title: "Clients & Sites", href: "/clients", icon: Building2 },
+    { title: "Assets", href: "/assets", icon: Package },
+    { title: "Payroll", href: "/payroll", icon: Banknote },
+    { title: "Billing", href: "/billing", icon: FileText },
+    { title: "Incidents", href: "/incidents", icon: AlertTriangle },
+    { title: "Reports", href: "/reports", icon: BarChart3 },
+    { title: "User & role management", href: "/settings/users", icon: Settings },
+]
+
 export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {
     const location = useLocation()
     const { mutate: logout } = useLogout()
-
-    const navItems = [
-        { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-        { title: "Jobs", href: "/jobs", icon: Briefcase },
-        { title: "Vacancies", href: "/vacancies", icon: Megaphone },
-        { title: "Job Applications", href: "/job-applications", icon: FileText },
-        { title: "CRM Leads", href: "/crm/leads", icon: Users },
-        { title: "Bids", href: "/crm/bids", icon: FileText },
-        { title: "Roster", href: "/roster", icon: CalendarDays },
-        { title: "Employees", href: "/employees", icon: Users },
-        { title: "Attendance", href: "/attendance", icon: ClipboardCheck },
-        { title: "Clients & Sites", href: "/clients", icon: Building2 },
-        { title: "Assets", href: "/assets", icon: Package },
-        { title: "Payroll", href: "/payroll", icon: Banknote },
-        { title: "Billing", href: "/billing", icon: FileText },
-        { title: "Incidents", href: "/incidents", icon: AlertTriangle },
-        { title: "Reports", href: "/reports", icon: BarChart3 },
-        // Settings - Hidden from sidebar (uncomment to enable)
-        // { title: "Settings", href: "/settings", icon: Settings },
-    ]
+    const { data: user } = useCurrentUser()
+    const role = user?.role ?? ''
+    const navItems = ALL_NAV_ITEMS.filter((item) => canSeeNav(role, item.href))
 
     return (
         <div className={cn("relative flex flex-col h-screen border-r bg-white transition-all duration-300", collapsed ? "w-16" : "w-64", className)}>

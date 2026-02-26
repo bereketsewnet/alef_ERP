@@ -8,66 +8,87 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
+    /**
+     * Create all admin/office accounts by role.
+     * Roles: Owner (Super Admin), GM, HR, Finance, Operations, Marketing, Procurement.
+     */
     public function run(): void
     {
-        // Create Super Admin User (always create, even if exists)
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@alefdelta.com'],
+        $accounts = [
             [
-                'username' => 'admin',
-                'password' => Hash::make('admin123'),
-                'role' => 'SUPER_ADMIN',
-                'is_active' => true,
-            ]
-        );
-        
-        // Update password if user already exists (in case it was changed)
-        if ($admin->wasRecentlyCreated === false) {
-            $admin->update([
-                'password' => Hash::make('admin123'),
-                'is_active' => true,
-            ]);
-        }
-
-        // Create HR Manager
-        $hr = User::firstOrCreate(
-            ['email' => 'hr@alefdelta.com'],
+                'username' => 'owner',
+                'email' => 'owner@alefdelta.com',
+                'password' => 'owner123',
+                'role' => 'OWNER',
+            ],
             [
-                'username' => 'hr_manager',
-                'password' => Hash::make('hr123'),
-                'role' => 'HR_MANAGER',
-                'is_active' => true,
-            ]
-        );
-        
-        if ($hr->wasRecentlyCreated === false) {
-            $hr->update([
-                'password' => Hash::make('hr123'),
-                'is_active' => true,
-            ]);
-        }
-
-        // Create Finance User
-        $finance = User::firstOrCreate(
-            ['email' => 'finance@alefdelta.com'],
+                'username' => 'gm',
+                'email' => 'gm@alefdelta.com',
+                'password' => 'gm123',
+                'role' => 'GM',
+            ],
+            [
+                'username' => 'hr',
+                'email' => 'hr@alefdelta.com',
+                'password' => 'hr123',
+                'role' => 'HR',
+            ],
             [
                 'username' => 'finance',
-                'password' => Hash::make('finance123'),
+                'email' => 'finance@alefdelta.com',
+                'password' => 'finance123',
                 'role' => 'FINANCE',
-                'is_active' => true,
-            ]
-        );
-        
-        if ($finance->wasRecentlyCreated === false) {
-            $finance->update([
-                'password' => Hash::make('finance123'),
+            ],
+            [
+                'username' => 'operations',
+                'email' => 'operations@alefdelta.com',
+                'password' => 'operations123',
+                'role' => 'OPERATIONS',
+            ],
+            [
+                'username' => 'marketing',
+                'email' => 'marketing@alefdelta.com',
+                'password' => 'marketing123',
+                'role' => 'MARKETING',
+            ],
+            [
+                'username' => 'procurement',
+                'email' => 'procurement@alefdelta.com',
+                'password' => 'procurement123',
+                'role' => 'PROCUREMENT',
+            ],
+        ];
+
+        foreach ($accounts as $acc) {
+            $user = User::firstOrCreate(
+                ['email' => $acc['email']],
+                [
+                    'username' => $acc['username'],
+                    'password' => Hash::make($acc['password']),
+                    'role' => $acc['role'],
+                    'is_active' => true,
+                ]
+            );
+            if (!$user->wasRecentlyCreated) {
+                $user->update([
+                    'username' => $acc['username'],
+                    'password' => Hash::make($acc['password']),
+                    'role' => $acc['role'],
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        // If old admin@alefdelta.com exists (from previous seeder), make it OWNER and keep password in sync
+        $legacy = User::where('email', 'admin@alefdelta.com')->first();
+        if ($legacy) {
+            $legacy->update([
+                'role' => 'OWNER',
+                'password' => Hash::make('owner123'),
                 'is_active' => true,
             ]);
         }
-        
-        echo "Created/Updated admin accounts:\n";
-        echo "  - Admin: admin@alefdelta.com / admin123\n";
-        echo "  - HR: hr@alefdelta.com / hr123\n";
-        echo "  - Finance: finance@alefdelta.com / finance123\n";
+
+        echo "Created/updated admin accounts: Owner, GM, HR, Finance, Operations, Marketing, Procurement.\n";
     }
 }

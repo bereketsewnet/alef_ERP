@@ -208,11 +208,14 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="ADMIN">Admin</SelectItem>
-                                            <SelectItem value="OPS_MANAGER">Operations Manager</SelectItem>
+                                            <SelectItem value="OWNER">Owner (Super Admin)</SelectItem>
+                                            <SelectItem value="GM">GM (Admin)</SelectItem>
                                             <SelectItem value="HR">HR</SelectItem>
                                             <SelectItem value="FINANCE">Finance</SelectItem>
-                                            <SelectItem value="SITE_SUPERVISOR">Site Supervisor</SelectItem>
+                                            <SelectItem value="OPERATIONS">Operations</SelectItem>
+                                            <SelectItem value="MARKETING">Marketing</SelectItem>
+                                            <SelectItem value="PROCUREMENT">Procurement</SelectItem>
+                                            <SelectItem value="FIELD_STAFF">Field Staff</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

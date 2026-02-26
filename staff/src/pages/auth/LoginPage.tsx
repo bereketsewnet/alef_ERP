@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom'
 
 const loginSchema = z.object({
     login: z.string().min(1, 'Email, username, or phone is required'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z.string().min(5, 'Password must be at least 5 characters'),
     remember: z.boolean().default(false),
 })
 

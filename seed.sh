@@ -18,6 +18,14 @@ if ! docker-compose ps | grep -q "Up"; then
     exit 1
 fi
 
+echo "Waiting for backend to be ready (e.g. after fresh up)..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    if docker-compose exec -T backend php artisan --version >/dev/null 2>&1; then
+        break
+    fi
+    sleep 2
+done
+
 echo ""
 echo "[1/2] Running database migrations (if needed)..."
 docker-compose exec -T backend php artisan migrate --force
@@ -123,15 +131,24 @@ echo "=========================================="
 echo "  DATABASE SEEDED SUCCESSFULLY!"
 echo "=========================================="
 echo ""
-echo "Sample Accounts:"
-echo "  - Admin:    admin@alefdelta.com / admin123"
-echo "  - HR:       hr@alefdelta.com / hr123"
-echo "  - Finance:  finance@alefdelta.com / finance123"
-echo "  - Staff:    johndoe / password123 (Phone: +251911234567)"
+echo "Sample users (admin panel):"
+echo "  - Owner:       owner@alefdelta.com / owner123"
+echo "  - GM:          gm@alefdelta.com / gm123"
+echo "  - HR:          hr@alefdelta.com / hr123"
+echo "  - Finance:     finance@alefdelta.com / finance123"
+echo "  - Operations:  operations@alefdelta.com / operations123"
+echo "  - Marketing:   marketing@alefdelta.com / marketing123"
+echo "  - Procurement: procurement@alefdelta.com / procurement123"
+echo ""
+echo "Sample users (field staff / member portal):"
+echo "  - johndoe / john.doe@alefdelta.com / password123 (Phone: +251911234567)"
+echo "  - janesmith / jane.smith@alefdelta.com / password123"
+echo "  (+ additional sample employees from SampleDataSeeder)"
 echo ""
 echo "Seeded Data:"
 echo "  - Roles and Permissions"
 echo "  - Departments"
+echo "  - Admin & sample users"
 echo "  - Job Categories and Jobs"
 echo "  - Clients and Client Sites"
 echo "  - Employees and Users"
@@ -139,5 +156,8 @@ echo "  - Shift Schedules"
 echo "  - Attendance Logs"
 echo "  - Assets (if table exists)"
 echo "  - Phone numbers synced"
+echo ""
+echo "Tip: After 'docker-compose down -v' and 'docker-compose up -d',"
+echo "     run ./seed.sh again to migrate and seed all sample users."
 echo ""
 

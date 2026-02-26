@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Bell, Search, User, Settings, LogOut } from "lucide-react"
+import { Bell, Search, User, LogOut, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -99,10 +99,12 @@ export function Topbar() {
                             <User className="mr-2 h-4 w-4" />
                             <span>Profile</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Settings</span>
-                        </DropdownMenuItem>
+                        {(user?.role === 'OWNER' || user?.role === 'GM') && (
+                            <DropdownMenuItem onClick={() => navigate('/settings/users')}>
+                                <Users className="mr-2 h-4 w-4" />
+                                <span>User management</span>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => logout()} className="text-red-600">
                             <LogOut className="mr-2 h-4 w-4" />

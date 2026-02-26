@@ -29,13 +29,16 @@ export interface SuccessResponse<T = any> {
     data?: T
 }
 
-export enum Role {
-    OPS_MANAGER = 'ops_manager',
-    HR = 'hr',
-    FINANCE = 'finance',
-    SITE_SUPERVISOR = 'site_supervisor',
-    ADMIN = 'admin',
-}
+/** Backend role values (uppercase). */
+export type Role =
+    | 'OWNER'
+    | 'GM'
+    | 'HR'
+    | 'FINANCE'
+    | 'OPERATIONS'
+    | 'MARKETING'
+    | 'PROCUREMENT'
+    | 'FIELD_STAFF'
 
 export enum Permission {
     VIEW_DASHBOARD = 'view_dashboard',
