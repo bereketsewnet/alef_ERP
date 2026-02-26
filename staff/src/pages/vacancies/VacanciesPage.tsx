@@ -112,7 +112,7 @@ export function VacanciesPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">Vacancy Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Vacancy Management</h1>
                     <p className="text-neutral-600 mt-1">
                         Job titles (Amharic & English), description, candidate qualification, and number of employees
                     </p>

@@ -215,22 +215,22 @@ export function BillingPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
                         Billing & Invoices
                     </h1>
                     <p className="text-neutral-600 mt-1">
                         Manage client invoices and billing
                     </p>
                 </div>
-                <Button className="bg-primary-600 hover:bg-primary-700" onClick={() => setCreateModalOpen(true)}>
+                <Button className="bg-primary-600 hover:bg-primary-700 shrink-0" onClick={() => setCreateModalOpen(true)}>
                     <FileText className="mr-2 h-4 w-4" />
                     Generate Invoice
                 </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 <Card>
                     <CardContent className="pt-6">
                         <p className="text-sm font-medium text-neutral-600">
@@ -274,7 +274,7 @@ export function BillingPage() {
             </div>
 
             <div className="flex justify-end">
-                <div className="w-72">
+                <div className="w-full sm:w-72">
                     <Input
                         placeholder="Search invoices..."
                         value={search}

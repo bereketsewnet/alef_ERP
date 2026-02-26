@@ -29,12 +29,12 @@ export function PayrollPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">Payroll</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Payroll</h1>
                     <p className="text-neutral-600 mt-1">Process payroll, manage bonuses, and generate payslips</p>
                 </div>
-                <Button onClick={() => setCreateModalOpen(true)} className="bg-primary-600 hover:bg-primary-700">
+                <Button onClick={() => setCreateModalOpen(true)} className="bg-primary-600 hover:bg-primary-700 shrink-0">
                     <Plus className="mr-2 h-4 w-4" />
                     Run Payroll
                 </Button>
@@ -49,7 +49,7 @@ export function PayrollPage() {
 
                 <TabsContent value="overview" className="space-y-4">
                     {/* Stats Cards */}
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                         <Card>
                             <CardContent className="pt-6">
                                 <div className="flex items-center justify-between">
@@ -90,6 +90,7 @@ export function PayrollPage() {
                             {periodsLoading ? (
                                 <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
                             ) : (
+                                <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -142,6 +143,7 @@ export function PayrollPage() {
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

@@ -13,7 +13,7 @@ export function DashboardPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900">
+                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
                     Dashboard
                 </h1>
                 <p className="text-neutral-600 mt-1">
@@ -28,7 +28,7 @@ export function DashboardPage() {
             ) : (
                 <>
                     {/* KPI Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                         <KPICard
                             title="Active Employees"
                             value={stats?.active_employees || 0}
@@ -68,7 +68,7 @@ export function DashboardPage() {
                     </div>
 
                     {/* Charts and Roster */}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                         <div className="lg:col-span-2">
                             <AttendanceTrendChart data={stats?.attendance_trend} />
                         </div>
@@ -78,7 +78,7 @@ export function DashboardPage() {
                     </div>
 
                     {/* Map and Asset Chart */}
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                         <LiveMap />
                         <AssetAvailabilityChart />
                     </div>

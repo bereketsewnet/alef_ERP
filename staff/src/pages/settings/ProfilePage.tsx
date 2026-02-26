@@ -84,7 +84,7 @@ export function ProfilePage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900">My Profile</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">My Profile</h1>
                 <p className="text-neutral-600 mt-1">
                     Update your contact details and password.
                 </p>

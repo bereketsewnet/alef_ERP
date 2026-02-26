@@ -175,16 +175,16 @@ export function RosterPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
                         Roster Management
                     </h1>
                     <p className="text-neutral-600 mt-1">
                         Schedule and assign shifts to employees
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                     <Button variant="outline" onClick={() => setBulkAssignOpen(true)}>
                         <Users className="mr-2 h-4 w-4" />
                         Bulk Assign
@@ -193,7 +193,7 @@ export function RosterPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
@@ -288,7 +288,7 @@ export function RosterPage() {
             </div>
 
             {/* Grouped Shifts Table */}
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -359,7 +359,7 @@ export function RosterPage() {
 
             {/* Pagination */}
             {rosterData && rosterData.last_page > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                     <div className="text-sm text-neutral-500">
                         Showing {rosterData.from} to {rosterData.to} of {rosterData.total} results
                     </div>

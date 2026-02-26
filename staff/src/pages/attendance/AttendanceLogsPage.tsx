@@ -221,12 +221,12 @@ export function AttendanceLogsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900">Attendance</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Attendance</h1>
                 <p className="text-neutral-600 mt-1">Record and manage employee attendance</p>
             </div>
 
             {/* Tab switcher */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
             <div className="flex gap-1 bg-neutral-100 rounded-lg p-1 w-fit">
                 <button
                     type="button"
@@ -293,7 +293,7 @@ export function AttendanceLogsPage() {
                         <div>
                             <Label className="mb-1 block">Site</Label>
                             <select
-                                className="flex h-10 w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="flex h-10 w-full sm:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 value={manualSiteId?.toString() ?? ''}
                                 onChange={(e) => setManualSiteId(e.target.value ? Number(e.target.value) : undefined)}
                             >
@@ -326,7 +326,7 @@ export function AttendanceLogsPage() {
                     )}
 
                     {/* Shifts table */}
-                    <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+                    <div className="border rounded-lg bg-white overflow-x-auto shadow-sm">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -489,7 +489,7 @@ export function AttendanceLogsPage() {
                     <div>
                         <Label className="mb-2 block">Site</Label>
                         <select
-                            className="flex h-10 w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            className="flex h-10 w-full sm:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
                             value={filters.site_id?.toString() || ''}
                             onChange={(e) => handleSiteFilter(e.target.value)}
                         >
@@ -554,7 +554,7 @@ export function AttendanceLogsPage() {
             </div>
 
             {/* Table */}
-            <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+            <div className="border rounded-lg bg-white overflow-x-auto shadow-sm">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -683,7 +683,7 @@ export function AttendanceLogsPage() {
 
             {/* Pagination */}
             {data && data.last_page > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                     <div className="text-sm text-neutral-500">
                         Showing {data.from} to {data.to} of {data.total} results
                     </div>

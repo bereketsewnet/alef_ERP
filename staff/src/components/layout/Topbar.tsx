@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Bell, Search, User, LogOut, Users } from "lucide-react"
+import { Bell, Search, User, LogOut, Users, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,7 +15,11 @@ import { useCurrentUser, useLogout } from "@/services/useAuth"
 import { useIncidents } from "@/services/useIncidents"
 import { useNavigate } from "react-router-dom"
 
-export function Topbar() {
+interface TopbarProps {
+    onMenuToggle?: () => void
+}
+
+export function Topbar({ onMenuToggle }: TopbarProps) {
     const { data: user } = useCurrentUser()
     const { mutate: logout } = useLogout()
     const navigate = useNavigate()
@@ -44,7 +48,21 @@ export function Topbar() {
     }
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 sm:gap-4 border-b bg-white px-4 sm:px-6 shadow-sm">
+            {/* Hamburger — only on mobile/tablet */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden shrink-0"
+                onClick={onMenuToggle}
+            >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+            </Button>
+
+            {/* Logo text visible on mobile (sidebar is hidden) */}
+            <span className="font-bold text-primary-600 text-sm md:hidden">ALEF DELTA</span>
+
             <div className="flex flex-1 items-center gap-4">
                 <form className="hidden sm:block lg:w-96" onSubmit={handleSearchSubmit}>
                     <div className="relative">

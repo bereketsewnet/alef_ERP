@@ -30,15 +30,15 @@ export function UserManagementPage() {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">User Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold">User Management</h1>
                     <p className="text-neutral-600">
                         Manage system users and their permissions
                     </p>
                 </div>
-                <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Button onClick={() => setIsCreateModalOpen(true)} className="shrink-0">
                     <Plus className="mr-2 h-4 w-4" />
                     Add User
                 </Button>
@@ -56,7 +56,7 @@ export function UserManagementPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -128,7 +128,7 @@ export function UserManagementPage() {
                 const currentPage = res?.meta?.current_page ?? res?.current_page ?? page
                 if (!data || lastPage == null || lastPage <= 1) return null
                 return (
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                         <p className="text-sm text-neutral-600">
                             Showing {data.data?.length ?? 0} of {total ?? 0} users
                         </p>

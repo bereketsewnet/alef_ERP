@@ -122,16 +122,16 @@ export function IncidentsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
                         Incidents & Reports
                     </h1>
                     <p className="text-neutral-600 mt-1">
                         View and manage security incidents and operational reports
                     </p>
                 </div>
-                <Button className="bg-red-600 hover:bg-red-700" onClick={() => setCreateModalOpen(true)}>
+                <Button className="bg-red-600 hover:bg-red-700 shrink-0" onClick={() => setCreateModalOpen(true)}>
                     <AlertTriangle className="mr-2 h-4 w-4" />
                     Report Incident
                 </Button>

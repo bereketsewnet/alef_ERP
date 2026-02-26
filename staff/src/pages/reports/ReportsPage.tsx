@@ -104,7 +104,7 @@ export function ReportsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">Advanced Reports</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Advanced Reports</h1>
                     <p className="text-neutral-600">Analytics and exports for the current month</p>
                 </div>
                 <div className="flex gap-2 items-center">
@@ -128,7 +128,7 @@ export function ReportsPage() {
             </div>
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
+                <TabsList className="grid w-full grid-cols-5 md:w-[600px]">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="roster">Roster</TabsTrigger>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
@@ -138,7 +138,7 @@ export function ReportsPage() {
 
                 <TabsContent value="overview" className="space-y-6 mt-6">
                     {/* Key Metrics Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Billed</CardTitle>
@@ -166,7 +166,7 @@ export function ReportsPage() {
                     </div>
 
                     {/* Charts */}
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                         <Card className="col-span-1 min-w-0">
                             <CardHeader>
                                 <CardTitle>Attendance Status</CardTitle>

@@ -52,15 +52,15 @@ export function EmployeeListPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Employees</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Employees</h1>
                     <p className="text-neutral-600 mt-1">
                         Manage your workforce and employee information
                     </p>
                 </div>
                 <Button
-                    className="bg-primary-600 hover:bg-primary-700"
+                    className="bg-primary-600 hover:bg-primary-700 shrink-0"
                     onClick={() => setIsCreateModalOpen(true)}
                 >
                     <Plus className="mr-2 h-4 w-4" />
@@ -80,7 +80,7 @@ export function EmployeeListPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -174,7 +174,7 @@ export function EmployeeListPage() {
 
             {/* Pagination */}
             {data && data.meta && data.meta.last_page > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                     <p className="text-sm text-neutral-600">
                         Showing {data.data.length} of {data.meta.total} employees
                     </p>

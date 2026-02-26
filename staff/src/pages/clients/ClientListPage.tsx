@@ -223,23 +223,23 @@ export function ClientListPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
                         Clients & Sites
                     </h1>
                     <p className="text-neutral-600 mt-1">
                         Manage your clients and their site locations
                     </p>
                 </div>
-                <Button onClick={() => setClientModalOpen(true)} className="bg-primary-600 hover:bg-primary-700">
+                <Button onClick={() => setClientModalOpen(true)} className="bg-primary-600 hover:bg-primary-700 shrink-0">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Client
                 </Button>
             </div>
 
             {/* Dashboard Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export function ClientListPage() {
             </div>
 
             {/* Table */}
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -435,7 +435,7 @@ export function ClientListPage() {
 
             {/* Pagination */}
             {data && data.last_page > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                     <div className="text-sm text-neutral-500">
                         Showing {data.from} to {data.to} of {data.total} results
                     </div>
