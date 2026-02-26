@@ -11,6 +11,7 @@ import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { BillingPage } from '@/pages/billing/BillingPage'
 import { UserManagementPage } from '@/pages/settings/UserManagementPage'
 import { ProfilePage } from '@/pages/settings/ProfilePage'
+import { AttendanceSettingsPage } from '@/pages/settings/AttendanceSettingsPage'
 import { JobsPage } from '@/pages/jobs/JobsPage'
 import { JobCategoriesPage } from '@/pages/jobs/JobCategoriesPage'
 import { VacanciesPage } from '@/pages/vacancies/VacanciesPage'
@@ -56,6 +57,7 @@ export function AppRoutes() {
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings/users" element={<UserManagementPage />} />
                 <Route path="/settings/profile" element={<ProfilePage />} />
+                <Route path="/settings/attendance" element={<AttendanceSettingsPage />} />
             </Route>
 
             {/* Default redirect */}

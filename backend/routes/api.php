@@ -51,16 +51,27 @@ Route::middleware('auth:api')->group(function () {
 
     // Attendance Routes
     Route::prefix('attendance')->group(function () {
+        // GPS-based (Telegram / member portal)
         Route::post('/clock-in', [AttendanceController::class, 'clockIn']);
         Route::post('/clock-out', [AttendanceController::class, 'clockOut']);
+
+        // Log listing / verification
         Route::get('/logs', [AttendanceController::class, 'index']);
         Route::put('/logs/{id}/verify', [AttendanceController::class, 'verify']);
         Route::put('/logs/{id}/unverify', [AttendanceController::class, 'unverify']);
+        Route::get('/my-logs', [AttendanceController::class, 'myLogs']);
+        Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+
+        // Permission flags
         Route::post('/{id}/mark-permission', [AttendanceController::class, 'markPermission']);
         Route::post('/permission/set', [AttendanceController::class, 'setPermission']);
         Route::post('/permission/remove', [AttendanceController::class, 'removePermission']);
-        Route::get('/my-logs', [AttendanceController::class, 'myLogs']);
-        Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+
+        // Manual attendance entry
+        Route::get('/pending-shifts', [AttendanceController::class, 'pendingShifts']);
+        Route::post('/manual', [AttendanceController::class, 'manualEntry']);
+        Route::put('/{id}/manual', [AttendanceController::class, 'updateManualEntry']);
+        Route::delete('/{id}/manual', [AttendanceController::class, 'deleteManualEntry']);
     });
 
     // Roster Routes
@@ -260,6 +271,12 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/incidents', [\App\Http\Controllers\Api\ReportController::class, 'getIncidentsReport']);
         Route::get('/roster', [\App\Http\Controllers\Api\ReportController::class, 'getRosterReport']);
         Route::get('/export/{type}', [\App\Http\Controllers\Api\ReportController::class, 'exportReport']);
+    });
+
+    // General Settings (OWNER only for write, all admin roles for read)
+    Route::prefix('settings')->group(function () {
+        Route::get('/attendance-mode', [\App\Http\Controllers\Api\GeneralSettingsController::class, 'getAttendanceMode']);
+        Route::put('/attendance-mode', [\App\Http\Controllers\Api\GeneralSettingsController::class, 'setAttendanceMode']);
     });
 });
 

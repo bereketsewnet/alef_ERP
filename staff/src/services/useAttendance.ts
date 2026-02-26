@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { attendanceApi, type AttendanceFilters } from '@/api/endpoints/attendance'
+import {
+    attendanceApi,
+    type AttendanceFilters,
+    type ManualAttendanceRequest,
+    type PendingShiftsFilters,
+} from '@/api/endpoints/attendance'
 import { toast } from 'sonner'
 
 export const useAttendanceLogs = (filters: AttendanceFilters = {}) => {
@@ -104,6 +109,75 @@ export const useSetPermission = () => {
                     || 'Failed to set permission'
                 toast.error(errorMessage)
             }
+        },
+    })
+}
+
+// ── Manual attendance hooks ───────────────────────────────────────────
+
+export const usePendingShifts = (filters: PendingShiftsFilters) => {
+    return useQuery({
+        queryKey: ['pending-shifts', filters],
+        queryFn: () => attendanceApi.pendingShifts(filters),
+        enabled: !!filters.date,
+    })
+}
+
+export const useManualAttendanceEntry = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (data: ManualAttendanceRequest) => attendanceApi.manualEntry(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-shifts'] })
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            toast.success('Attendance recorded successfully')
+        },
+        onError: (error: any) => {
+            toast.error(
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Failed to record attendance',
+            )
+        },
+    })
+}
+
+export const useUpdateManualAttendance = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({
+            id,
+            data,
+        }: {
+            id: number
+            data: Omit<ManualAttendanceRequest, 'schedule_id'>
+        }) => attendanceApi.updateManualEntry(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-shifts'] })
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            toast.success('Attendance updated successfully')
+        },
+        onError: (error: any) => {
+            toast.error(
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Failed to update attendance',
+            )
+        },
+    })
+}
+
+export const useDeleteManualAttendance = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => attendanceApi.deleteManualEntry(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-shifts'] })
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            toast.success('Attendance entry deleted')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to delete attendance entry')
         },
     })
 }

@@ -378,12 +378,15 @@ class PayrollService
         if ($clientId) {
             $siteIds = \App\Models\ClientSite::where('client_id', $clientId)->pluck('id');
             
-            // Count unique days from attendance logs at client sites
-            // This gives us the actual days worked, which is more accurate than scheduled shifts
+            // Count unique days from attendance logs at client sites (exclude ABSENT records)
             $uniqueDays = AttendanceLog::where('employee_id', $employee->id)
                 ->whereBetween('clock_in_time', [$startDate, $endDate])
                 ->whereHas('schedule', function ($q) use ($siteIds) {
                     $q->whereIn('site_id', $siteIds);
+                })
+                ->where(function ($q) {
+                    $q->whereNull('attendance_status')
+                      ->orWhere('attendance_status', '!=', 'ABSENT');
                 })
                 ->selectRaw('DATE(clock_in_time) as date')
                 ->distinct()
@@ -422,7 +425,13 @@ class PayrollService
 
         $query = AttendanceLog::with('schedule.site')
             ->where('employee_id', $employee->id)
-            ->whereBetween('clock_in_time', [$startDate, $endDate]);
+            ->whereBetween('clock_in_time', [$startDate, $endDate])
+            // Exclude manual ABSENT records — they are not worked shifts.
+            // Payroll counts absent by finding expected shifts with no "present" log.
+            ->where(function ($q) {
+                $q->whereNull('attendance_status')
+                  ->orWhere('attendance_status', '!=', 'ABSENT');
+            });
 
         if ($clientId) {
             $siteIds = \App\Models\ClientSite::where('client_id', $clientId)->pluck('id');
@@ -490,17 +499,27 @@ class PayrollService
 
         foreach ($expectedShifts as $shift) {
             if (!in_array($shift->id, $attendedShiftIds)) {
-                // This shift was expected but no attendance log exists = absence
-                // Check if there's a penalty record for this date that might indicate permission
-                $shiftDate = Carbon::parse($shift->shift_start)->toDateString();
-                $hasPermissionPenalty = Penalty::where('employee_id', $employee->id)
-                    ->where('penalty_type', 'ABSENT')
-                    ->whereDate('penalty_date', $shiftDate)
-                    ->where(function ($q) {
-                        $q->whereRaw('LOWER(reason) LIKE ?', ['%permission%'])
-                          ->orWhereRaw('LOWER(reason) LIKE ?', ['%with permission%']);
-                    })
+                // This shift was expected but no present/late log exists = absence.
+                // Check permission via:
+                //   1. Manual ABSENT log with with_permission flag (new)
+                //   2. Legacy Penalty record with "permission" in reason
+                $hasPermissionPenalty = AttendanceLog::where('employee_id', $employee->id)
+                    ->where('schedule_id', $shift->id)
+                    ->where('attendance_status', 'ABSENT')
+                    ->where('with_permission', true)
                     ->exists();
+
+                if (!$hasPermissionPenalty) {
+                    $shiftDate = Carbon::parse($shift->shift_start)->toDateString();
+                    $hasPermissionPenalty = Penalty::where('employee_id', $employee->id)
+                        ->where('penalty_type', 'ABSENT')
+                        ->whereDate('penalty_date', $shiftDate)
+                        ->where(function ($q) {
+                            $q->whereRaw('LOWER(reason) LIKE ?', ['%permission%'])
+                              ->orWhereRaw('LOWER(reason) LIKE ?', ['%with permission%']);
+                        })
+                        ->exists();
+                }
 
                 if ($hasPermissionPenalty) {
                     // Always count for display

@@ -39,6 +39,7 @@ export type Role =
     | 'MARKETING'
     | 'PROCUREMENT'
     | 'FIELD_STAFF'
+    | 'SUPERVISOR'
 
 export enum Permission {
     VIEW_DASHBOARD = 'view_dashboard',

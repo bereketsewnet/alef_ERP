@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Briefcase,
     Megaphone,
+    ToggleLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLogout } from "@/services/useAuth"
@@ -45,6 +46,7 @@ const ALL_NAV_ITEMS = [
     { title: "Incidents", href: "/incidents", icon: AlertTriangle },
     { title: "Reports", href: "/reports", icon: BarChart3 },
     { title: "User & role management", href: "/settings/users", icon: Settings },
+    { title: "Attendance Settings", href: "/settings/attendance", icon: ToggleLeft },
 ]
 
 export function Sidebar({ className, collapsed, setCollapsed }: SidebarProps) {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { format } from 'date-fns'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -18,11 +19,21 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Search, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown, Shield } from "lucide-react"
-import { useAttendanceLogs, useVerifyAttendance, useUnverifyAttendance, useExportAttendance, useMarkAttendancePermission } from "@/services/useAttendance"
+import { Search, CheckCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown, Shield, PenLine, Trash2, ClipboardCheck, ClipboardList } from "lucide-react"
+import {
+    useAttendanceLogs,
+    useVerifyAttendance,
+    useUnverifyAttendance,
+    useExportAttendance,
+    useMarkAttendancePermission,
+    usePendingShifts,
+    useDeleteManualAttendance,
+} from "@/services/useAttendance"
+import { useAttendanceMode } from "@/services/useSettings"
 import { PermissionManagementModal } from "@/components/attendance/PermissionManagementModal"
+import { ManualAttendanceModal, AttendanceStatusBadge } from "@/components/attendance/ManualAttendanceModal"
 import { useClients } from "@/services/useClients"
-import type { AttendanceFilters, AttendanceLog } from "@/api/endpoints/attendance"
+import type { AttendanceFilters, AttendanceLog, ShiftWithAttendance } from "@/api/endpoints/attendance"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,20 +42,50 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function AttendanceLogsPage() {
-    const [filters, setFilters] = useState<AttendanceFilters>({
-        page: 1
-    })
+    // ── Attendance mode from settings ────────────────────────────────
+    const { data: modeData } = useAttendanceMode()
+    const attendanceMode = modeData?.mode ?? 'MANUAL'
+
+    // ── Tab state: default driven by attendance mode ─────────────────
+    // MANUAL → open on Manual Entry   GPS → open on Logs   MIXED → Manual (both shown)
+    const defaultTab = useMemo<'logs' | 'manual'>(
+        () => (attendanceMode === 'GPS' ? 'logs' : 'manual'),
+        [attendanceMode],
+    )
+    const [activeTab, setActiveTab] = useState<'logs' | 'manual'>(defaultTab)
+
+    // Sync tab when mode loads from server (first render)
+    useEffect(() => {
+        setActiveTab(attendanceMode === 'GPS' ? 'logs' : 'manual')
+    }, [attendanceMode])
+
+    // ── Logs tab state ────────────────────────────────────────────────
+    const [filters, setFilters] = useState<AttendanceFilters>({ page: 1 })
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
     const [exportFormat, setExportFormat] = useState<'pdf' | 'csv'>('csv')
     const [permissionModalOpen, setPermissionModalOpen] = useState(false)
     const [permissionModalMode, setPermissionModalMode] = useState<'set' | 'remove'>('set')
 
+    // ── Manual Entry tab state ────────────────────────────────────────
+    const [manualDate, setManualDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+    const [manualSearch, setManualSearch] = useState('')
+    const [manualSiteId, setManualSiteId] = useState<number | undefined>()
+    const [manualShift, setManualShift] = useState<ShiftWithAttendance | null>(null)
+    const [manualModalOpen, setManualModalOpen] = useState(false)
+
     const { data, isLoading, error } = useAttendanceLogs(filters)
     const { mutate: verify } = useVerifyAttendance()
     const { mutate: unverify } = useUnverifyAttendance()
     const { mutate: exportData, isPending: isExporting } = useExportAttendance()
     const { mutate: markPermission } = useMarkAttendancePermission()
+    const { mutate: deleteManual } = useDeleteManualAttendance()
+
+    const { data: pendingShifts, isLoading: shiftsLoading } = usePendingShifts({
+        date: manualDate,
+        site_id: manualSiteId,
+        search: manualSearch || undefined,
+    })
 
     // Load sites (via clients) for site filter dropdown
     const { data: clientsData } = useClients({ page: 1, per_page: 500 })
@@ -172,16 +213,209 @@ export function AttendanceLogsPage() {
         return acc
     }, { active: 0, late: 0, early: 0, present: 0, notFinished: 0 }) || { active: 0, late: 0, early: 0, present: 0, notFinished: 0 }
 
+    const handleDeleteManual = (logId: number) => {
+        if (!window.confirm('Delete this attendance entry? The shift will be reset to Pending.')) return
+        deleteManual(logId)
+    }
+
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900">
-                    Attendance Logs
-                </h1>
-                <p className="text-neutral-600 mt-1">
-                    View and manage employee clock-in/out records
-                </p>
+                <h1 className="text-3xl font-bold text-neutral-900">Attendance</h1>
+                <p className="text-neutral-600 mt-1">Record and manage employee attendance</p>
             </div>
+
+            {/* Tab switcher */}
+            <div className="flex items-center gap-3">
+            <div className="flex gap-1 bg-neutral-100 rounded-lg p-1 w-fit">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('manual')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        activeTab === 'manual'
+                            ? 'bg-white shadow text-neutral-900'
+                            : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                >
+                    <PenLine className="h-4 w-4" />
+                    Manual Entry
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('logs')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        activeTab === 'logs'
+                            ? 'bg-white shadow text-neutral-900'
+                            : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                >
+                    <ClipboardList className="h-4 w-4" />
+                    Logs
+                </button>
+            </div>
+            {/* Current mode badge */}
+            <span className={`text-xs font-medium px-2 py-1 rounded-full border ${
+                attendanceMode === 'MANUAL' ? 'bg-violet-50 text-violet-700 border-violet-200' :
+                attendanceMode === 'GPS'    ? 'bg-green-50  text-green-700  border-green-200'  :
+                                             'bg-blue-50   text-blue-700   border-blue-200'
+            }`}>
+                {attendanceMode === 'MANUAL' ? 'Manual Mode' :
+                 attendanceMode === 'GPS'    ? 'GPS Mode'    : 'Mixed Mode'}
+            </span>
+            </div>
+
+            {/* ══════════════ MANUAL ENTRY TAB ══════════════ */}
+            {activeTab === 'manual' && (
+                <div className="space-y-4">
+                    {/* Filters row */}
+                    <div className="flex flex-col sm:flex-row gap-3 items-end">
+                        <div>
+                            <Label className="mb-1 block">Date</Label>
+                            <Input
+                                type="date"
+                                value={manualDate}
+                                onChange={(e) => setManualDate(e.target.value)}
+                                className="w-44"
+                            />
+                        </div>
+                        <div className="flex-1 max-w-xs">
+                            <Label className="mb-1 block">Search Employee</Label>
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
+                                <Input
+                                    placeholder="Name…"
+                                    value={manualSearch}
+                                    onChange={(e) => setManualSearch(e.target.value)}
+                                    className="pl-9"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="mb-1 block">Site</Label>
+                            <select
+                                className="flex h-10 w-52 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={manualSiteId?.toString() ?? ''}
+                                onChange={(e) => setManualSiteId(e.target.value ? Number(e.target.value) : undefined)}
+                            >
+                                <option value="">All sites</option>
+                                {clientsData?.data.flatMap((client: any) =>
+                                    (client.sites || []).map((site: any) => (
+                                        <option key={site.id} value={site.id}>
+                                            {client.company_name} — {site.site_name}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Pending-shifts summary badges */}
+                    {pendingShifts && (
+                        <div className="flex gap-3 flex-wrap">
+                            {(['PENDING', 'PRESENT', 'LATE', 'LATE_WITH_PERMISSION', 'ABSENT', 'ABSENT_WITH_PERMISSION'] as const).map((s) => {
+                                const count = pendingShifts.filter((sh) => sh.attendance_status === s).length
+                                if (count === 0) return null
+                                return (
+                                    <div key={s} className="flex items-center gap-1">
+                                        <AttendanceStatusBadge status={s} />
+                                        <span className="text-sm font-semibold">{count}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    {/* Shifts table */}
+                    <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Employee</TableHead>
+                                    <TableHead>Site</TableHead>
+                                    <TableHead>Shift Time</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {shiftsLoading && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                                            Loading shifts…
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {!shiftsLoading && (!pendingShifts || pendingShifts.length === 0) && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                                            No shifts found for this date
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {pendingShifts?.map((shift) => {
+                                    const start = new Date(shift.shift_start)
+                                    const end   = new Date(shift.shift_end)
+                                    const hrs   = ((end.getTime() - start.getTime()) / 3600000).toFixed(1)
+                                    return (
+                                        <TableRow key={shift.id}>
+                                            <TableCell className="font-medium">
+                                                {shift.employee.first_name} {shift.employee.last_name}
+                                                <div className="text-xs text-neutral-500">{shift.employee.employee_code}</div>
+                                            </TableCell>
+                                            <TableCell>{shift.site.site_name}</TableCell>
+                                            <TableCell className="text-sm">
+                                                {format(start, 'HH:mm')} – {format(end, 'HH:mm')}
+                                                <span className="ml-1 text-neutral-400">({hrs}h)</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1">
+                                                    <AttendanceStatusBadge status={shift.attendance_status} />
+                                                    {shift.attendance_log?.manual_entry && (
+                                                        <Badge variant="outline" className="text-xs border-violet-300 text-violet-700">
+                                                            Manual
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right space-x-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant={shift.attendance_status === 'PENDING' ? 'default' : 'outline'}
+                                                    onClick={() => {
+                                                        setManualShift(shift)
+                                                        setManualModalOpen(true)
+                                                    }}
+                                                    disabled={!!(shift.attendance_log && !shift.attendance_log.manual_entry)}
+                                                    title={shift.attendance_log && !shift.attendance_log.manual_entry
+                                                        ? 'GPS-recorded entry — cannot edit here'
+                                                        : shift.attendance_status === 'PENDING' ? 'Record attendance' : 'Edit attendance'}
+                                                >
+                                                    <PenLine className="h-3.5 w-3.5 mr-1" />
+                                                    {shift.attendance_status === 'PENDING' ? 'Record' : 'Edit'}
+                                                </Button>
+                                                {shift.attendance_log?.manual_entry && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-red-600 hover:bg-red-50"
+                                                        onClick={() => handleDeleteManual(shift.attendance_log!.id)}
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════ LOGS TAB ══════════════ */}
+            {activeTab === 'logs' && (
+            <>
 
             {/* Status Summary */}
             {data && data.data.length > 0 && (
@@ -570,6 +804,18 @@ export function AttendanceLogsPage() {
                 open={permissionModalOpen}
                 onOpenChange={setPermissionModalOpen}
                 mode={permissionModalMode}
+            />
+            </> // end logs tab wrapper
+            )} {/* end activeTab === 'logs' */}
+
+            {/* Manual Attendance Modal (shared) */}
+            <ManualAttendanceModal
+                open={manualModalOpen}
+                onClose={() => {
+                    setManualModalOpen(false)
+                    setManualShift(null)
+                }}
+                shift={manualShift}
             />
         </div>
     )

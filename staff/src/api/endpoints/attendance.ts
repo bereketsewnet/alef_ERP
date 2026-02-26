@@ -1,5 +1,14 @@
 import apiClient from '../axios'
 
+export type AttendanceStatusRaw = 'PRESENT' | 'LATE' | 'ABSENT'
+export type AttendanceStatusFull =
+    | 'PRESENT'
+    | 'LATE'
+    | 'LATE_WITH_PERMISSION'
+    | 'ABSENT'
+    | 'ABSENT_WITH_PERMISSION'
+    | 'PENDING'
+
 export interface AttendanceLog {
     id: number
     employee_id: number
@@ -17,6 +26,9 @@ export interface AttendanceLog {
     flagged_early_leave: boolean
     notes: string | null
     with_permission?: boolean
+    manual_entry?: boolean
+    manual_note?: string | null
+    attendance_status?: AttendanceStatusRaw | null
     created_at: string
     updated_at: string
     employee?: {
@@ -41,6 +53,47 @@ export interface AttendanceLog {
             client_id: number
         }
     }
+}
+
+/** A shift row returned by /attendance/pending-shifts */
+export interface ShiftWithAttendance {
+    id: number
+    employee_id: number
+    site_id: number
+    shift_start: string
+    shift_end: string
+    status: string
+    attendance_status: AttendanceStatusFull
+    attendance_log: AttendanceLog | null
+    employee: {
+        id: number
+        employee_code: string
+        first_name: string
+        last_name: string
+        phone_number: string
+        status: string
+    }
+    site: {
+        id: number
+        site_name: string
+        client_id: number
+        client?: { id: number; company_name: string }
+    }
+}
+
+export interface ManualAttendanceRequest {
+    schedule_id: number
+    attendance_status: AttendanceStatusFull
+    clock_in_time?: string | null
+    clock_out_time?: string | null
+    manual_note?: string | null
+}
+
+export interface PendingShiftsFilters {
+    date: string
+    site_id?: number
+    employee_id?: number
+    search?: string
 }
 
 export interface AttendanceListResponse {
@@ -147,7 +200,6 @@ export const attendanceApi = {
             })
             return response.data
         } catch (error: any) {
-            // Log the full error for debugging
             console.error('Remove permission API error:', {
                 status: error.response?.status,
                 data: error.response?.data,
@@ -155,5 +207,34 @@ export const attendanceApi = {
             })
             throw error
         }
+    },
+
+    // ── Manual attendance ─────────────────────────────────────────────
+
+    pendingShifts: async (filters: PendingShiftsFilters): Promise<ShiftWithAttendance[]> => {
+        const params = new URLSearchParams({ date: filters.date })
+        if (filters.site_id)     params.append('site_id',     filters.site_id.toString())
+        if (filters.employee_id) params.append('employee_id', filters.employee_id.toString())
+        if (filters.search)      params.append('search',      filters.search)
+        const response = await apiClient.get(`/attendance/pending-shifts?${params.toString()}`)
+        return response.data
+    },
+
+    manualEntry: async (data: ManualAttendanceRequest): Promise<{ message: string; data: AttendanceLog }> => {
+        const response = await apiClient.post('/attendance/manual', data)
+        return response.data
+    },
+
+    updateManualEntry: async (
+        id: number,
+        data: Omit<ManualAttendanceRequest, 'schedule_id'>,
+    ): Promise<{ message: string; data: AttendanceLog }> => {
+        const response = await apiClient.put(`/attendance/${id}/manual`, data)
+        return response.data
+    },
+
+    deleteManualEntry: async (id: number): Promise<{ message: string }> => {
+        const response = await apiClient.delete(`/attendance/${id}/manual`)
+        return response.data
     },
 }

@@ -21,6 +21,9 @@ class AttendanceLog extends Model
         'with_permission',
         'verified_by_user_id',
         'raw_initdata',
+        'manual_entry',
+        'manual_note',
+        'attendance_status',
     ];
 
     protected $casts = [
@@ -29,6 +32,7 @@ class AttendanceLog extends Model
         'is_verified' => 'boolean',
         'flagged_late' => 'boolean',
         'with_permission' => 'boolean',
+        'manual_entry' => 'boolean',
     ];
 
     public function schedule()

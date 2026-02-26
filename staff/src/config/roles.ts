@@ -10,6 +10,7 @@ export const ADMIN_PANEL_ROLES = [
   'OPERATIONS',
   'MARKETING',
   'PROCUREMENT',
+  'SUPERVISOR',
 ] as const
 
 export type AdminRole = (typeof ADMIN_PANEL_ROLES)[number]
@@ -23,9 +24,9 @@ export const ROLE_PATHS: Record<string, AdminRole[]> = {
   '/job-applications': ['OWNER', 'GM', 'HR'],
   '/crm/leads': ['OWNER', 'GM', 'MARKETING'],
   '/crm/bids': ['OWNER', 'GM', 'MARKETING'],
-  '/roster': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
+  '/roster': ['OWNER', 'GM', 'HR', 'OPERATIONS', 'SUPERVISOR'],
   '/employees': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
-  '/attendance': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
+  '/attendance': ['OWNER', 'GM', 'HR', 'OPERATIONS', 'SUPERVISOR'],
   '/clients': ['OWNER', 'GM', 'OPERATIONS'],
   '/assets': ['OWNER', 'GM', 'OPERATIONS', 'PROCUREMENT'],
   '/payroll': ['OWNER', 'GM', 'FINANCE'],
@@ -33,20 +34,21 @@ export const ROLE_PATHS: Record<string, AdminRole[]> = {
   '/incidents': ['OWNER', 'GM', 'OPERATIONS'],
   '/reports': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS'],
   '/settings/users': ['OWNER', 'GM'],
+  '/settings/attendance': ['OWNER'],
   '/settings/profile': ADMIN_PANEL_ROLES as unknown as AdminRole[],
 }
 
 /** Which roles can see each nav item (by href prefix or exact). */
 export const NAV_ROLES: Record<string, AdminRole[]> = {
-  '/dashboard': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS', 'MARKETING', 'PROCUREMENT'],
+  '/dashboard': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS', 'MARKETING', 'PROCUREMENT', 'SUPERVISOR'],
   '/jobs': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
   '/vacancies': ['OWNER', 'GM', 'HR'],
   '/job-applications': ['OWNER', 'GM', 'HR'],
   '/crm/leads': ['OWNER', 'GM', 'MARKETING'],
   '/crm/bids': ['OWNER', 'GM', 'MARKETING'],
-  '/roster': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
+  '/roster': ['OWNER', 'GM', 'HR', 'OPERATIONS', 'SUPERVISOR'],
   '/employees': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
-  '/attendance': ['OWNER', 'GM', 'HR', 'OPERATIONS'],
+  '/attendance': ['OWNER', 'GM', 'HR', 'OPERATIONS', 'SUPERVISOR'],
   '/clients': ['OWNER', 'GM', 'OPERATIONS'],
   '/assets': ['OWNER', 'GM', 'OPERATIONS', 'PROCUREMENT'],
   '/payroll': ['OWNER', 'GM', 'FINANCE'],
@@ -54,7 +56,8 @@ export const NAV_ROLES: Record<string, AdminRole[]> = {
   '/incidents': ['OWNER', 'GM', 'OPERATIONS'],
   '/reports': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS'],
   '/settings/users': ['OWNER', 'GM'],
-  '/settings/profile': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS', 'MARKETING', 'PROCUREMENT'],
+  '/settings/attendance': ['OWNER'],
+  '/settings/profile': ['OWNER', 'GM', 'HR', 'FINANCE', 'OPERATIONS', 'MARKETING', 'PROCUREMENT', 'SUPERVISOR'],
 }
 
 export function canAccessPath(role: string, path: string): boolean {
