@@ -69,7 +69,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
                         <Input
                             type="search"
-                            placeholder="Search employees, sites, assets..."
+                            placeholder="Search sites..."
                             className="w-full bg-neutral-50 pl-9"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
