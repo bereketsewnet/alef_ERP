@@ -24,6 +24,7 @@
     "react-hook-form": "^7.54.2",
     "react-i18next": "^15.2.0",
     "react-leaflet": "^4.2.1",
+    "react-phone-number-input": "^3.4.17",
     "react-router-dom": "^7.0.2",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.1"

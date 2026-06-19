@@ -1,0 +1,166 @@
+Alef Delta – HR & Workforce Management Platform
+Alef Delta is a modern HR and workforce management platform that lets employees focus on their talent and performance, while companies stop worrying about day‑to‑day HR hassles such as hiring, attendance, payroll, and compliance.
+What Alef Delta Does
+Alef Delta connects companies that need reliable staff with employees who want stable, well‑managed jobs.
+The platform handles the full employee lifecycle:
+From recruitment to onboarding
+From daily attendance to GPS‑backed timesheets
+From shift planning to payroll with penalties, bonuses, and tax/VAT
+From incident reporting to client billing and management
+Companies no longer need to follow up each salary manually or chase attendance sheets; Alef Delta centralizes everything into a single, professional system.
+Who Alef Delta Is For
+For Employees
+Job seekers and field staff who want:
+Transparent shifts and schedules
+Clear salary and payment history
+Simple, mobile‑first tools to clock in and out
+A trusted HR partner that manages contracts and compliance with client companies
+For Companies
+Businesses that need employees without HR headaches, including:
+Companies that hire security guards, cleaners, promoters, drivers, field sales, and other field staff
+Organizations that work with multiple sites, branches, and clients
+Managers who want strong control over attendance, performance, and payroll without doing every calculation by hand
+Companies can rely on Alef Delta to provide, manage, and monitor employees, so they do not need to worry about recruitment, testing, daily attendance, or individual salary processing.
+Core Components of the System
+Staff Portal (Admin Panel)
+A web‑based admin portal for office and management users (Owner, GM, HR, Finance, Operations, Marketing, Procurement). It provides:
+Role‑based access control so each department only sees what they need
+Complete visibility of jobs, employees, clients, sites, attendance, payroll, billing, and reports
+Central place to manage user accounts and roles
+Member Portal (Employee Portal)
+A mobile‑friendly member portal for field staff that allows:
+Viewing today’s shift, future roster, and assigned client site
+Clock in / clock out with GPS and location context
+Viewing salary history and payslips
+Reporting incidents or issues from the field
+Working even with poor internet, using offline‑aware features that sync later
+Telegram Mini App for Employees
+Alef Delta also provides a Telegram Mini App for employees:
+Employees can use Telegram as their daily HR interface
+View shift schedule, attendance status, and salary details from their phone
+Submit clock in/out (where allowed) with location, notes, or simple confirmations
+Receive notifications about upcoming shifts, approvals, or HR updates
+This makes adoption very easy, because employees do not have to install a separate app.
+Key Features – System Capabilities
+1. Advanced Attendance & Time Tracking
+GPS‑based attendance:
+Capture location when employees clock in and out
+Verify presence at the correct client site
+Multiple attendance modes:
+Automatic / GPS attendance
+Manual attendance (for corrections or locations with no GPS)
+Mixed attendance model combining device logs, supervisor approval, and manual adjustments
+Shift & roster integration:
+Attendance is validated against planned shifts and working days
+Late arrivals, early leaves, absences, and overtime can be tracked accurately
+Permission and leave management:
+Record permissions, approved absences, and exceptions
+Configurable rules to mark with‑permission / without‑permission absences
+2. Smart Roster & Shift Management
+Create and manage shift schedules for each employee, team, and client site
+Support different working-day patterns and rotations
+Operational users can:
+Assign staff to clients and sites
+See who is on duty today, tomorrow, and in coming weeks
+Avoid double‑booking or understaffed sites
+3. Advanced Payroll Engine
+Alef Delta includes an advanced payroll system that calculates salaries based on real operational data:
+Attendance‑based payroll:
+Automatically considers presence, absence, late, overtime, and shift type
+Supports penalties for unapproved absence or lateness
+Supports bonuses for performance, extra shifts, or incentives
+Configurable penalties and overrides:
+HR can define standard penalties and bonuses per job or employee
+Operations can set site‑specific rules where needed
+Tax & VAT‑aware calculations:
+Payroll integrates with invoice and billing structure for clients
+Supports tax/VAT elements so finance can stay compliant
+Salary history and transparency:
+Employees can see salary breakdowns and history in the member portal
+Finance can extract detailed reports for accounting and audits
+4. Recruitment & HR Management
+Vacancies and job applications:
+Create and publish job vacancies
+Track applications and status
+Screening and onboarding:
+Manage job application screenings and employee screenings
+Collect and track employee documents (ID, contracts, certificates)
+Employee profiles:
+Maintain full employee records (contact details, positions, departments, history)
+Auto‑generate secure user accounts and default passwords for new employees
+5. Client & Site Management
+Register client organizations and their sites/locations
+Link employees to specific clients and sites
+Manage service levels, staffing requirements, and incidents per site
+Store contact information and preferences for each client
+6. CRM & Business Development (Leads & Bids)
+Track CRM leads from potential client companies
+Manage bids / proposals and their status
+Coordinate marketing and sales activities inside the same platform
+7. Billing & Invoicing
+Generate client invoices based on:
+Staff assignments
+Attendance and shift data
+Agreed billing rates and VAT
+Attach supporting documents (e.g. reports, summaries)
+Monitor payment status and integrate with finance workflows
+8. Incident & Operational Reporting
+Field staff and supervisors can report incidents (security, safety, service issues)
+Operations team can:
+Log, categorize, and track incidents
+Record who reported them and from which site
+Management can review incident trends and respond quickly
+9. Assets & Procurement (As Implemented)
+Register and manage assets related to staff and operations such as:
+Uniforms, fuel cards, vehicles, equipment, and office items
+Link assets to clients, sites, or employees
+Support procurement workflows and cost tracking
+10. Dashboards & Reporting
+Role‑based dashboards for Owner, GM, HR, Finance, Operations, Marketing, and Procurement
+Overview of:
+Attendance status and trends
+Payroll and cost summaries
+Client performance and incidents
+Recruitment pipeline and CRM activity
+Exportable reports for management, finance, and auditors
+How Employees Use Alef Delta
+Get hired and onboarded through structured vacancy and screening processes
+Log in via:
+Member portal (web, mobile‑friendly)
+Telegram Mini App for daily usage
+See assigned shifts and locations clearly
+Clock in and out with GPS or approved methods:
+Reduce disputes about “who was where and when”
+View salary and history:
+Understand calculations, attendance impact, and bonuses/penalties
+Report incidents or issues from the field
+Enjoy less admin work and more focus on performance and talent
+How Companies Use Alef Delta
+Stop worrying about manual staff management:
+No need to calculate each salary one by one
+No need to chase timesheets or guess attendance
+Rely on Alef Delta as an HR and workforce partner:
+We provide and manage employees
+We monitor attendance and performance with real data
+We handle payroll rules, VAT and adjustments
+Use the Staff Portal to:
+See dashboards and reports
+Approve or adjust attendance and permissions
+Monitor client sites, incidents, and service quality
+Gain control and transparency:
+Clear, auditable records of staff work
+Strong role‑based security and access control
+Why Alef Delta
+Built for professional HR operations with a formal, compliant approach
+End‑to‑end coverage: recruitment, operations, attendance, payroll, billing, and reporting
+Field‑friendly tools:
+Telegram Mini App
+Responsive portals
+Offline‑aware attendance and queueing
+Data‑driven decisions:
+GPS, shifts, incidents, and financial data all connected
+Less worry, more focus:
+Employees focus on their work and talent
+Companies focus on growth, knowing HR and workforce processes are under control
+Summary
+Alef Delta is a complete HR and workforce platform that connects employees and companies, automates attendance, payroll, and operations, and provides professional, formal tools for managing people, shifts, sites, and clients.

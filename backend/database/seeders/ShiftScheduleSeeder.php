@@ -18,7 +18,7 @@ class ShiftScheduleSeeder extends Seeder
         $dayShiftGuard = Job::where('job_name', 'Day Shift Security Guard')->first();
         $nightShiftGuard = Job::where('job_name', 'Night Shift Security Guard')->first();
         $cleaner = Job::where('job_name', 'Office Cleaner')->first();
-        $admin = User::where('username', 'admin')->first();
+        $admin = User::where('username', 'admin')->orWhere('username', 'owner')->first();
 
         if ($employees->isEmpty() || $sites->isEmpty()) {
             echo "No employees or sites found. Skipping shift schedules.\n";

@@ -14,11 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Enable CORS globally (must be first to handle preflight OPTIONS requests)
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
-        
+
         // Disable CSRF for API routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
+
+        // Return null (throw AuthenticationException as JSON) for API routes instead of
+        // trying to redirect to a named 'login' route that doesn't exist in this API-only app.
+        $middleware->redirectGuestsTo(fn ($request) => $request->is('api/*') ? null : '/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request, \Throwable $e) {

@@ -19,7 +19,7 @@ class AttendanceSeeder extends Seeder
             return;
         }
 
-        $admin = User::where('username', 'admin')->first();
+        $admin = User::where('username', 'admin')->orWhere('username', 'owner')->first();
         $attendanceLogs = [];
 
         foreach ($schedules as $schedule) {
