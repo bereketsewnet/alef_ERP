@@ -1,0 +1,18 @@
+{
+	email {$ACME_EMAIL}
+}
+
+erp-api.alefdelta.com {
+	encode zstd gzip
+	reverse_proxy backend:80
+}
+
+erp-staff.alefdelta.com {
+	encode zstd gzip
+	reverse_proxy staff:80
+}
+
+erp-member.alefdelta.com {
+	encode zstd gzip
+	reverse_proxy member_portal:80
+}

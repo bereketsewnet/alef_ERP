@@ -193,11 +193,15 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [AssetController::class, 'store']);
         Route::get('/stats', [AssetController::class, 'stats']);
         Route::get('/unreturned', [AssetController::class, 'unreturned']);
+        Route::get('/assignment-history', [AssetController::class, 'assignmentHistory']);
+        Route::get('/batches', [AssetController::class, 'batches']);
+        Route::get('/batches/{batchId}', [AssetController::class, 'showBatch']);
         Route::get('/{id}', [AssetController::class, 'show']);
         Route::put('/{id}', [AssetController::class, 'update']);
         Route::delete('/{id}', [AssetController::class, 'destroy']);
         Route::post('/{id}/assign', [AssetController::class, 'assign']);
         Route::post('/{id}/return', [AssetController::class, 'returnAsset']);
+        Route::delete('/{id}/assignments/{assignmentId}', [AssetController::class, 'destroyAssignment']);
     });
 
     // Payroll Management
@@ -270,6 +274,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/finance', [\App\Http\Controllers\Api\ReportController::class, 'getFinanceReport']);
         Route::get('/incidents', [\App\Http\Controllers\Api\ReportController::class, 'getIncidentsReport']);
         Route::get('/roster', [\App\Http\Controllers\Api\ReportController::class, 'getRosterReport']);
+        Route::get('/assets', [\App\Http\Controllers\Api\ReportController::class, 'getAssetReport']);
         Route::get('/export/{type}', [\App\Http\Controllers\Api\ReportController::class, 'exportReport']);
     });
 

@@ -1,12 +1,38 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: alef_erp_caddy
+    profiles:
+      - standalone-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-admin@alefdelta.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      staff:
+        condition: service_started
+      member_portal:
+        condition: service_started
+    networks:
+      - alef-erp-network
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: alef_erp_backend
     restart: unless-stopped
-    ports:
-      - "4002:80"
+    expose:
+      - "80"
     environment:
       # These override the .env file inside the container
       DB_CONNECTION: mysql
@@ -27,7 +53,14 @@ services:
       - backend_storage:/var/www/html/storage
       - ./backend/.env:/var/www/html/.env:ro
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - alef-erp-network
 
@@ -39,8 +72,8 @@ services:
         - VITE_API_URL=${VITE_API_URL:-https://erp-api.alefdelta.com/api}
     container_name: alef_erp_staff
     restart: unless-stopped
-    ports:
-      - "5176:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
@@ -54,8 +87,8 @@ services:
         - VITE_API_URL=${VITE_API_URL:-https://erp-api.alefdelta.com/api}
     container_name: alef_erp_member_portal
     restart: unless-stopped
-    ports:
-      - "7071:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
@@ -66,7 +99,7 @@ services:
     container_name: alef_erp_db
     restart: unless-stopped
     ports:
-      - "3309:3306"
+      - "127.0.0.1:3309:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-alef_erp}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
@@ -79,13 +112,50 @@ services:
     networks:
       - alef-erp-network
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alef_erp_seed
+    restart: "no"
+    entrypoint: ["/bin/bash", "/seed.sh", "--container-if-empty"]
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-alef_erp}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      APP_KEY: ${APP_KEY:-}
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      JWT_SECRET: ${JWT_SECRET:-}
+      APP_URL: ${APP_URL:-https://erp-api.alefdelta.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://erp-staff.alefdelta.com}
+    volumes:
+      - ./backend:/var/www/html:cached
+      - backend_storage:/var/www/html/storage
+      - ./backend/.env:/var/www/html/.env:ro
+      - ./seed.sh:/seed.sh:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - alef-erp-network
 
   adminer:
     image: adminer
     container_name: alef_erp_adminer
     restart: always
     ports:
-      - "8083:8080"
+      - "127.0.0.1:8083:8080"
     environment:
       ADMINER_DEFAULT_SERVER: db
     depends_on:
@@ -121,3 +191,5 @@ networks:
 volumes:
   db_data:
   backend_storage:
+  caddy_data:
+  caddy_config:

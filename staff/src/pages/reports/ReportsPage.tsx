@@ -2,11 +2,11 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar as CalendarIcon, Download, FileBarChart, PieChart, BarChart } from "lucide-react"
+import { Calendar as CalendarIcon, Download } from "lucide-react"
 import { BarChart as RechartsBar, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from "recharts"
 import { startOfMonth, endOfMonth, format } from "date-fns"
 import { DataTable } from "@/components/ui/data-table"
-import { useReportDashboard, useExportReport, useAttendanceReport, useFinanceReport, useIncidentsReport, useRosterReport } from "@/services/useReports"
+import { useReportDashboard, useExportReport, useAttendanceReport, useFinanceReport, useIncidentsReport, useRosterReport, useAssetReport } from "@/services/useReports"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 
@@ -77,6 +77,30 @@ const incidentColumns: ColumnDef<any>[] = [
     }
 ]
 
+const assetColumns: ColumnDef<any>[] = [
+    { accessorKey: 'asset_code', header: 'Asset Code' },
+    { accessorKey: 'name', header: 'Asset' },
+    { accessorKey: 'company', header: 'Company' },
+    { accessorKey: 'site', header: 'Site' },
+    { accessorKey: 'category', header: 'Category' },
+    { accessorKey: 'condition', header: 'Condition' },
+    { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant="outline">{row.original.status}</Badge> },
+    { accessorKey: 'current_employee', header: 'Current Employee', cell: ({ row }) => row.original.current_employee || '—' },
+    { accessorKey: 'value', header: 'Value', cell: ({ row }) => `ETB ${Number(row.original.value).toLocaleString()}` },
+    { accessorKey: 'created_at', header: 'Created', cell: ({ row }) => format(new Date(row.original.created_at), 'MMM dd, yyyy') },
+]
+
+const assetHistoryColumns: ColumnDef<any>[] = [
+    { accessorKey: 'asset_code', header: 'Asset Code' },
+    { accessorKey: 'asset_name', header: 'Asset' },
+    { accessorKey: 'company', header: 'Company' },
+    { accessorKey: 'employee', header: 'Employee' },
+    { accessorKey: 'assigned_at', header: 'Assigned', cell: ({ row }) => format(new Date(row.original.assigned_at), 'MMM dd, yyyy HH:mm') },
+    { accessorKey: 'returned_at', header: 'Returned', cell: ({ row }) => row.original.returned_at ? format(new Date(row.original.returned_at), 'MMM dd, yyyy HH:mm') : <Badge>Currently assigned</Badge> },
+    { accessorKey: 'return_condition', header: 'Return Condition', cell: ({ row }) => row.original.return_condition || '—' },
+    { accessorKey: 'notes', header: 'Notes', cell: ({ row }) => row.original.notes || '—' },
+]
+
 export function ReportsPage() {
     const [dateRange, setDateRange] = useState({
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -91,10 +115,11 @@ export function ReportsPage() {
     const { data: attendanceData, isLoading: isLoadingAttendance } = useAttendanceReport(params)
     const { data: financeData, isLoading: isLoadingFinance } = useFinanceReport(params)
     const { data: incidentData, isLoading: isLoadingIncidents } = useIncidentsReport(params)
+    const { data: assetData, isLoading: isLoadingAssets } = useAssetReport(params)
 
     const { mutate: exportFile, isPending: isExporting } = useExportReport()
 
-    const handleExport = (type: string, format: 'pdf' | 'excel') => {
+    const handleExport = (type: string, format: 'pdf' | 'excel' | 'csv') => {
         exportFile({ type, format, params })
     }
 
@@ -128,12 +153,13 @@ export function ReportsPage() {
             </div>
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 md:w-[600px]">
+                <TabsList className="grid h-auto w-full grid-cols-3 gap-1 sm:grid-cols-6 xl:w-[760px]">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="roster">Roster</TabsTrigger>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="incidents">Incidents</TabsTrigger>
+                    <TabsTrigger value="assets">Assets</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6 mt-6">
@@ -294,6 +320,69 @@ export function ReportsPage() {
                             }
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="assets" className="mt-6 space-y-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-xl font-semibold">Asset Inventory and History</h2>
+                            <p className="text-sm text-neutral-500">Inventory created in the selected dates, plus assignment and return activity during those dates.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" onClick={() => handleExport('assets', 'csv')} disabled={isExporting || isLoadingAssets}>
+                                <Download className="mr-2 h-4 w-4" /> Download CSV
+                            </Button>
+                            <Button variant="outline" onClick={() => handleExport('assets', 'pdf')} disabled={isExporting || isLoadingAssets}>
+                                <Download className="mr-2 h-4 w-4" /> Download PDF
+                            </Button>
+                        </div>
+                    </div>
+
+                    {isLoadingAssets ? <Card><CardContent className="py-12 text-center">Loading asset report...</CardContent></Card> : <>
+                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                            {[
+                                ['Total Assets', assetData?.summary.total ?? 0],
+                                ['Available', assetData?.summary.available ?? 0],
+                                ['Assigned', assetData?.summary.assigned ?? 0],
+                                ['Total Value', `ETB ${(assetData?.summary.total_value ?? 0).toLocaleString()}`],
+                                ['History Records', assetData?.summary.history_records ?? 0],
+                            ].map(([label, value]) => (
+                                <Card key={String(label)}><CardContent className="p-4 sm:p-5"><p className="text-sm text-neutral-500">{label}</p><p className="mt-1 text-xl font-bold sm:text-2xl">{value}</p></CardContent></Card>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            <Card className="min-w-0">
+                                <CardHeader><CardTitle>Assets by Company</CardTitle><CardDescription>Quantity supplied by each client company</CardDescription></CardHeader>
+                                <CardContent className="h-[320px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RechartsBar data={assetData?.by_company || []} margin={{ top: 10, right: 10, left: 0, bottom: 55 }}>
+                                            <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-35} textAnchor="end" interval={0} height={75} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="count" name="Assets" fill="#2563eb" />
+                                        </RechartsBar>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                            <Card className="min-w-0">
+                                <CardHeader><CardTitle>Assets by Category</CardTitle><CardDescription>Inventory distribution by asset category</CardDescription></CardHeader>
+                                <CardContent className="h-[320px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RechartsPie><Pie data={assetData?.by_category || []} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={95} label>
+                                            {assetData?.by_category.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                                        </Pie><Tooltip /><Legend /></RechartsPie>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <Card>
+                            <CardHeader><CardTitle>Full Asset Inventory</CardTitle><CardDescription>{assetData?.inventory.length ?? 0} assets match the selected date range</CardDescription></CardHeader>
+                            <CardContent className="overflow-x-auto"><DataTable columns={assetColumns} data={assetData?.inventory || []} /></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle>Assignment and Return History</CardTitle><CardDescription>All asset assignment or return activity during the selected date range</CardDescription></CardHeader>
+                            <CardContent className="overflow-x-auto"><DataTable columns={assetHistoryColumns} data={assetData?.history || []} /></CardContent>
+                        </Card>
+                    </>}
                 </TabsContent>
             </Tabs>
         </div>

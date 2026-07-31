@@ -16,6 +16,9 @@ export const assetKeys = {
     detail: (id: number) => [...assetKeys.details(), id] as const,
     stats: () => [...assetKeys.all, 'stats'] as const,
     unreturned: () => [...assetKeys.all, 'unreturned'] as const,
+    assignmentHistory: (filters?: Record<string, any>) => [...assetKeys.all, 'assignment-history', filters] as const,
+    batches: (filters?: Record<string, any>) => [...assetKeys.all, 'batches', filters] as const,
+    batch: (id: string) => [...assetKeys.all, 'batch', id] as const,
 }
 
 // List assets with filters
@@ -57,16 +60,49 @@ export const useUnreturnedAssets = () => {
     })
 }
 
+export const useAssetBatches = (params?: { search?: string }) => useQuery({
+    queryKey: assetKeys.batches(params),
+    queryFn: () => assetsApi.batches(params),
+})
+
+export const useAssetBatch = (batchId: string) => useQuery({
+    queryKey: assetKeys.batch(batchId),
+    queryFn: () => assetsApi.getBatch(batchId),
+    enabled: !!batchId,
+})
+
+export const useAssetAssignmentHistory = (params?: { page?: number; search?: string; per_page?: number }) => {
+    return useQuery({
+        queryKey: assetKeys.assignmentHistory(params),
+        queryFn: () => assetsApi.assignmentHistory(params),
+    })
+}
+
+export const useDeleteAssetAssignment = () => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: ({ assetId, assignmentId }: { assetId: number; assignmentId: number }) =>
+            assetsApi.deleteAssignment(assetId, assignmentId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
+            toast.success('Assignment history deleted successfully')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to delete assignment history')
+        },
+    })
+}
+
 // Create asset
 export const useCreateAsset = () => {
     const queryClient = useQueryClient()
 
     return useMutation({
         mutationFn: (data: CreateAssetRequest) => assetsApi.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: assetKeys.lists() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.stats() })
-            toast.success('Asset created successfully')
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
+            toast.success('count' in response ? `${response.count} assets created successfully` : 'Asset created successfully')
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to create asset')
@@ -82,9 +118,7 @@ export const useUpdateAsset = () => {
         mutationFn: ({ id, data }: { id: number; data: UpdateAssetRequest }) =>
             assetsApi.update(id, data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: assetKeys.lists() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) })
-            queryClient.invalidateQueries({ queryKey: assetKeys.stats() })
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
             toast.success('Asset updated successfully')
         },
         onError: (error: any) => {
@@ -100,8 +134,7 @@ export const useDeleteAsset = () => {
     return useMutation({
         mutationFn: (id: number) => assetsApi.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: assetKeys.lists() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.stats() })
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
             toast.success('Asset deleted successfully')
         },
         onError: (error: any) => {
@@ -118,10 +151,7 @@ export const useAssignAsset = () => {
         mutationFn: ({ id, data }: { id: number; data: AssignAssetRequest }) =>
             assetsApi.assign(id, data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: assetKeys.lists() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) })
-            queryClient.invalidateQueries({ queryKey: assetKeys.stats() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.unreturned() })
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
             toast.success('Asset assigned successfully')
         },
         onError: (error: any) => {
@@ -138,10 +168,7 @@ export const useReturnAsset = () => {
         mutationFn: ({ id, data }: { id: number; data: ReturnAssetRequest }) =>
             assetsApi.returnAsset(id, data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: assetKeys.lists() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) })
-            queryClient.invalidateQueries({ queryKey: assetKeys.stats() })
-            queryClient.invalidateQueries({ queryKey: assetKeys.unreturned() })
+            queryClient.invalidateQueries({ queryKey: assetKeys.all })
             toast.success('Asset returned successfully')
         },
         onError: (error: any) => {

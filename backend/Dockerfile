@@ -21,6 +21,9 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 # Enable Apache Rewrite Module
 RUN a2enmod rewrite
 
+# Match PHP's request limits to the document upload validation rules.
+COPY docker-uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Set working directory
 WORKDIR /var/www/html
 

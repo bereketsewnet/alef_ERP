@@ -45,6 +45,21 @@ export interface ReportParams {
     page?: number
 }
 
+export interface AssetReportData {
+    summary: { total: number; available: number; assigned: number; total_value: number; history_records: number }
+    by_company: Array<{ name: string; count: number }>
+    by_category: Array<{ name: string; count: number }>
+    by_status: Array<{ name: string; count: number }>
+    inventory: Array<{
+        id: number; asset_code: string; name: string; company: string; site: string; category: string
+        condition: string; status: string; value: number; current_employee: string | null; created_at: string
+    }>
+    history: Array<{
+        id: number; asset_code: string; asset_name: string; company: string; category: string; employee: string
+        assigned_at: string; returned_at: string | null; return_condition: string | null; notes: string | null
+    }>
+}
+
 export const reportsApi = {
     getDashboardStats: (params?: ReportParams) =>
         apiClient.get<ReportDashboardStats>('/reports/dashboard', { params }),
@@ -61,7 +76,10 @@ export const reportsApi = {
     getRosterReport: (params?: ReportParams) =>
         apiClient.get('/reports/roster', { params }),
 
-    exportReport: (type: string, format: 'pdf' | 'excel', params: ReportParams) =>
+    getAssetReport: (params?: ReportParams) =>
+        apiClient.get<AssetReportData>('/reports/assets', { params }),
+
+    exportReport: (type: string, format: 'pdf' | 'excel' | 'csv', params: ReportParams) =>
         apiClient.get(`/reports/export/${type}`, {
             params: { ...params, format },
             responseType: 'blob'

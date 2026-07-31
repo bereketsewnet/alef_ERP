@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query"
 import type { AxiosResponse } from "axios"
-import { reportsApi, type ReportParams, type ReportDashboardStats } from "@/api/endpoints/reports"
+import { reportsApi, type ReportParams, type ReportDashboardStats, type AssetReportData } from "@/api/endpoints/reports"
 
 export function useReportDashboard(params?: ReportParams) {
     return useQuery({
@@ -38,16 +38,23 @@ export function useRosterReport(params?: ReportParams) {
     })
 }
 
+export function useAssetReport(params?: ReportParams) {
+    return useQuery({
+        queryKey: ['reports', 'assets', params],
+        queryFn: () => reportsApi.getAssetReport(params).then((res: AxiosResponse<AssetReportData>) => res.data),
+    })
+}
+
 export function useExportReport() {
     return useMutation({
-        mutationFn: async ({ type, format, params }: { type: string, format: 'pdf' | 'excel', params: ReportParams }) => {
+        mutationFn: async ({ type, format, params }: { type: string, format: 'pdf' | 'excel' | 'csv', params: ReportParams }) => {
             const response = await reportsApi.exportReport(type, format, params)
 
             // Create a blob link to download
             const url = window.URL.createObjectURL(new Blob([response.data]))
             const link = document.createElement('a')
             link.href = url
-            link.setAttribute('download', `${type}_report.${format}`)
+            link.setAttribute('download', `${type}_report.${format === 'excel' ? 'xlsx' : format}`)
             document.body.appendChild(link)
             link.click()
             link.remove()

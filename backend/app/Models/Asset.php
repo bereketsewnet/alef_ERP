@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Asset extends Model
@@ -13,6 +14,10 @@ class Asset extends Model
 
     protected $fillable = [
         'asset_code',
+        'client_id',
+        'site_id',
+        'batch_id',
+        'batch_name',
         'name',
         'category',
         'condition',
@@ -21,6 +26,16 @@ class Asset extends Model
         'description',
         'status',
     ];
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(ClientSite::class, 'site_id');
+    }
 
     protected $casts = [
         'purchase_date' => 'date',
@@ -96,7 +111,9 @@ class Asset extends Model
         return $query->where(function ($q) use ($search) {
             $q->where('asset_code', 'LIKE', "%{$search}%")
                 ->orWhere('name', 'LIKE', "%{$search}%")
-                ->orWhere('category', 'LIKE', "%{$search}%");
+                ->orWhere('category', 'LIKE', "%{$search}%")
+                ->orWhereHas('client', fn ($client) => $client->where('company_name', 'LIKE', "%{$search}%"))
+                ->orWhereHas('site', fn ($site) => $site->where('site_name', 'LIKE', "%{$search}%"));
         });
     }
 

@@ -56,18 +56,18 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Create Roles and Assign Permissions
 
         // Super Admin
-        $superAdmin = Role::create(['name' => 'SUPER_ADMIN']);
-        $superAdmin->givePermissionTo(Permission::all());
+        $superAdmin = Role::firstOrCreate(['name' => 'SUPER_ADMIN', 'guard_name' => 'web']);
+        $superAdmin->syncPermissions(Permission::all());
 
         // Operations Manager
-        $opsManager = Role::create(['name' => 'OPS_MANAGER']);
-        $opsManager->givePermissionTo([
+        $opsManager = Role::firstOrCreate(['name' => 'OPS_MANAGER', 'guard_name' => 'web']);
+        $opsManager->syncPermissions([
             'view_employees', 'create_employees', 'edit_employees',
             'view_attendance', 'verify_attendance',
             'view_roster', 'create_roster', 'edit_roster', 'delete_roster',
@@ -76,8 +76,8 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // HR Manager
-        $hrManager = Role::create(['name' => 'HR_MANAGER']);
-        $hrManager->givePermissionTo([
+        $hrManager = Role::firstOrCreate(['name' => 'HR_MANAGER', 'guard_name' => 'web']);
+        $hrManager->syncPermissions([
             'view_employees', 'create_employees', 'edit_employees', 'delete_employees',
             'view_attendance', 'view_roster',
             'view_payroll', 'generate_payroll',
@@ -85,8 +85,8 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // Finance
-        $finance = Role::create(['name' => 'FINANCE']);
-        $finance->givePermissionTo([
+        $finance = Role::firstOrCreate(['name' => 'FINANCE', 'guard_name' => 'web']);
+        $finance->syncPermissions([
             'view_employees', 'view_attendance',
             'view_payroll', 'generate_payroll',
             'view_invoices', 'create_invoices',
@@ -94,15 +94,15 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // Site Supervisor
-        $siteSupervisor = Role::create(['name' => 'SITE_SUPERVISOR']);
-        $siteSupervisor->givePermissionTo([
+        $siteSupervisor = Role::firstOrCreate(['name' => 'SITE_SUPERVISOR', 'guard_name' => 'web']);
+        $siteSupervisor->syncPermissions([
             'view_employees', 'view_attendance', 'verify_attendance',
             'view_roster', 'create_reports',
         ]);
 
         // Field Staff
-        $fieldStaff = Role::create(['name' => 'FIELD_STAFF']);
-        $fieldStaff->givePermissionTo([
+        $fieldStaff = Role::firstOrCreate(['name' => 'FIELD_STAFF', 'guard_name' => 'web']);
+        $fieldStaff->syncPermissions([
             'create_attendance', 'view_attendance', 'view_roster',
         ]);
     }

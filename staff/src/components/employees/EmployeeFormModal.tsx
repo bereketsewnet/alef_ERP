@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateEmployee, useUpdateEmployee } from '@/services/useEmployees'
+import { employeeDocumentsApi } from '@/api/endpoints/employeeDocuments'
 import type { Employee } from '@/api/endpoints/employees'
 import { EmployeeCredentialsModal } from './EmployeeCredentialsModal'
+import { EmployeeDocumentsPanel } from './EmployeeDocumentsPanel'
+import {
+    NamedFileUploader,
+    type NamedFileItem,
+} from '@/components/shared/NamedFileUploader'
+import { toast } from '@/components/ui/use-toast'
 import {
     Dialog,
     DialogContent,
@@ -13,7 +20,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Briefcase, User } from 'lucide-react'
+import { Briefcase, FileText, User } from 'lucide-react'
 import { EmployeeJobsPanel } from './EmployeeJobsPanel'
 import {
     Form,
@@ -50,11 +57,12 @@ interface EmployeeFormModalProps {
     employee?: Employee | null
 }
 
-function EmployeeFormFields({ form, isSubmitting, employee, onClose }: {
+function EmployeeFormFields({ form, isSubmitting, employee, onClose, children }: {
     form: UseFormReturn<EmployeeFormValues>,
     isSubmitting: boolean,
     employee?: Employee | null,
-    onClose: () => void
+    onClose: () => void,
+    children?: ReactNode
 }) {
     return (
         <div className="space-y-4">
@@ -157,6 +165,8 @@ function EmployeeFormFields({ form, isSubmitting, employee, onClose }: {
                 )}
             />
 
+            {children}
+
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>
                     Cancel
@@ -174,10 +184,13 @@ function EmployeeFormFields({ form, isSubmitting, employee, onClose }: {
 }
 
 export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModalProps) {
-    const { mutate: createEmployee, isPending: isCreating } = useCreateEmployee()
+    const { mutateAsync: createEmployee, isPending: isCreating } = useCreateEmployee()
     const { mutate: updateEmployee, isPending: isUpdating } = useUpdateEmployee()
     const [credentials, setCredentials] = useState<{ username: string; email: string; password: string; message: string } | null>(null)
     const [showCredentialsModal, setShowCredentialsModal] = useState(false)
+    const [attachments, setAttachments] = useState<NamedFileItem[]>([])
+    const [attachmentError, setAttachmentError] = useState<string>()
+    const [isUploadingDocuments, setIsUploadingDocuments] = useState(false)
 
     const form = useForm<EmployeeFormValues>({
         resolver: zodResolver(employeeSchema),
@@ -210,10 +223,22 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                 status: 'active',
                 hire_date: '',
             })
+            setAttachments([])
+            setAttachmentError(undefined)
         }
-    }, [employee, form])
+    }, [employee, form, open])
 
-    const onSubmit = (data: EmployeeFormValues) => {
+    const validateAttachments = () => {
+        if (attachments.some((item) => !item.name.trim() || !item.file)) {
+            return 'Every attachment needs both a file name and a selected file.'
+        }
+        if (attachments.some((item) => item.file && item.file.size > 10 * 1024 * 1024)) {
+            return 'Each attachment must be 10 MB or smaller.'
+        }
+        return undefined
+    }
+
+    const onSubmit = async (data: EmployeeFormValues) => {
         if (employee) {
             updateEmployee(
                 { id: employee.id, data },
@@ -224,20 +249,53 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                     },
                 }
             )
-        } else {
-            createEmployee(data, {
-                onSuccess: (response) => {
-                    form.reset()
-                    // If credentials are provided, show them in a modal
-                    if (response?.login_credentials) {
-                        setCredentials(response.login_credentials)
-                        setShowCredentialsModal(true)
-                        // Don't close the form modal yet - wait for user to acknowledge credentials
-                    } else {
-                        onClose()
-                    }
-                },
-            })
+            return
+        }
+
+        const validationError = validateAttachments()
+        setAttachmentError(validationError)
+        if (validationError) return
+
+        try {
+            const response = await createEmployee(data)
+            const employeeId = response.data.id
+
+            if (attachments.length > 0) {
+                setIsUploadingDocuments(true)
+                const results = await Promise.allSettled(
+                    attachments.map((attachment) => employeeDocumentsApi.upload(employeeId, {
+                        type: 'OTHER',
+                        name: attachment.name.trim(),
+                        file: attachment.file!,
+                    }))
+                )
+                const failedUploads = results.filter((result) => result.status === 'rejected').length
+                if (failedUploads > 0) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Some documents were not uploaded',
+                        description: `${failedUploads} of ${attachments.length} document(s) failed. Open the employee details to retry them.`,
+                    })
+                } else {
+                    toast({
+                        title: 'Documents uploaded',
+                        description: `${attachments.length} employee document(s) saved successfully.`,
+                    })
+                }
+            }
+
+            form.reset()
+            setAttachments([])
+            if (response.login_credentials) {
+                setCredentials(response.login_credentials)
+                setShowCredentialsModal(true)
+            } else {
+                onClose()
+            }
+        } catch {
+            // The employee mutation already displays the API error.
+        } finally {
+            setIsUploadingDocuments(false)
         }
     }
 
@@ -255,7 +313,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
 
                 {employee ? (
                     <Tabs defaultValue="info" className="mt-4">
-                        <TabsList className="grid w-full grid-cols-2 gap-1 sm:gap-2">
+                        <TabsList className="grid w-full grid-cols-3 gap-1 sm:gap-2">
                             <TabsTrigger value="info" className="flex items-center gap-2">
                                 <User className="h-4 w-4" />
                                 Information
@@ -263,6 +321,10 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                             <TabsTrigger value="jobs" className="flex items-center gap-2">
                                 <Briefcase className="h-4 w-4" />
                                 Jobs & Pay
+                            </TabsTrigger>
+                            <TabsTrigger value="documents" className="flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Documents
                             </TabsTrigger>
                         </TabsList>
 
@@ -285,16 +347,33 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                                 employeeName={`${employee.first_name} ${employee.last_name}`}
                             />
                         </TabsContent>
+
+                        <TabsContent value="documents" className="mt-4">
+                            <EmployeeDocumentsPanel employeeId={employee.id} />
+                        </TabsContent>
                     </Tabs>
                 ) : (
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <EmployeeFormFields
                                 form={form}
-                                isSubmitting={isCreating}
+                                isSubmitting={isCreating || isUploadingDocuments}
                                 employee={undefined}
                                 onClose={onClose}
-                            />
+                            >
+                                <NamedFileUploader
+                                    value={attachments}
+                                    onChange={(items) => {
+                                        setAttachments(items)
+                                        setAttachmentError(undefined)
+                                    }}
+                                    disabled={isCreating || isUploadingDocuments}
+                                    error={attachmentError}
+                                    title="Employee Documents"
+                                    description="Add IDs, certificates, or any other supporting employee files."
+                                    addButtonLabel="Add document"
+                                />
+                            </EmployeeFormFields>
                         </form>
                     </Form>
                 )}

@@ -24,7 +24,14 @@ class AssetService
      * @return AssetAssignment
      * @throws \Exception
      */
-    public function assignAsset(int $assetId, int $employeeId, ?string $notes = null, ?int $assignedByUserId = null): AssetAssignment
+    public function assignAsset(
+        int $assetId,
+        int $employeeId,
+        ?string $notes = null,
+        ?int $assignedByUserId = null,
+        ?string $assignmentDocumentPath = null,
+        ?string $assignmentConditionImagePath = null
+    ): AssetAssignment
     {
         $asset = Asset::findOrFail($assetId);
 
@@ -48,6 +55,8 @@ class AssetService
             'assigned_to_employee_id' => $employeeId,
             'assigned_at' => now(),
             'notes' => $notes,
+            'assignment_document_path' => $assignmentDocumentPath,
+            'assignment_condition_image_path' => $assignmentConditionImagePath,
             'assigned_by_user_id' => $assignedByUserId,
         ]);
 
@@ -69,7 +78,14 @@ class AssetService
      * @return AssetAssignment
      * @throws \Exception
      */
-    public function returnAsset(int $assetId, string $returnCondition, ?string $notes = null, ?int $returnedByUserId = null): AssetAssignment
+    public function returnAsset(
+        int $assetId,
+        string $returnCondition,
+        ?string $notes = null,
+        ?int $returnedByUserId = null,
+        ?string $returnDocumentPath = null,
+        ?string $returnConditionImagePath = null
+    ): AssetAssignment
     {
         $asset = Asset::findOrFail($assetId);
 
@@ -87,6 +103,8 @@ class AssetService
             'returned_at' => now(),
             'return_condition' => $returnCondition,
             'notes' => $assignment->notes ? $assignment->notes . "\n" . $notes : $notes,
+            'return_document_path' => $returnDocumentPath,
+            'return_condition_image_path' => $returnConditionImagePath,
             'returned_by_user_id' => $returnedByUserId,
         ]);
 

@@ -1,5 +1,34 @@
 #!/bin/bash
 
+if [ "${1:-}" = "--container-if-empty" ]; then
+    set -e
+    cd /var/www/html
+
+    echo "Checking whether the database needs initial seed data..."
+    php artisan migrate --force
+
+    USER_COUNT=$(php -r '
+        $dsn = sprintf(
+            "mysql:host=%s;port=%s;dbname=%s",
+            getenv("DB_HOST") ?: "db",
+            getenv("DB_PORT") ?: "3306",
+            getenv("DB_DATABASE") ?: "alef_erp"
+        );
+        $pdo = new PDO($dsn, getenv("DB_USERNAME") ?: "root", getenv("DB_PASSWORD") ?: "root");
+        echo (int) $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+    ')
+
+    if [ "$USER_COUNT" -gt 0 ]; then
+        echo "Database already contains $USER_COUNT user(s); automatic seeding skipped."
+        exit 0
+    fi
+
+    echo "The users table is empty; running DatabaseSeeder..."
+    php artisan db:seed --force
+    echo "Initial database seed completed successfully."
+    exit 0
+fi
+
 echo "=========================================="
 echo "  ALEF DELTA ERP - SEED DATABASE"
 echo "=========================================="
@@ -160,4 +189,3 @@ echo ""
 echo "Tip: After 'docker-compose down -v' and 'docker-compose up -d',"
 echo "     run ./seed.sh again to migrate and seed all sample users."
 echo ""
-

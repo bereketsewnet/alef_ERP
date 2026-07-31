@@ -44,7 +44,7 @@ class EmployeeDocumentController extends Controller
         $employee = Employee::findOrFail($employeeId);
 
         $validated = $request->validate([
-            'file' => 'required|file|max:10240', // 10MB
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,doc,docx,txt|max:10240', // 10MB
             'type' => 'required|string|max:100',
             'name' => 'required|string|max:255',
             'valid_until' => 'nullable|date',
@@ -84,4 +84,3 @@ class EmployeeDocumentController extends Controller
         return response()->json(['message' => 'Document deleted successfully']);
     }
 }
-

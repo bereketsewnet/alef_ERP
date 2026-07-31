@@ -10,6 +10,7 @@ use App\Models\ShiftSchedule;
 use App\Models\OperationalReport;
 use App\Models\Employee;
 use App\Models\Asset;
+use App\Models\AssetAssignment;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel; // We might need a generic export class
@@ -17,6 +18,105 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    private function assetReportData(?string $startDate, ?string $endDate): array
+    {
+        $query = Asset::with([
+            'client', 'site', 'currentAssignment.employee',
+            'assignments' => fn ($assignment) => $assignment->with('employee')->orderBy('assigned_at'),
+        ]);
+
+        if ($startDate) {
+            $query->where('created_at', '>=', Carbon::parse($startDate)->startOfDay());
+        }
+        if ($endDate) {
+            $query->where('created_at', '<=', Carbon::parse($endDate)->endOfDay());
+        }
+
+        $assets = $query->orderByDesc('created_at')->get();
+        $inventory = $assets->map(function (Asset $asset) {
+            return [
+                'id' => $asset->id,
+                'asset_code' => $asset->asset_code,
+                'name' => $asset->name,
+                'company' => $asset->client?->company_name ?? 'No company',
+                'site' => $asset->site?->site_name ?? 'No site',
+                'category' => $asset->category,
+                'condition' => $asset->condition,
+                'status' => $asset->current_assignment_status,
+                'value' => (float) $asset->value,
+                'current_employee' => $asset->currentAssignment?->employee
+                    ? trim($asset->currentAssignment->employee->first_name . ' ' . $asset->currentAssignment->employee->last_name)
+                    : null,
+                'created_at' => $asset->created_at?->toDateTimeString(),
+            ];
+        })->values();
+
+        $historyQuery = AssetAssignment::with(['asset.client', 'employee']);
+        if ($startDate || $endDate) {
+            $start = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
+            $end = $endDate ? Carbon::parse($endDate)->endOfDay() : null;
+            $historyQuery->where(function ($query) use ($start, $end) {
+                $query->where(function ($assigned) use ($start, $end) {
+                    if ($start) $assigned->where('assigned_at', '>=', $start);
+                    if ($end) $assigned->where('assigned_at', '<=', $end);
+                })->orWhere(function ($returned) use ($start, $end) {
+                    $returned->whereNotNull('returned_at');
+                    if ($start) $returned->where('returned_at', '>=', $start);
+                    if ($end) $returned->where('returned_at', '<=', $end);
+                });
+            });
+        }
+        $history = $historyQuery->latest('assigned_at')->get()->filter(fn ($assignment) => $assignment->asset)
+            ->map(function (AssetAssignment $assignment) {
+                $asset = $assignment->asset;
+                return [
+                    'id' => $assignment->id,
+                    'asset_code' => $asset->asset_code,
+                    'asset_name' => $asset->name,
+                    'company' => $asset->client?->company_name ?? 'No company',
+                    'category' => $asset->category,
+                    'employee' => $assignment->employee
+                        ? trim($assignment->employee->first_name . ' ' . $assignment->employee->last_name)
+                        : 'Unknown employee',
+                    'assigned_at' => $assignment->assigned_at?->toDateTimeString(),
+                    'returned_at' => $assignment->returned_at?->toDateTimeString(),
+                    'return_condition' => $assignment->return_condition,
+                    'notes' => $assignment->notes,
+                ];
+            })->values();
+
+        $byCompany = $assets->groupBy(fn ($asset) => $asset->client?->company_name ?? 'No company')
+            ->map(fn ($items, $name) => ['name' => $name, 'count' => $items->count()])->values();
+        $byCategory = $assets->groupBy(fn ($asset) => $asset->category ?: 'Uncategorized')
+            ->map(fn ($items, $name) => ['name' => $name, 'count' => $items->count()])->values();
+        $byStatus = $assets->groupBy(fn ($asset) => $asset->current_assignment_status)
+            ->map(fn ($items, $name) => ['name' => ucfirst($name), 'count' => $items->count()])->values();
+
+        return [
+            'summary' => [
+                'total' => $assets->count(),
+                'available' => $assets->filter(fn ($asset) => $asset->current_assignment_status === 'available')->count(),
+                'assigned' => $assets->filter(fn ($asset) => $asset->current_assignment_status === 'assigned')->count(),
+                'total_value' => round((float) $assets->sum('value'), 2),
+                'history_records' => $history->count(),
+            ],
+            'by_company' => $byCompany,
+            'by_category' => $byCategory,
+            'by_status' => $byStatus,
+            'inventory' => $inventory,
+            'history' => $history,
+        ];
+    }
+
+    public function getAssetReport(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        return response()->json($this->assetReportData($request->start_date, $request->end_date));
+    }
     /**
      * Get comprehensive dashboard stats
      */
@@ -268,6 +368,35 @@ class ReportController extends Controller
         $title = ucfirst($type) . " Report";
         
         switch ($type) {
+            case 'assets':
+                $assetReport = $this->assetReportData($startDate, $endDate);
+                if ($format === 'pdf') {
+                    return Pdf::loadView('reports.asset_pdf', [
+                        'title' => 'Asset Inventory and History Report',
+                        'report' => $assetReport,
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+                    ])->setPaper('a4', 'landscape')->download('asset_report.pdf');
+                }
+
+                if ($format === 'csv') {
+                    return response()->streamDownload(function () use ($assetReport) {
+                        $output = fopen('php://output', 'w');
+                        fputcsv($output, ['Asset Code', 'Asset', 'Company', 'Site', 'Category', 'Condition', 'Status', 'Value', 'Current Employee', 'Created At']);
+                        foreach ($assetReport['inventory'] as $row) {
+                            fputcsv($output, [$row['asset_code'], $row['name'], $row['company'], $row['site'], $row['category'], $row['condition'], $row['status'], $row['value'], $row['current_employee'], $row['created_at']]);
+                        }
+                        fputcsv($output, []);
+                        fputcsv($output, ['ASSIGNMENT AND RETURN HISTORY']);
+                        fputcsv($output, ['Asset Code', 'Asset', 'Company', 'Category', 'Employee', 'Assigned At', 'Returned At', 'Return Condition', 'Notes']);
+                        foreach ($assetReport['history'] as $row) {
+                            fputcsv($output, [$row['asset_code'], $row['asset_name'], $row['company'], $row['category'], $row['employee'], $row['assigned_at'], $row['returned_at'], $row['return_condition'], $row['notes']]);
+                        }
+                        fclose($output);
+                    }, 'asset_report.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+                }
+                abort(422, 'Asset reports support PDF or CSV format.');
+
             case 'attendance':
                 $query = AttendanceLog::with(['employee', 'schedule.employee', 'schedule.site']);
                 

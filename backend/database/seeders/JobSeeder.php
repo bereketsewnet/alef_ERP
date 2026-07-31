@@ -21,6 +21,7 @@ class JobSeeder extends Seeder
             $jobs = array_merge($jobs, [
                 [
                     'category_id' => $securityCategory->id,
+                    'job_code' => 'SEC-001',
                     'job_name' => 'Day Shift Security Guard',
                     'description' => 'Security guard for day shift (8 AM - 4 PM)',
                     'pay_type' => 'MONTHLY',
@@ -35,6 +36,7 @@ class JobSeeder extends Seeder
                 ],
                 [
                     'category_id' => $securityCategory->id,
+                    'job_code' => 'SEC-002',
                     'job_name' => 'Night Shift Security Guard',
                     'description' => 'Security guard for night shift (8 PM - 4 AM)',
                     'pay_type' => 'MONTHLY',
@@ -49,6 +51,7 @@ class JobSeeder extends Seeder
                 ],
                 [
                     'category_id' => $securityCategory->id,
+                    'job_code' => 'SEC-003',
                     'job_name' => 'Security Supervisor',
                     'description' => 'Supervisor for security team',
                     'pay_type' => 'MONTHLY',
@@ -68,6 +71,7 @@ class JobSeeder extends Seeder
             $jobs = array_merge($jobs, [
                 [
                     'category_id' => $cleaningCategory->id,
+                    'job_code' => 'CLN-001',
                     'job_name' => 'Office Cleaner',
                     'description' => 'General office cleaning and maintenance',
                     'pay_type' => 'MONTHLY',
@@ -82,6 +86,7 @@ class JobSeeder extends Seeder
                 ],
                 [
                     'category_id' => $cleaningCategory->id,
+                    'job_code' => 'CLN-002',
                     'job_name' => 'Deep Clean Specialist',
                     'description' => 'Specialized deep cleaning services',
                     'pay_type' => 'HOURLY',
@@ -101,6 +106,7 @@ class JobSeeder extends Seeder
             $jobs = array_merge($jobs, [
                 [
                     'category_id' => $hospitalityCategory->id,
+                    'job_code' => 'HSP-001',
                     'job_name' => 'Waiter/Waitress',
                     'description' => 'Restaurant service staff',
                     'pay_type' => 'HOURLY',
@@ -120,6 +126,7 @@ class JobSeeder extends Seeder
             $jobs = array_merge($jobs, [
                 [
                     'category_id' => $constructionCategory->id,
+                    'job_code' => 'CST-001',
                     'job_name' => 'Construction Laborer',
                     'description' => 'General construction work',
                     'pay_type' => 'HOURLY',
