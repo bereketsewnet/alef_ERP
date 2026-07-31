@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\CrmLeadController;
 use App\Http\Controllers\Api\BidController;
+use App\Http\Controllers\Api\PublicRecruitmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,17 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/telegram', [AuthController::class, 'telegramLogin']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
+});
+
+// Public marketing-site recruitment API. No JWT is required. Read traffic and
+// submissions have separate rate limits to protect the ERP from abuse.
+Route::prefix('public/recruitment')->group(function () {
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/vacancies', [PublicRecruitmentController::class, 'vacancies']);
+        Route::get('/vacancies/{id}', [PublicRecruitmentController::class, 'vacancy']);
+        Route::get('/jobs', [PublicRecruitmentController::class, 'jobs']);
+    });
+    Route::post('/applications', [PublicRecruitmentController::class, 'apply'])->middleware('throttle:5,1');
 });
 
 // Protected Routes (JWT)

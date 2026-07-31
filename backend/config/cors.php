@@ -1,9 +1,11 @@
 <?php
 
+$marketingOrigins = array_values(array_filter(array_map('trim', explode(',', env('MARKETING_ALLOWED_ORIGINS', '')))));
+
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
-    'allowed_origins' => [
+    'allowed_origins' => array_merge([
         'http://localhost:5175',  // Staff Portal (local)
         'http://localhost:7070',  // Member Portal (local)
         'http://127.0.0.1:5175',
@@ -14,7 +16,7 @@ return [
         'http://102.211.186.118:7071',  // Member Portal (VPS IP)
         'https://erp-staff.alefdelta.com',   // Staff Portal (production)
         'https://erp-member.alefdelta.com',  // Member Portal (production)
-    ],
+    ], $marketingOrigins),
     'allowed_origins_patterns' => [
         '/^http:\/\/localhost:\d+$/',  // Allow any localhost port
         '/^http:\/\/127\.0\.0\.1:\d+$/',  // Allow any 127.0.0.1 port
