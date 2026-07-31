@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Calendar, Cloud, Clock, User, CreditCard } from 'lucide-react'
+import { Home, Calendar, Cloud, Clock, User, CreditCard, ClipboardCheck, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 const navItems = [
     { path: '/', icon: Home, labelKey: 'nav.home' },
@@ -14,11 +15,19 @@ const navItems = [
 
 export function BottomNav() {
     const { t } = useTranslation()
+    const { user } = useAuth()
+    const visibleItems = user?.is_site_controller
+        ? [
+            ...navItems.filter(item => item.path !== '/salary' && item.path !== '/pending'),
+            { path: '/site-attendance', icon: ClipboardCheck, labelKey: 'Site' },
+            { path: '/incidents', icon: TriangleAlert, labelKey: 'Incidents' },
+          ]
+        : navItems
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-50">
             <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-                {navItems.map((item) => (
+                {visibleItems.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
@@ -36,7 +45,7 @@ export function BottomNav() {
                                 <item.icon
                                     className={cn('h-6 w-6', isActive && 'stroke-[2.5]')}
                                 />
-                                <span className="text-xs mt-1 font-medium">{t(item.labelKey)}</span>
+                                <span className="text-[10px] mt-1 font-medium">{item.labelKey.includes('.') ? t(item.labelKey) : item.labelKey}</span>
                             </>
                         )}
                     </NavLink>

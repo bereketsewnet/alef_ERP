@@ -187,6 +187,8 @@ class AuthController extends Controller
 
         $user->update($request->only(['email', 'phone_number']));
 
+        $user->setAttribute('is_site_controller', in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $user->employee && str_starts_with($user->employee->employee_code, 'FS-') && $user->supervisedSites()->exists());
+
         return response()->json([
             'message' => 'Profile updated successfully',
             'user' => $user
@@ -328,6 +330,7 @@ class AuthController extends Controller
                 return response()->json(['error' => 'User not found'], 401);
             }
             $user->load('employee');
+            $user->setAttribute('is_site_controller', in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $user->employee && str_starts_with($user->employee->employee_code, 'FS-') && $user->supervisedSites()->exists());
             return response()->json(['user' => $user]);
         } catch (\Exception $e) {
             \Log::error('Me error: ' . $e->getMessage());

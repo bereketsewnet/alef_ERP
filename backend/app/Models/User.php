@@ -57,5 +57,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(Employee::class);
     }
-}
 
+    public function supervisedSites()
+    {
+        return $this->belongsToMany(ClientSite::class, 'client_site_supervisors', 'user_id', 'client_site_id')
+            ->withTimestamps();
+    }
+}

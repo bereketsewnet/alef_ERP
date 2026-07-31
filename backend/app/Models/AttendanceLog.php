@@ -15,6 +15,15 @@ class AttendanceLog extends Model
         'clock_out_time',
         'clock_in_lat',
         'clock_in_long',
+        'clock_in_accuracy',
+        'clock_in_distance',
+        'clock_out_lat',
+        'clock_out_long',
+        'clock_out_accuracy',
+        'clock_out_distance',
+        'clock_out_verified',
+        'clock_in_photo_url',
+        'clock_out_photo_url',
         'is_verified',
         'verification_method',
         'flagged_late',
@@ -33,6 +42,7 @@ class AttendanceLog extends Model
         'flagged_late' => 'boolean',
         'with_permission' => 'boolean',
         'manual_entry' => 'boolean',
+        'clock_out_verified' => 'boolean',
     ];
 
     public function schedule()

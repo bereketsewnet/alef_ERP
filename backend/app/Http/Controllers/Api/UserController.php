@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use OpenApi\Annotations as OA;
 
 class UserController extends Controller
@@ -25,7 +26,7 @@ class UserController extends Controller
     {
         $this->authorizeAdmin();
 
-        $query = User::with('employee');
+        $query = User::with(['employee', 'supervisedSites.client']);
 
         if ($request->has('role')) {
             $query->where('role', $request->role);
@@ -39,7 +40,7 @@ class UserController extends Controller
             });
         }
 
-        return response()->json($query->paginate(20));
+        return response()->json($query->paginate(min($request->integer('per_page', 20), 500)));
     }
 
     /**
@@ -173,6 +174,25 @@ class UserController extends Controller
         $user->update(['password' => Hash::make($request->new_password)]);
 
         return response()->json(['message' => 'Password reset successfully']);
+    }
+
+    public function updateSites(Request $request, $id)
+    {
+        $this->authorizeAdmin();
+        $user = User::findOrFail($id);
+
+        if (!in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true)) {
+            return response()->json(['message' => 'Sites can only be assigned to Field Staff or Supervisor users.'], 422);
+        }
+
+        $validated = $request->validate([
+            'site_ids' => 'present|array',
+            'site_ids.*' => ['integer', 'distinct', Rule::exists('client_sites', 'id')],
+        ]);
+
+        $user->supervisedSites()->sync($validated['site_ids']);
+
+        return response()->json($user->load(['employee', 'supervisedSites.client']));
     }
 
     private function authorizeAdmin()

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AuthFixController;
 use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\AttendanceImportController;
 use App\Http\Controllers\Api\RosterController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\ClientController;
@@ -25,6 +26,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/telegram', [AuthController::class, 'telegramLogin']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
 });
 
 // Protected Routes (JWT)
@@ -32,7 +34,6 @@ Route::middleware('auth:api')->group(function () {
     
     // Auth Routes
     Route::prefix('auth')->group(function () {
-        Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::post('auth/sync-users', [AuthFixController::class, 'generateUsersForEmployees']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -46,6 +47,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [\App\Http\Controllers\Api\UserController::class, 'store']);
         Route::get('/{id}', [\App\Http\Controllers\Api\UserController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\Api\UserController::class, 'update']);
+        Route::put('/{id}/sites', [\App\Http\Controllers\Api\UserController::class, 'updateSites']);
         Route::post('/{id}/reset-password', [\App\Http\Controllers\Api\UserController::class, 'resetPassword']);
     });
 
@@ -60,6 +62,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/logs/{id}/verify', [AttendanceController::class, 'verify']);
         Route::put('/logs/{id}/unverify', [AttendanceController::class, 'unverify']);
         Route::get('/my-logs', [AttendanceController::class, 'myLogs']);
+        Route::get('/controller-sites', [AttendanceController::class, 'controllerSites']);
         Route::get('/export', [AttendanceController::class, 'exportAttendance']);
 
         // Permission flags
@@ -70,6 +73,9 @@ Route::middleware('auth:api')->group(function () {
         // Manual attendance entry
         Route::get('/pending-shifts', [AttendanceController::class, 'pendingShifts']);
         Route::post('/manual', [AttendanceController::class, 'manualEntry']);
+        Route::get('/import/template', [AttendanceImportController::class, 'template']);
+        Route::get('/import/bundle', [AttendanceImportController::class, 'bundle']);
+        Route::post('/import', [AttendanceImportController::class, 'import']);
         Route::put('/{id}/manual', [AttendanceController::class, 'updateManualEntry']);
         Route::delete('/{id}/manual', [AttendanceController::class, 'deleteManualEntry']);
     });
@@ -78,6 +84,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('roster')->group(function () {
         Route::get('/', [RosterController::class, 'index']);
         Route::post('/bulk-assign', [RosterController::class, 'bulkAssign']);
+        Route::post('/field-staff/bulk-assign', [RosterController::class, 'bulkAssignControllers']);
         Route::get('/my-roster', [RosterController::class, 'myRoster']);
         Route::delete('/by-employee/{employeeId}', [RosterController::class, 'deleteByEmployee']);
         Route::delete('/{id}', [RosterController::class, 'destroy']);
@@ -123,6 +130,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('clients')->group(function () {
         Route::get('/', [ClientController::class, 'index']);
         Route::post('/', [ClientController::class, 'store']);
+        Route::get('/site-staff-options', [ClientController::class, 'siteStaffOptions']);
         Route::get('/{id}', [ClientController::class, 'show']);
         Route::put('/{id}', [ClientController::class, 'update']);
         Route::delete('/{id}', [ClientController::class, 'destroy']);
@@ -130,6 +138,8 @@ Route::middleware('auth:api')->group(function () {
         // Client sites
         Route::post('/{id}/sites', [ClientController::class, 'createSite']);
         Route::get('/{clientId}/sites', [ClientController::class, 'getSites']);
+        Route::put('/{clientId}/sites/{siteId}', [ClientController::class, 'updateSite']);
+        Route::put('/{clientId}/sites/{siteId}/supervisors', [ClientController::class, 'updateSiteSupervisors']);
         Route::delete('/{clientId}/sites/{siteId}', [ClientController::class, 'destroySite']);
     });
 
@@ -240,6 +250,7 @@ Route::middleware('auth:api')->group(function () {
     // Invoice Routes
     Route::prefix('invoices')->group(function () {
         Route::get('/stats', [\App\Http\Controllers\Api\InvoiceController::class, 'dashboard_stats']);
+        Route::get('/client/{clientId}/penalty-preview', [\App\Http\Controllers\Api\InvoiceController::class, 'penaltyPreview']);
         Route::get('/', [\App\Http\Controllers\Api\InvoiceController::class, 'index']);
         Route::post('/', [\App\Http\Controllers\Api\InvoiceController::class, 'store']);
         Route::get('/{id}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
@@ -275,6 +286,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/incidents', [\App\Http\Controllers\Api\ReportController::class, 'getIncidentsReport']);
         Route::get('/roster', [\App\Http\Controllers\Api\ReportController::class, 'getRosterReport']);
         Route::get('/assets', [\App\Http\Controllers\Api\ReportController::class, 'getAssetReport']);
+        Route::get('/clients-sites', [\App\Http\Controllers\Api\ReportController::class, 'getClientSiteReport']);
         Route::get('/export/{type}', [\App\Http\Controllers\Api\ReportController::class, 'exportReport']);
     });
 

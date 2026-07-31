@@ -13,8 +13,8 @@ export const incidentApi = {
         formData.append('severity_level', payload.severity_level)
 
         if (payload.images) {
-            payload.images.forEach((image, index) => {
-                formData.append(`images[${index}]`, image)
+            payload.images.forEach((image) => {
+                formData.append('evidence[]', image)
             })
         }
 

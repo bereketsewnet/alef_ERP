@@ -3,7 +3,8 @@ export interface User {
     id: number
     email: string
     phone_number: string
-    role: 'ADMIN' | 'MANAGER' | 'STAFF'
+    role: 'OWNER' | 'GM' | 'HR' | 'FINANCE' | 'OPERATIONS' | 'MARKETING' | 'FIELD_STAFF' | 'SUPERVISOR'
+    is_site_controller?: boolean
     employee_id: number | null
     employee?: Employee
 }
@@ -80,6 +81,8 @@ export interface AttendanceLog {
     verification_method: 'GPS' | 'MANUAL' | 'BIOMETRIC'
     is_verified: boolean
     flagged_late: boolean
+    manual_note?: string
+    attendance_status?: 'PRESENT' | 'LATE' | 'ABSENT' | 'POLICY_VIOLATION'
     selfie_url?: string
     created_at: string
     schedule?: ShiftSchedule
@@ -157,7 +160,7 @@ export interface PayrollBonus {
 // Offline Queue Types
 export interface QueuedAction {
     id: string
-    type: 'CLOCK_IN' | 'CLOCK_OUT' | 'INCIDENT'
+    type: 'CLOCK_IN' | 'CLOCK_OUT' | 'INCIDENT' | 'MANUAL_ATTENDANCE'
     payload: unknown
     timestamp: string
     status: 'PENDING' | 'SYNCING' | 'FAILED'

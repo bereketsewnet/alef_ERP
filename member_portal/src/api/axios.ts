@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getAuthToken, getRefreshToken, saveAuthToken, clearAuth } from '@/utils/storage'
+import { getAuthToken, saveAuthToken, clearAuth } from '@/utils/storage'
 
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4002/api`
 console.log('Backend API URL used by Member Portal:', API_URL);
@@ -35,7 +35,7 @@ api.interceptors.response.use(
             originalRequest._retry = true
 
             try {
-                const refreshToken = await getRefreshToken()
+                const refreshToken = await getAuthToken()
                 if (refreshToken) {
                     const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
                         headers: {

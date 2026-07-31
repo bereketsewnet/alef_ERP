@@ -6,7 +6,7 @@ import { Calendar as CalendarIcon, Download } from "lucide-react"
 import { BarChart as RechartsBar, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from "recharts"
 import { startOfMonth, endOfMonth, format } from "date-fns"
 import { DataTable } from "@/components/ui/data-table"
-import { useReportDashboard, useExportReport, useAttendanceReport, useFinanceReport, useIncidentsReport, useRosterReport, useAssetReport } from "@/services/useReports"
+import { useReportDashboard, useExportReport, useAttendanceReport, useFinanceReport, useIncidentsReport, useRosterReport, useAssetReport, useClientSiteReport } from "@/services/useReports"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 
@@ -101,11 +101,31 @@ const assetHistoryColumns: ColumnDef<any>[] = [
     { accessorKey: 'notes', header: 'Notes', cell: ({ row }) => row.original.notes || '—' },
 ]
 
+const clientReportColumns: ColumnDef<any>[] = [
+    { accessorKey:'company', header:'Company' }, { accessorKey:'sites', header:'Sites' }, { accessorKey:'invoices', header:'Invoices' },
+    { accessorKey:'total_billed', header:'Total Billed', cell:({row})=>`ETB ${Number(row.original.total_billed).toLocaleString()}` },
+    { accessorKey:'paid', header:'Paid' }, { accessorKey:'overdue', header:'Overdue' }, { accessorKey:'verified', header:'Verified' },
+    { accessorKey:'on_time', header:'On Time' }, { accessorKey:'paid_late', header:'Paid Late' }, { accessorKey:'next_due_date', header:'Next Due', cell:({row})=>row.original.next_due_date || '—' },
+]
+const siteReportColumns: ColumnDef<any>[] = [
+    { accessorKey:'company', header:'Company' }, { accessorKey:'site', header:'Site' }, { accessorKey:'employees', header:'Employees' },
+    { accessorKey:'field_staff', header:'Field Staff' }, { accessorKey:'total_staff', header:'Total Staff' }, { accessorKey:'gps_radius', header:'GPS Radius', cell:({row})=>`${row.original.gps_radius} m` },
+]
+const invoiceReportColumns: ColumnDef<any>[] = [
+    { accessorKey:'invoice_number', header:'Invoice #' }, { accessorKey:'company', header:'Company' }, { accessorKey:'invoice_date', header:'Invoice Date' },
+    { accessorKey:'due_date', header:'Due Date' }, { accessorKey:'payment_date', header:'Payment Date', cell:({row})=>row.original.payment_date || '—' },
+    { accessorKey:'amount', header:'Amount', cell:({row})=>`ETB ${Number(row.original.amount).toLocaleString()}` },
+    { accessorKey:'status', header:'Status', cell:({row})=><Badge variant={row.original.overdue?'destructive':'outline'}>{row.original.overdue?'OVERDUE':row.original.status}</Badge> },
+    { accessorKey:'verified', header:'Verified', cell:({row})=>row.original.verified?'Yes':'No' },
+    { id:'timing', header:'Payment Timing', cell:({row})=>row.original.on_time?'On time':row.original.paid_late?'Paid late':row.original.overdue?'Overdue':'Due' },
+]
+
 export function ReportsPage() {
     const [dateRange, setDateRange] = useState({
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
     })
+    const [clientFilters, setClientFilters] = useState<{client_id?:number;site_id?:number;payment_status?:string}>({})
 
     const params = { start_date: dateRange.start, end_date: dateRange.end }
 
@@ -116,11 +136,13 @@ export function ReportsPage() {
     const { data: financeData, isLoading: isLoadingFinance } = useFinanceReport(params)
     const { data: incidentData, isLoading: isLoadingIncidents } = useIncidentsReport(params)
     const { data: assetData, isLoading: isLoadingAssets } = useAssetReport(params)
+    const clientSiteParams = { ...params, ...clientFilters }
+    const { data: clientSiteData, isLoading: isLoadingClientSites } = useClientSiteReport(clientSiteParams)
 
     const { mutate: exportFile, isPending: isExporting } = useExportReport()
 
     const handleExport = (type: string, format: 'pdf' | 'excel' | 'csv') => {
-        exportFile({ type, format, params })
+        exportFile({ type, format, params: type === 'clients-sites' ? clientSiteParams : params })
     }
 
     if (isLoadingStats) return <div className="p-8">Loading reports...</div>
@@ -153,13 +175,14 @@ export function ReportsPage() {
             </div>
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid h-auto w-full grid-cols-3 gap-1 sm:grid-cols-6 xl:w-[760px]">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7 xl:w-[980px]">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="roster">Roster</TabsTrigger>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
                     <TabsTrigger value="finance">Finance</TabsTrigger>
                     <TabsTrigger value="incidents">Incidents</TabsTrigger>
                     <TabsTrigger value="assets">Assets</TabsTrigger>
+                    <TabsTrigger value="clients-sites">Clients & Sites</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6 mt-6">
@@ -382,6 +405,36 @@ export function ReportsPage() {
                             <CardHeader><CardTitle>Assignment and Return History</CardTitle><CardDescription>All asset assignment or return activity during the selected date range</CardDescription></CardHeader>
                             <CardContent className="overflow-x-auto"><DataTable columns={assetHistoryColumns} data={assetData?.history || []} /></CardContent>
                         </Card>
+                    </>}
+                </TabsContent>
+                <TabsContent value="clients-sites" className="mt-6 space-y-6">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                        <div><h2 className="text-xl font-semibold">Clients, Sites and Payments</h2><p className="text-sm text-neutral-500">Site staffing is based on distinct employees rostered during the selected period. Payment metrics use invoices issued during the period.</p></div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" onClick={()=>handleExport('clients-sites','csv')} disabled={isExporting}><Download className="mr-2 h-4 w-4"/>CSV</Button>
+                            <Button variant="outline" onClick={()=>handleExport('clients-sites','excel')} disabled={isExporting}><Download className="mr-2 h-4 w-4"/>Excel</Button>
+                            <Button variant="outline" onClick={()=>handleExport('clients-sites','pdf')} disabled={isExporting}><Download className="mr-2 h-4 w-4"/>PDF</Button>
+                        </div>
+                    </div>
+                    <Card><CardContent className="grid gap-3 p-4 sm:grid-cols-3">
+                        <select className="h-10 rounded-md border bg-white px-3 text-sm" value={clientFilters.client_id||''} onChange={e=>setClientFilters(v=>({...v,client_id:e.target.value?Number(e.target.value):undefined,site_id:undefined}))}><option value="">All companies</option>{clientSiteData?.clients.map(c=><option key={c.client_id} value={c.client_id}>{c.company}</option>)}</select>
+                        <select className="h-10 rounded-md border bg-white px-3 text-sm" value={clientFilters.site_id||''} onChange={e=>setClientFilters(v=>({...v,site_id:e.target.value?Number(e.target.value):undefined}))}><option value="">All sites</option>{clientSiteData?.staff_by_site.map(s=><option key={s.site_id} value={s.site_id}>{s.company} — {s.site}</option>)}</select>
+                        <select className="h-10 rounded-md border bg-white px-3 text-sm" value={clientFilters.payment_status||''} onChange={e=>setClientFilters(v=>({...v,payment_status:e.target.value||undefined}))}><option value="">All payment statuses</option><option value="DRAFT">Draft</option><option value="SENT">Sent/Due</option><option value="PAID">Paid</option><option value="OVERDUE">Overdue</option><option value="CANCELLED">Cancelled</option></select>
+                    </CardContent></Card>
+                    {isLoadingClientSites ? <Card><CardContent className="py-12 text-center">Loading client and site report…</CardContent></Card> : <>
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                            {[
+                                ['Clients',clientSiteData?.summary.clients||0],['Sites',clientSiteData?.summary.sites||0],['Employees',clientSiteData?.summary.employees||0],['Field Staff',clientSiteData?.summary.field_staff||0],
+                                ['Paid',clientSiteData?.summary.paid||0],['Due',clientSiteData?.summary.due||0],['Overdue',clientSiteData?.summary.overdue||0],['Verified',clientSiteData?.summary.verified||0],['On Time',clientSiteData?.summary.on_time||0],['Paid Late',clientSiteData?.summary.paid_late||0],['Total Billed',`ETB ${(clientSiteData?.summary.total_billed||0).toLocaleString()}`]
+                            ].map(([label,value])=><Card key={String(label)}><CardContent className="p-4"><p className="text-xs text-neutral-500 sm:text-sm">{label}</p><p className="mt-1 text-xl font-bold break-words">{value}</p></CardContent></Card>)}
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            <Card className="min-w-0"><CardHeader><CardTitle>Staffing by Site</CardTitle><CardDescription>Employees and Field Staff with roster shifts</CardDescription></CardHeader><CardContent className="h-[350px]"><ResponsiveContainer width="100%" height="100%"><RechartsBar data={clientSiteData?.staff_by_site||[]} margin={{top:10,right:10,left:0,bottom:65}}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="site" angle={-35} textAnchor="end" interval={0} height={85}/><YAxis allowDecimals={false}/><Tooltip/><Legend/><Bar dataKey="employees" name="Employees" stackId="a" fill="#2563eb"/><Bar dataKey="field_staff" name="Field Staff" stackId="a" fill="#8b5cf6"/></RechartsBar></ResponsiveContainer></CardContent></Card>
+                            <Card className="min-w-0"><CardHeader><CardTitle>Payment Performance</CardTitle><CardDescription>Due, overdue and payment timing</CardDescription></CardHeader><CardContent className="h-[350px]"><ResponsiveContainer width="100%" height="100%"><RechartsPie><Pie data={clientSiteData?.payment_status||[]} dataKey="count" nameKey="name" cx="50%" cy="45%" outerRadius={105} label>{clientSiteData?.payment_status.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></RechartsPie></ResponsiveContainer></CardContent></Card>
+                        </div>
+                        <Card><CardHeader><CardTitle>Client Payment Summary</CardTitle><CardDescription>Billing, verification and payment performance by company</CardDescription></CardHeader><CardContent className="overflow-x-auto"><DataTable columns={clientReportColumns} data={clientSiteData?.clients||[]}/></CardContent></Card>
+                        <Card><CardHeader><CardTitle>Site Staffing Detail</CardTitle><CardDescription>Distinct rostered personnel for every site</CardDescription></CardHeader><CardContent className="overflow-x-auto"><DataTable columns={siteReportColumns} data={clientSiteData?.staff_by_site||[]}/></CardContent></Card>
+                        <Card><CardHeader><CardTitle>Invoice and Payment Detail</CardTitle><CardDescription>Invoice date, due date, actual payment date and verification</CardDescription></CardHeader><CardContent className="overflow-x-auto"><DataTable columns={invoiceReportColumns} data={clientSiteData?.invoices||[]}/></CardContent></Card>
                     </>}
                 </TabsContent>
             </Tabs>

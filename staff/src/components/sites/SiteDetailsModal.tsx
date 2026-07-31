@@ -2,17 +2,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { MapPin, Phone, Briefcase, Ruler } from 'lucide-react'
+import { MapPin, Phone, Briefcase, Ruler, Users } from 'lucide-react'
 import { SiteJobsPanel } from './SiteJobsPanel'
+import { SiteSupervisorsField } from './SiteSupervisorsField'
+import { useSiteStaffOptions, useUpdateSiteSupervisors } from '@/services/useClients'
+import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
+import type { User } from '@/types/common.types'
 
 interface Site {
     id: number
+    client_id: number
     site_name: string
     latitude: number
     longitude: number
     geo_radius_meters?: number
     site_contact_phone?: string
     is_active?: boolean
+    supervisors?: User[]
 }
 
 interface SiteDetailsModalProps {
@@ -22,6 +29,14 @@ interface SiteDetailsModalProps {
 }
 
 export function SiteDetailsModal({ open, onClose, site }: SiteDetailsModalProps) {
+    const [selectedSupervisorIds, setSelectedSupervisorIds] = useState<number[]>([])
+    const { data: fieldStaffUsers = [] } = useSiteStaffOptions()
+    const { mutate: updateSupervisors, isPending } = useUpdateSiteSupervisors()
+
+    useEffect(() => {
+        setSelectedSupervisorIds(site?.supervisors?.map((user) => user.id) || [])
+    }, [site])
+
     if (!site) return null
 
     return (
@@ -38,7 +53,7 @@ export function SiteDetailsModal({ open, onClose, site }: SiteDetailsModalProps)
                 </DialogHeader>
 
                 <Tabs defaultValue="info" className="mt-4">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid h-auto w-full grid-cols-3">
                         <TabsTrigger value="info" className="flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
                             Location Info
@@ -46,6 +61,10 @@ export function SiteDetailsModal({ open, onClose, site }: SiteDetailsModalProps)
                         <TabsTrigger value="jobs" className="flex items-center gap-2">
                             <Briefcase className="h-4 w-4" />
                             Job Requirements
+                        </TabsTrigger>
+                        <TabsTrigger value="supervisors" className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Field Staff
                         </TabsTrigger>
                     </TabsList>
 
@@ -103,6 +122,19 @@ export function SiteDetailsModal({ open, onClose, site }: SiteDetailsModalProps)
                             siteId={site.id}
                             siteName={site.site_name}
                         />
+                    </TabsContent>
+                    <TabsContent value="supervisors" className="mt-4 space-y-4">
+                        <SiteSupervisorsField users={fieldStaffUsers} value={selectedSupervisorIds} onChange={setSelectedSupervisorIds} disabled={isPending} />
+                        <div className="flex justify-end">
+                            <Button
+                                disabled={isPending}
+                                onClick={() => updateSupervisors({
+                                    clientId: site.client_id,
+                                    siteId: site.id,
+                                    supervisorUserIds: selectedSupervisorIds,
+                                })}
+                            >{isPending ? 'Saving...' : 'Save Field Staff'}</Button>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </DialogContent>

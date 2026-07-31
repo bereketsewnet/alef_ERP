@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Services\RosterService;
 use App\Models\ShiftSchedule;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Annotations as OA;
 
 class RosterController extends Controller
@@ -15,6 +18,79 @@ class RosterController extends Controller
     public function __construct(RosterService $rosterService)
     {
         $this->rosterService = $rosterService;
+    }
+
+    public function bulkAssignControllers(Request $request)
+    {
+        if (!in_array(auth()->user()->role, ['OWNER', 'GM', 'HR', 'OPERATIONS'], true)) {
+            return response()->json(['error' => 'Only management may schedule Field Staff'], 403);
+        }
+        $validated = $request->validate([
+            'site_id' => 'required|exists:client_sites,id',
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'exists:users,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i',
+            'working_days_schedule' => 'nullable|array',
+        ]);
+
+        $users = \App\Models\User::with('employee')->whereIn('id', $validated['user_ids'])->get();
+        foreach ($users as $user) {
+            if (!in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true)) {
+                return response()->json(['error' => "{$user->username} is not a Field Staff user"], 422);
+            }
+            if (!$user->supervisedSites()->whereKey($validated['site_id'])->exists()) {
+                return response()->json(['error' => "{$user->username} is not assigned to the selected site"], 422);
+            }
+            if (!$user->employee_id) {
+                $parts = preg_split('/[._\-\s]+/', trim($user->username), 2);
+                $employee = \App\Models\Employee::create([
+                    'employee_code' => 'FS-' . str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+                    'first_name' => ucfirst($parts[0] ?: 'Field'),
+                    'last_name' => ucfirst($parts[1] ?? 'Staff'),
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number ?: 'FIELD-STAFF-' . $user->id,
+                    'role' => 'FIELD_STAFF',
+                    'status' => 'ACTIVE',
+                    'hire_date' => Carbon::now('Africa/Addis_Ababa')->toDateString(),
+                ]);
+                $user->update(['employee_id' => $employee->id]);
+                $user->setRelation('employee', $employee);
+            }
+            if (!str_starts_with($user->employee->employee_code, 'FS-')) {
+                return response()->json(['error' => "{$user->username} is an employee account, not a Field Staff controller"], 422);
+            }
+        }
+
+        $created = 0;
+        $skipped = [];
+        DB::transaction(function () use ($validated, $users, &$created, &$skipped) {
+            foreach (CarbonPeriod::create($validated['start_date'], $validated['end_date']) as $day) {
+                $dayKey = strtolower($day->format('l'));
+                $rule = $validated['working_days_schedule'][$dayKey] ?? null;
+                if ($rule && empty($rule['enabled'])) continue;
+                $startTime = $rule['start_time'] ?? $validated['start_time'];
+                $endTime = $rule['end_time'] ?? $validated['end_time'];
+                $start = Carbon::parse($day->format('Y-m-d') . ' ' . $startTime, 'Africa/Addis_Ababa')->utc();
+                $end = Carbon::parse($day->format('Y-m-d') . ' ' . $endTime, 'Africa/Addis_Ababa');
+                if ($end->lte(Carbon::parse($day->format('Y-m-d') . ' ' . $startTime, 'Africa/Addis_Ababa'))) $end->addDay();
+                $end = $end->utc();
+                foreach ($users as $user) {
+                    $overlap = ShiftSchedule::where('employee_id', $user->employee_id)
+                        ->where('shift_start', '<', $end)->where('shift_end', '>', $start)->exists();
+                    if ($overlap) { $skipped[] = ['user_id' => $user->id, 'date' => $day->format('Y-m-d'), 'reason' => 'overlap']; continue; }
+                    ShiftSchedule::create([
+                        'employee_id' => $user->employee_id, 'site_id' => $validated['site_id'], 'job_id' => null,
+                        'shift_start' => $start, 'shift_end' => $end, 'status' => 'SCHEDULED',
+                        'created_by_user_id' => auth()->id(), 'working_days_schedule' => $validated['working_days_schedule'] ?? null,
+                    ]);
+                    $created++;
+                }
+            }
+        });
+        return response()->json(['message' => "$created Field Staff shifts created", 'created' => $created, 'skipped' => $skipped]);
     }
 
     /**

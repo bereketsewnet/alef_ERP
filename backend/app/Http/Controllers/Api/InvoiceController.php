@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 class InvoiceController extends Controller
 {
@@ -116,6 +117,44 @@ class InvoiceController extends Controller
             DB::rollback();
             return response()->json(['message' => 'Failed to create invoice', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function penaltyPreview(Request $request, $clientId)
+    {
+        $validated = $request->validate(['as_of' => 'nullable|date']);
+        $client = Client::findOrFail($clientId);
+        $asOf = Carbon::parse($validated['as_of'] ?? now()->toDateString())->startOfDay();
+        $graceDays = (int) ($client->payment_grace_days ?? 0);
+
+        $overdueInvoices = Invoice::where('client_id', $client->id)
+            ->where('status', '!=', 'PAID')
+            ->whereDate('due_date', '<', $asOf->copy()->subDays($graceDays))
+            ->get();
+
+        $oldestDueDate = $overdueInvoices->min('due_date');
+        $monthsOverdue = 0;
+        if ($oldestDueDate) {
+            $penaltyStart = Carbon::parse($oldestDueDate)->addDays($graceDays);
+            $monthsOverdue = max(1, (int) floor($penaltyStart->diffInMonths($asOf)) + 1);
+        }
+
+        $multiplier = $client->late_penalty_recurring ? $monthsOverdue : min($monthsOverdue, 1);
+        $outstanding = (float) $overdueInvoices->sum('total_amount');
+        $value = (float) ($client->late_penalty_value ?? 0);
+        $penalty = $client->late_penalty_type === 'PERCENTAGE'
+            ? $outstanding * ($value / 100) * $multiplier
+            : $value * $multiplier;
+
+        return response()->json([
+            'applicable' => $monthsOverdue > 0 && $value > 0 && in_array($client->late_penalty_type, ['FIXED', 'PERCENTAGE'], true),
+            'penalty_type' => $client->late_penalty_type,
+            'penalty_value' => $value,
+            'recurring' => (bool) $client->late_penalty_recurring,
+            'months_overdue' => $monthsOverdue,
+            'outstanding_amount' => round($outstanding, 2),
+            'suggested_penalty' => round($penalty, 2),
+            'grace_days' => $graceDays,
+        ]);
     }
 
     /**

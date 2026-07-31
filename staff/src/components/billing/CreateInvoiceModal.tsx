@@ -10,6 +10,8 @@ import { useClients, useUpdateClient } from "@/services/useClients"
 import { useCreateInvoice } from "@/services/useInvoices"
 import { toEthiopian, formatEthiopian } from "@/utils/ethiopianDate"
 import { Plus, Trash2, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import apiClient from "@/api/axios"
 
 const formSchema = z.object({
     client_id: z.string().min(1, "Client is required"),
@@ -31,6 +33,7 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
     const { data: clients, isLoading: clientsLoading } = useClients({ page: 1, per_page: 1000 })
     const { mutate: createInvoice, isPending } = useCreateInvoice()
     const { mutate: updateClient } = useUpdateClient()
+    const [penaltyPreview, setPenaltyPreview] = useState<any>(null)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -76,6 +79,45 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
     const dueDateIso = form.watch('due_date')
     const ethInvoiceDate = invoiceDateIso ? formatEthiopian(toEthiopian(new Date(invoiceDateIso + 'T12:00:00Z'))) : null
     const ethDueDate = dueDateIso ? formatEthiopian(toEthiopian(new Date(dueDateIso + 'T12:00:00Z'))) : null
+
+    useEffect(() => {
+        if (!selectedClient || !invoiceDateIso) {
+            setPenaltyPreview(null)
+            return
+        }
+
+        if (selectedClient.payment_due_day) {
+            const invoiceDate = new Date(`${invoiceDateIso}T12:00:00`)
+            let year = invoiceDate.getFullYear()
+            let month = invoiceDate.getMonth()
+            if (invoiceDate.getDate() > selectedClient.payment_due_day) {
+                month += 1
+                if (month > 11) { month = 0; year += 1 }
+            }
+            const lastDay = new Date(year, month + 1, 0).getDate()
+            const due = new Date(year, month, Math.min(selectedClient.payment_due_day, lastDay), 12)
+            const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
+            form.setValue('due_date', dueIso)
+        }
+
+        let cancelled = false
+        apiClient.get(`/invoices/client/${selectedClient.id}/penalty-preview`, { params: { as_of: invoiceDateIso } })
+            .then(({ data }) => {
+                if (cancelled) return
+                setPenaltyPreview(data)
+                const items = form.getValues('items').filter((item) => !item.description.startsWith('Late payment penalty'))
+                if (data.applicable) {
+                    items.push({
+                        description: `Late payment penalty — ${data.months_overdue} overdue month${data.months_overdue === 1 ? '' : 's'} (${data.penalty_type === 'PERCENTAGE' ? `${data.penalty_value}%` : 'fixed ETB'}${data.recurring ? ' monthly' : ', one-time'})`,
+                        quantity: 1,
+                        unit_price: Number(data.suggested_penalty),
+                    })
+                }
+                form.setValue('items', items, { shouldValidate: true })
+            })
+            .catch(() => setPenaltyPreview(null))
+        return () => { cancelled = true }
+    }, [selectedClient?.id, invoiceDateIso])
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -169,6 +211,13 @@ export function CreateInvoiceModal({ open, onOpenChange }: CreateInvoiceModalPro
                         </div>
 
                         <div className="space-y-4 border p-4 rounded-md">
+                            {selectedClient && (
+                                <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
+                                    Payment due on day {selectedClient.payment_due_day || '—'} with {selectedClient.payment_grace_days || 0} grace day(s).
+                                    {penaltyPreview?.applicable && <span className="block mt-1 font-medium">An editable ETB {Number(penaltyPreview.suggested_penalty).toLocaleString()} late-penalty item was added from ETB {Number(penaltyPreview.outstanding_amount).toLocaleString()} outstanding.</span>}
+                                    {penaltyPreview && !penaltyPreview.applicable && <span className="block mt-1">No late penalty applies on this invoice date.</span>}
+                                </div>
+                            )}
                             <div className="flex justify-between items-center">
                                 <h3 className="text-sm font-medium">Invoice Items</h3>
                                 <Button type="button" variant="outline" size="sm" onClick={() => append({ description: "", quantity: 1, unit_price: 0 })}>

@@ -13,6 +13,7 @@ class JobApplication extends Model
         'vacancy_id',
         'applicant_id',
         'age',
+        'sex',
         'education',
         'experience',
     ];

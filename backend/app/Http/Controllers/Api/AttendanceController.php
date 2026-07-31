@@ -12,11 +12,61 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    private const MANAGEMENT_ROLES = ['OWNER', 'GM', 'HR', 'OPERATIONS'];
+    private const CONTROLLER_ROLES = ['FIELD_STAFF', 'SUPERVISOR'];
+    private const BUSINESS_TIMEZONE = 'Africa/Addis_Ababa';
     private AttendanceService $attendanceService;
 
     public function __construct(AttendanceService $attendanceService)
     {
         $this->attendanceService = $attendanceService;
+    }
+
+    private function isManagement($user): bool
+    {
+        return in_array($user->role, self::MANAGEMENT_ROLES, true);
+    }
+
+    private function isSiteController($user): bool
+    {
+        return in_array($user->role, self::CONTROLLER_ROLES, true)
+            && $user->employee
+            && str_starts_with($user->employee->employee_code, 'FS-')
+            && $user->supervisedSites()->exists();
+    }
+
+    private function authorizeManualSchedule(ShiftSchedule $schedule): ?\Illuminate\Http\JsonResponse
+    {
+        $user = auth()->user();
+        if ($this->isManagement($user)) {
+            return null;
+        }
+        if (!$this->isSiteController($user)) {
+            return response()->json(['error' => 'You are not authorized to manage attendance'], 403);
+        }
+        if (!$user->supervisedSites()->whereKey($schedule->site_id)->exists()) {
+            return response()->json(['error' => 'This site is not assigned to you'], 403);
+        }
+        if ((int) $schedule->employee_id === (int) $user->employee_id) {
+            return response()->json(['error' => 'Your own attendance must be recorded using GPS clock-in/out'], 403);
+        }
+        $shiftDay = Carbon::parse($schedule->shift_start)->timezone(self::BUSINESS_TIMEZONE)->toDateString();
+        if ($shiftDay !== Carbon::now(self::BUSINESS_TIMEZONE)->toDateString()) {
+            return response()->json(['error' => 'Field Staff may manage attendance only for the current day'], 403);
+        }
+        return null;
+    }
+
+    public function controllerSites()
+    {
+        $user = auth()->user();
+        if (!$this->isSiteController($user)) {
+            return response()->json(['data' => [], 'is_controller' => false]);
+        }
+        return response()->json([
+            'data' => $user->supervisedSites()->with('client')->orderBy('site_name')->get(),
+            'is_controller' => true,
+        ]);
     }
 
     /**
@@ -52,6 +102,8 @@ class AttendanceController extends Controller
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'initData' => 'nullable|string',
+            'accuracy' => 'nullable|numeric|min:0',
+            'selfie' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
         $user = auth()->user();
@@ -62,13 +114,18 @@ class AttendanceController extends Controller
         }
 
         $rawInitData = $request->initData ? ['initData' => $request->initData] : null;
+        $photoUrl = $request->hasFile('selfie')
+            ? asset('storage/' . $request->file('selfie')->store('attendance/' . now()->format('Y/m'), 'public'))
+            : null;
 
         $result = $this->attendanceService->clockIn(
             $employeeId,
             $request->schedule_id,
             $request->latitude,
             $request->longitude,
-            $rawInitData
+            $rawInitData,
+            $request->accuracy,
+            $photoUrl
         );
 
         if (!$result['success']) {
@@ -117,6 +174,8 @@ class AttendanceController extends Controller
             'schedule_id' => 'required|integer|exists:shift_schedules,id',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+            'accuracy' => 'nullable|numeric|min:0',
+            'selfie' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
         $user = auth()->user();
@@ -126,11 +185,16 @@ class AttendanceController extends Controller
             return response()->json(['error' => 'User is not linked to an employee'], 400);
         }
 
+        $photoUrl = $request->hasFile('selfie')
+            ? asset('storage/' . $request->file('selfie')->store('attendance/' . now()->format('Y/m'), 'public'))
+            : null;
         $result = $this->attendanceService->clockOut(
             $employeeId,
             $request->schedule_id,
             $request->latitude,
-            $request->longitude
+            $request->longitude,
+            $request->accuracy,
+            $photoUrl
         );
 
         if (!$result['success']) {
@@ -174,6 +238,15 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $query = AttendanceLog::with(['employee', 'schedule.site']);
+
+        if ($request->boolean('field_staff')) {
+            $query->whereHas('employee.user', function ($q) {
+                $q->whereIn('role', self::CONTROLLER_ROLES)->whereHas('supervisedSites');
+            })->whereHas('employee', fn ($q) => $q->where('employee_code', 'like', 'FS-%'));
+        }
+        if ($request->boolean('exclude_field_staff')) {
+            $query->whereHas('employee', fn ($q) => $q->where('employee_code', 'not like', 'FS-%'));
+        }
 
         // Search by employee name, email, or phone (case-insensitive)
         if ($request->has('search')) {
@@ -491,13 +564,19 @@ class AttendanceController extends Controller
             $query->where('employee_id', $request->employee_id);
         }
 
-        // SUPERVISOR role: restrict to their assigned site via linked employee
+        // Site controllers see only sites explicitly assigned in client management.
         $user = auth()->user();
-        if ($user->role === 'SUPERVISOR' && $user->employee_id) {
-            $supervisorSiteIds = \App\Models\ShiftSchedule::where('employee_id', $user->employee_id)
-                ->distinct()
-                ->pluck('site_id');
-            $query->whereIn('site_id', $supervisorSiteIds);
+        if (in_array($user->role, self::CONTROLLER_ROLES, true)) {
+            if (!$this->isSiteController($user)) {
+                return response()->json([]);
+            }
+            $query->whereIn('site_id', $user->supervisedSites()->pluck('client_sites.id'));
+            $date = Carbon::parse($request->date, self::BUSINESS_TIMEZONE)->toDateString();
+            if ($date !== Carbon::now(self::BUSINESS_TIMEZONE)->toDateString()) {
+                return response()->json(['error' => 'Field Staff may view site attendance only for today'], 403);
+            }
+            // Controllers cannot use this list to manually alter their own GPS attendance.
+            $query->where('employee_id', '!=', $user->employee_id);
         }
 
         if ($request->filled('search')) {
@@ -519,6 +598,8 @@ class AttendanceController extends Controller
                 $attendanceStatus = $log->with_permission ? 'ABSENT_WITH_PERMISSION' : 'ABSENT';
             } elseif ($log->attendance_status === 'LATE' || $log->flagged_late) {
                 $attendanceStatus = $log->with_permission ? 'LATE_WITH_PERMISSION' : 'LATE';
+            } elseif ($log->attendance_status === 'POLICY_VIOLATION') {
+                $attendanceStatus = 'POLICY_VIOLATION';
             } else {
                 $attendanceStatus = 'PRESENT';
             }
@@ -566,13 +647,16 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'schedule_id'       => 'required|integer|exists:shift_schedules,id',
-            'attendance_status' => 'required|in:PRESENT,LATE,LATE_WITH_PERMISSION,ABSENT,ABSENT_WITH_PERMISSION',
+            'attendance_status' => 'required|in:PRESENT,LATE,LATE_WITH_PERMISSION,ABSENT,ABSENT_WITH_PERMISSION,POLICY_VIOLATION',
             'clock_in_time'     => 'nullable|date',
             'clock_out_time'    => 'nullable|date',
-            'manual_note'       => 'nullable|string|max:500',
+            'manual_note'       => 'nullable|required_if:attendance_status,POLICY_VIOLATION|string|max:500',
         ]);
 
         $schedule = ShiftSchedule::with(['site', 'employee'])->findOrFail($request->schedule_id);
+        if ($denied = $this->authorizeManualSchedule($schedule)) {
+            return $denied;
+        }
 
         // Prevent duplicate entries
         $existing = AttendanceLog::where('schedule_id', $request->schedule_id)->first();
@@ -590,7 +674,7 @@ class AttendanceController extends Controller
         $isLate       = in_array($rawStatus, ['LATE', 'LATE_WITH_PERMISSION']);
 
         // Normalized status stored in DB: PRESENT | LATE | ABSENT
-        $storedStatus = $isAbsent ? 'ABSENT' : ($isLate ? 'LATE' : 'PRESENT');
+        $storedStatus = $rawStatus === 'POLICY_VIOLATION' ? 'POLICY_VIOLATION' : ($isAbsent ? 'ABSENT' : ($isLate ? 'LATE' : 'PRESENT'));
 
         if ($isAbsent) {
             // For absent records we still need a clock_in_time so date-range queries work
@@ -673,23 +757,42 @@ class AttendanceController extends Controller
     {
         $log = AttendanceLog::with('schedule')->findOrFail($id);
 
-        if (!$log->manual_entry) {
-            return response()->json(['error' => 'Only manual attendance entries can be edited'], 400);
-        }
-
         $request->validate([
-            'attendance_status' => 'required|in:PRESENT,LATE,LATE_WITH_PERMISSION,ABSENT,ABSENT_WITH_PERMISSION',
+            'attendance_status' => 'required|in:PRESENT,LATE,LATE_WITH_PERMISSION,ABSENT,ABSENT_WITH_PERMISSION,POLICY_VIOLATION',
             'clock_in_time'     => 'nullable|date',
             'clock_out_time'    => 'nullable|date',
-            'manual_note'       => 'nullable|string|max:500',
+            'manual_note'       => 'nullable|required_if:attendance_status,POLICY_VIOLATION|string|max:500',
         ]);
 
         $schedule = $log->schedule;
+        if ($denied = $this->authorizeManualSchedule($schedule)) {
+            return $denied;
+        }
         $rawStatus    = $request->attendance_status;
         $withPermission = in_array($rawStatus, ['LATE_WITH_PERMISSION', 'ABSENT_WITH_PERMISSION']);
         $isAbsent     = in_array($rawStatus, ['ABSENT', 'ABSENT_WITH_PERMISSION']);
         $isLate       = in_array($rawStatus, ['LATE', 'LATE_WITH_PERMISSION']);
-        $storedStatus = $isAbsent ? 'ABSENT' : ($isLate ? 'LATE' : 'PRESENT');
+        $storedStatus = $rawStatus === 'POLICY_VIOLATION' ? 'POLICY_VIOLATION' : ($isAbsent ? 'ABSENT' : ($isLate ? 'LATE' : 'PRESENT'));
+
+        // A site controller may apply a reviewed attendance decision to an
+        // existing GPS record. Preserve the original GPS timestamps, location,
+        // verification method and evidence photos for the audit trail.
+        if (!$log->manual_entry) {
+            $log->update([
+                'attendance_status' => $storedStatus,
+                'flagged_late' => $isLate,
+                'with_permission' => $withPermission,
+                'manual_note' => $request->manual_note,
+                'verified_by_user_id' => auth()->id(),
+            ]);
+            $schedule->update([
+                'status' => $isAbsent ? 'NO_SHOW' : ($log->clock_out_time ? 'COMPLETED' : 'IN_PROGRESS'),
+            ]);
+            return response()->json([
+                'message' => 'Attendance decision applied; GPS evidence was preserved',
+                'data' => $log->fresh()->load(['employee', 'schedule.site']),
+            ]);
+        }
 
         if ($isAbsent) {
             $clockIn     = Carbon::parse($schedule->shift_start);
@@ -758,6 +861,10 @@ class AttendanceController extends Controller
             return response()->json(['error' => 'Only manual attendance entries can be deleted'], 400);
         }
 
+        if ($denied = $this->authorizeManualSchedule($log->schedule)) {
+            return $denied;
+        }
+
         $schedule = $log->schedule;
         $log->delete();
 
@@ -814,4 +921,3 @@ class AttendanceController extends Controller
         ]);
     }
 }
-

@@ -7,7 +7,14 @@ mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/storage/framework/cache
 mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/fonts
 mkdir -p /var/www/html/storage/app/public/invoice-proofs
+# Dompdf is restricted to the application chroot. Copy the installed Ethiopic
+# fonts into public/fonts so Amharic documentation can embed real glyphs.
+mkdir -p /var/www/html/public/fonts
+cp /usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf /var/www/html/public/fonts/NotoSansEthiopic-Regular.ttf 2>/dev/null || true
+cp /usr/share/fonts/truetype/noto/NotoSansEthiopic-Bold.ttf /var/www/html/public/fonts/NotoSansEthiopic-Bold.ttf 2>/dev/null || true
+chmod 644 /var/www/html/public/fonts/NotoSansEthiopic-*.ttf 2>/dev/null || true
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # Ensure log file is writable
@@ -136,4 +143,3 @@ php artisan cache:clear 2>&1 || echo "Note: Cache clear skipped"
 echo "Starting Apache server..."
 # Start Apache (this should not exit)
 exec apache2-foreground
-

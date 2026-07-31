@@ -104,3 +104,36 @@ export const useCreateSite = () => {
         },
     })
 }
+
+export const useUpdateSite = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ clientId, siteId, data }: { clientId: number; siteId: number; data: Partial<CreateSiteRequest> }) =>
+            clientsApi.updateSite(clientId, siteId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clients'] })
+            queryClient.invalidateQueries({ queryKey: ['client-sites'] })
+            toast.success('Site updated successfully')
+        },
+        onError: (error: any) => toast.error(error.response?.data?.message || 'Failed to update site'),
+    })
+}
+
+export const useSiteStaffOptions = () => useQuery({
+    queryKey: ['site-staff-options'],
+    queryFn: clientsApi.getSiteStaffOptions,
+})
+
+export const useUpdateSiteSupervisors = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ clientId, siteId, supervisorUserIds }: { clientId: number; siteId: number; supervisorUserIds: number[] }) =>
+            clientsApi.updateSiteSupervisors(clientId, siteId, supervisorUserIds),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clients'] })
+            queryClient.invalidateQueries({ queryKey: ['client-sites'] })
+            toast.success('Site field staff updated successfully')
+        },
+        onError: (error: any) => toast.error(error.response?.data?.message || 'Failed to update site field staff'),
+    })
+}

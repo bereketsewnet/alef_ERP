@@ -8,6 +8,8 @@ import { HistoryPage } from '@/pages/HistoryPage'
 import { SalaryHistoryPage } from '@/pages/SalaryHistoryPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { PendingActionsPage } from '@/pages/PendingActionsPage'
+import { SiteAttendancePage } from '@/pages/SiteAttendancePage'
+import { IncidentsPage } from '@/pages/IncidentsPage'
 import { LoadingScreen } from '@/components/ui/Spinner'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -25,7 +27,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-    const { isAuthenticated, isLoading } = useAuth()
+    const { isAuthenticated, isLoading, user } = useAuth()
 
     if (isLoading) {
         return <LoadingScreen message="Loading..." />
@@ -48,7 +50,9 @@ function AppRoutes() {
                 <Route index element={<DashboardPage />} />
                 <Route path="roster" element={<RosterPage />} />
                 <Route path="history" element={<HistoryPage />} />
-                <Route path="salary" element={<SalaryHistoryPage />} />
+                <Route path="salary" element={user?.is_site_controller ? <Navigate to="/" replace /> : <SalaryHistoryPage />} />
+                <Route path="site-attendance" element={user?.is_site_controller ? <SiteAttendancePage /> : <Navigate to="/" replace />} />
+                <Route path="incidents" element={user?.is_site_controller ? <IncidentsPage /> : <Navigate to="/" replace />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="pending" element={<PendingActionsPage />} />
             </Route>

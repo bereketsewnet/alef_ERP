@@ -5,11 +5,21 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ClientSite;
+use App\Models\User;
 use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
+use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
+    public function siteStaffOptions()
+    {
+        return response()->json(User::with('employee')
+            ->whereIn('role', ['FIELD_STAFF', 'SUPERVISOR'])
+            ->where('is_active', true)
+            ->orderBy('username')
+            ->get());
+    }
     /**
      * @OA\Get(
      *     path="/clients",
@@ -21,7 +31,7 @@ class ClientController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Client::with('sites');
+        $query = Client::with('sites.supervisors.employee');
 
         // Search by company name, contact person, or phone (case-insensitive)
         if ($request->has('search')) {
@@ -63,10 +73,16 @@ class ClientController extends Controller
     {
         $request->validate([
             'company_name' => 'required|string',
+            'description' => 'nullable|string|max:5000',
             'contact_person' => 'required|string',
             'contact_phone' => 'required|string',
             'email' => 'nullable|email',
             'billing_cycle' => 'sometimes|string',
+            'payment_due_day' => 'nullable|integer|between:1,31',
+            'payment_grace_days' => 'nullable|integer|min:0|max:365',
+            'late_penalty_type' => 'nullable|in:FIXED,PERCENTAGE',
+            'late_penalty_value' => 'nullable|numeric|min:0',
+            'late_penalty_recurring' => 'nullable|boolean',
             'tin_number' => 'nullable|string',
             'address_details' => 'nullable|array',
         ]);
@@ -87,7 +103,7 @@ class ClientController extends Controller
      */
     public function show($id)
     {
-        return response()->json(Client::with('sites')->findOrFail($id));
+        return response()->json(Client::with('sites.supervisors.employee')->findOrFail($id));
     }
 
     /**
@@ -109,11 +125,24 @@ class ClientController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
+            'company_name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'contact_person' => 'sometimes|required|string|max:255',
+            'contact_phone' => 'sometimes|required|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'billing_cycle' => 'nullable|string|max:50',
+            'payment_due_day' => 'nullable|integer|between:1,31',
+            'payment_grace_days' => 'nullable|integer|min:0|max:365',
+            'late_penalty_type' => 'nullable|in:FIXED,PERCENTAGE',
+            'late_penalty_value' => 'nullable|numeric|min:0',
+            'late_penalty_recurring' => 'nullable|boolean',
+            'tin_number' => 'nullable|string|max:100',
+            'address_details' => 'nullable|array',
             'preferred_calendar' => 'sometimes|in:EC,GC',
         ]);
         $client = Client::findOrFail($id);
-        $client->update($request->all());
+        $client->update($validated);
         return response()->json($client);
     }
 
@@ -161,17 +190,24 @@ class ClientController extends Controller
     {
         $request->validate([
             'site_name' => 'required|string',
+            'description' => 'nullable|string|max:5000',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'geo_radius_meters' => 'sometimes|integer|min:10',
             'site_contact_phone' => 'nullable|string',
             'email' => 'nullable|email',
+            'supervisor_user_ids' => 'nullable|array',
+            'supervisor_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['FIELD_STAFF', 'SUPERVISOR'])),
+            ],
         ]);
 
         $client = Client::findOrFail($clientId);
-        $site = $client->sites()->create($request->all());
+        $site = $client->sites()->create($request->except('supervisor_user_ids'));
+        $site->supervisors()->sync($request->input('supervisor_user_ids', []));
 
-        return response()->json($site, 201);
+        return response()->json($site->load('supervisors.employee'), 201);
     }
 
     /**
@@ -186,8 +222,52 @@ class ClientController extends Controller
      */
     public function getSites($clientId)
     {
-        $sites = ClientSite::where('client_id', $clientId)->with('requiredJobs')->get();
+        $sites = ClientSite::where('client_id', $clientId)->with(['requiredJobs', 'supervisors.employee'])->get();
         return response()->json($sites);
+    }
+
+    public function updateSiteSupervisors(Request $request, $clientId, $siteId)
+    {
+        $validated = $request->validate([
+            'supervisor_user_ids' => 'present|array',
+            'supervisor_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['FIELD_STAFF', 'SUPERVISOR'])),
+            ],
+        ]);
+
+        $site = ClientSite::where('client_id', $clientId)->findOrFail($siteId);
+        $site->supervisors()->sync($validated['supervisor_user_ids']);
+
+        return response()->json($site->load('supervisors.employee'));
+    }
+
+    public function updateSite(Request $request, $clientId, $siteId)
+    {
+        $validated = $request->validate([
+            'site_name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'latitude' => 'sometimes|required|numeric|between:-90,90',
+            'longitude' => 'sometimes|required|numeric|between:-180,180',
+            'geo_radius_meters' => 'sometimes|required|integer|min:10',
+            'site_contact_phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'supervisor_user_ids' => 'sometimes|array',
+            'supervisor_user_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['FIELD_STAFF', 'SUPERVISOR'])),
+            ],
+        ]);
+
+        $site = ClientSite::where('client_id', $clientId)->findOrFail($siteId);
+        $supervisorIds = $validated['supervisor_user_ids'] ?? null;
+        unset($validated['supervisor_user_ids']);
+        $site->update($validated);
+        if ($supervisorIds !== null) {
+            $site->supervisors()->sync($supervisorIds);
+        }
+
+        return response()->json($site->fresh()->load('supervisors.employee'));
     }
 
     /**

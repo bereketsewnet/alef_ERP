@@ -11,6 +11,8 @@ use App\Models\OperationalReport;
 use App\Models\Employee;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
+use App\Models\Client;
+use App\Models\ClientSite;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel; // We might need a generic export class
@@ -18,6 +20,86 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    private function clientSiteReportData(Request $request): array
+    {
+        $start = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth();
+        $end = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfMonth();
+        $todayEnd = Carbon::now()->endOfDay();
+        $asOf = $end->lt($todayEnd) ? $end->copy() : $todayEnd;
+
+        $clientsQuery = Client::with(['sites', 'invoices' => function ($q) use ($start, $end, $request) {
+            $q->with('attachments')->whereBetween('invoice_date', [$start->toDateString(), $end->toDateString()]);
+            if ($request->filled('payment_status')) $q->where('status', $request->payment_status);
+        }]);
+        if ($request->filled('client_id')) $clientsQuery->whereKey($request->client_id);
+        if ($request->filled('site_id')) $clientsQuery->whereHas('sites', fn ($q) => $q->whereKey($request->site_id));
+        $clients = $clientsQuery->orderBy('company_name')->get();
+        if ($request->filled('payment_status')) $clients = $clients->filter(fn ($client) => $client->invoices->isNotEmpty())->values();
+
+        $allInvoices = $clients->flatMap->invoices;
+        $isVerified = fn ($invoice) => $invoice->status === 'PAID' && ($invoice->paid_by || $invoice->receipt_number || $invoice->proof_image_path || $invoice->attachments->isNotEmpty());
+        $isOnTime = fn ($invoice) => $invoice->status === 'PAID' && $invoice->payment_date && Carbon::parse($invoice->payment_date)->lte(Carbon::parse($invoice->due_date));
+        $isPaidLate = fn ($invoice) => $invoice->status === 'PAID' && $invoice->payment_date && Carbon::parse($invoice->payment_date)->gt(Carbon::parse($invoice->due_date));
+        $isOverdue = fn ($invoice) => $invoice->status !== 'PAID' && Carbon::parse($invoice->due_date)->lt($asOf);
+
+        $siteRows = collect();
+        foreach ($clients as $client) {
+            foreach ($client->sites->when($request->filled('site_id'), fn ($sites) => $sites->where('id', $request->integer('site_id'))) as $site) {
+                $employeeIds = ShiftSchedule::where('site_id', $site->id)->whereBetween('shift_start', [$start, $end])->distinct()->pluck('employee_id');
+                $codes = Employee::whereIn('id', $employeeIds)->pluck('employee_code');
+                $siteRows->push([
+                    'site_id' => $site->id, 'client_id' => $client->id, 'company' => $client->company_name,
+                    'site' => $site->site_name, 'employees' => $codes->filter(fn ($code) => !str_starts_with($code, 'FS-'))->count(),
+                    'field_staff' => $codes->filter(fn ($code) => str_starts_with($code, 'FS-'))->count(),
+                    'total_staff' => $codes->count(), 'gps_radius' => $site->geo_radius_meters,
+                ]);
+            }
+        }
+
+        $clientRows = $clients->map(function ($client) use ($isVerified, $isOnTime, $isPaidLate, $isOverdue) {
+            $invoices = $client->invoices;
+            return [
+                'client_id' => $client->id, 'company' => $client->company_name, 'sites' => $client->sites->count(),
+                'contact' => $client->contact_person, 'phone' => $client->contact_phone, 'email' => $client->email,
+                'billing_cycle' => $client->billing_cycle, 'invoices' => $invoices->count(),
+                'total_billed' => round((float) $invoices->sum('total_amount'), 2),
+                'paid' => $invoices->where('status', 'PAID')->count(), 'verified' => $invoices->filter($isVerified)->count(),
+                'on_time' => $invoices->filter($isOnTime)->count(), 'paid_late' => $invoices->filter($isPaidLate)->count(),
+                'overdue' => $invoices->filter($isOverdue)->count(),
+                'next_due_date' => $invoices->where('status', '!=', 'PAID')->sortBy('due_date')->first()?->due_date,
+            ];
+        })->values();
+
+        $invoiceRows = $allInvoices->sortByDesc('invoice_date')->map(fn ($invoice) => [
+            'id' => $invoice->id, 'invoice_number' => $invoice->invoice_number, 'company' => $invoice->client?->company_name,
+            'invoice_date' => $invoice->invoice_date, 'due_date' => $invoice->due_date, 'payment_date' => $invoice->payment_date,
+            'amount' => (float) $invoice->total_amount, 'status' => $invoice->status,
+            'verified' => $isVerified($invoice), 'on_time' => $isOnTime($invoice), 'paid_late' => $isPaidLate($invoice), 'overdue' => $isOverdue($invoice),
+        ])->values();
+
+        return [
+            'summary' => [
+                'clients' => $clients->count(), 'sites' => $siteRows->count(), 'employees' => $siteRows->sum('employees'),
+                'field_staff' => $siteRows->sum('field_staff'), 'total_billed' => round((float) $allInvoices->sum('total_amount'), 2),
+                'paid' => $allInvoices->where('status', 'PAID')->count(), 'due' => $allInvoices->where('status', '!=', 'PAID')->filter(fn ($i) => !$isOverdue($i))->count(),
+                'overdue' => $allInvoices->filter($isOverdue)->count(), 'verified' => $allInvoices->filter($isVerified)->count(),
+                'on_time' => $allInvoices->filter($isOnTime)->count(), 'paid_late' => $allInvoices->filter($isPaidLate)->count(),
+            ],
+            'payment_status' => [
+                ['name' => 'Paid on time', 'count' => $allInvoices->filter($isOnTime)->count()],
+                ['name' => 'Paid late', 'count' => $allInvoices->filter($isPaidLate)->count()],
+                ['name' => 'Overdue', 'count' => $allInvoices->filter($isOverdue)->count()],
+                ['name' => 'Due', 'count' => $allInvoices->where('status', '!=', 'PAID')->filter(fn ($i) => !$isOverdue($i))->count()],
+            ],
+            'staff_by_site' => $siteRows->sortByDesc('total_staff')->values(), 'clients' => $clientRows, 'invoices' => $invoiceRows,
+        ];
+    }
+
+    public function getClientSiteReport(Request $request)
+    {
+        $request->validate(['start_date' => 'nullable|date', 'end_date' => 'nullable|date|after_or_equal:start_date', 'client_id' => 'nullable|exists:clients,id', 'site_id' => 'nullable|exists:client_sites,id', 'payment_status' => 'nullable|in:DRAFT,SENT,PAID,OVERDUE,CANCELLED']);
+        return response()->json($this->clientSiteReportData($request));
+    }
     private function assetReportData(?string $startDate, ?string $endDate): array
     {
         $query = Asset::with([
@@ -368,6 +450,26 @@ class ReportController extends Controller
         $title = ucfirst($type) . " Report";
         
         switch ($type) {
+            case 'clients-sites':
+                $report = $this->clientSiteReportData($request);
+                if ($format === 'pdf') {
+                    return Pdf::loadView('reports.client_site_pdf', ['report' => $report, 'startDate' => $startDate, 'endDate' => $endDate])->setPaper('a4', 'landscape')->download('clients_sites_report.pdf');
+                }
+                $headings = ['Company','Site','Employees','Field Staff','Total Staff','GPS Radius (m)','Invoices','Total Billed','Paid','Overdue','Verified','On Time','Paid Late','Next Due Date'];
+                $clients = collect($report['clients'])->keyBy('client_id');
+                $rows = collect($report['staff_by_site'])->map(function ($site) use ($clients) {
+                    $client = $clients->get($site['client_id']);
+                    return [$site['company'],$site['site'],$site['employees'],$site['field_staff'],$site['total_staff'],$site['gps_radius'],$client['invoices'] ?? 0,$client['total_billed'] ?? 0,$client['paid'] ?? 0,$client['overdue'] ?? 0,$client['verified'] ?? 0,$client['on_time'] ?? 0,$client['paid_late'] ?? 0,$client['next_due_date'] ?? null];
+                })->all();
+                if ($format === 'csv') {
+                    return response()->streamDownload(function () use ($headings, $rows, $report) {
+                        $out=fopen('php://output','w'); fputcsv($out,$headings); foreach($rows as $row) fputcsv($out,$row);
+                        fputcsv($out,[]); fputcsv($out,['INVOICE DETAIL']); fputcsv($out,['Invoice','Company','Invoice Date','Due Date','Payment Date','Amount','Status','Verified','On Time','Paid Late','Overdue']);
+                        foreach($report['invoices'] as $i) fputcsv($out,[$i['invoice_number'],$i['company'],$i['invoice_date'],$i['due_date'],$i['payment_date'],$i['amount'],$i['status'],$i['verified']?'Yes':'No',$i['on_time']?'Yes':'No',$i['paid_late']?'Yes':'No',$i['overdue']?'Yes':'No']); fclose($out);
+                    }, 'clients_sites_report.csv', ['Content-Type'=>'text/csv; charset=UTF-8']);
+                }
+                if ($format === 'excel') return Excel::download(new \App\Exports\ArrayReportExport($rows, $headings), 'clients_sites_report.xlsx');
+                abort(422, 'Supported formats: PDF, CSV, Excel.');
             case 'assets':
                 $assetReport = $this->assetReportData($startDate, $endDate);
                 if ($format === 'pdf') {

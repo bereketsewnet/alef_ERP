@@ -29,6 +29,7 @@ import { employeeScreeningsApi } from "@/api/endpoints/employeeScreenings"
 const applicationSchema = z.object({
     applicant_id: z.string().min(1, "ID is required"),
     age: z.string().min(1, "Age is required"),
+    sex: z.enum(['MALE', 'FEMALE'], { message: 'Sex is required' }),
     education: z.string().min(1, "Education is required"),
     experience: z.string().min(1, "Experience is required"),
 })
@@ -62,6 +63,7 @@ export function JobApplicationsPage() {
         defaultValues: {
             applicant_id: "",
             age: "",
+            sex: undefined,
             education: "",
             experience: "",
         },
@@ -80,6 +82,7 @@ export function JobApplicationsPage() {
         const payload = {
             applicant_id: data.applicant_id,
             age: Number(data.age),
+            sex: data.sex,
             education: data.education,
             experience: data.experience,
             job_ids: selectedJobIds,
@@ -114,6 +117,7 @@ export function JobApplicationsPage() {
         form.reset({
             applicant_id: application.applicant_id,
             age: application.age !== null ? String(application.age) : "",
+            sex: application.sex || undefined,
             education: application.education || "",
             experience: application.experience || "",
         })
@@ -259,7 +263,7 @@ export function JobApplicationsPage() {
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <FormField
                                         control={form.control}
                                         name="applicant_id"
@@ -282,6 +286,23 @@ export function JobApplicationsPage() {
                                                 <FormControl>
                                                     <Input type="number" min={15} {...field} />
                                                 </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="sex"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Sex *</FormLabel>
+                                                <Select value={field.value} onValueChange={field.onChange}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="MALE">Male</SelectItem>
+                                                        <SelectItem value="FEMALE">Female</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -416,6 +437,7 @@ export function JobApplicationsPage() {
                                 <TableRow>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Age</TableHead>
+                                    <TableHead>Sex</TableHead>
                                     <TableHead>Education</TableHead>
                                     <TableHead>Experience</TableHead>
                                     <TableHead>Vacancy</TableHead>
@@ -426,7 +448,7 @@ export function JobApplicationsPage() {
                             <TableBody>
                                 {applications?.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-neutral-500 py-8">
+                                        <TableCell colSpan={8} className="text-center text-neutral-500 py-8">
                                             No applications found. Add your first application to get started.
                                         </TableCell>
                                     </TableRow>
@@ -437,6 +459,7 @@ export function JobApplicationsPage() {
                                                 {application.applicant_id}
                                             </TableCell>
                                             <TableCell>{application.age ?? "—"}</TableCell>
+                                            <TableCell>{application.sex === 'MALE' ? 'Male' : application.sex === 'FEMALE' ? 'Female' : '—'}</TableCell>
                                             <TableCell className="max-w-[180px] truncate" title={application.education || undefined}>
                                                 {application.education || "—"}
                                             </TableCell>
@@ -631,4 +654,3 @@ export function JobApplicationsPage() {
         </div>
     )
 }
-

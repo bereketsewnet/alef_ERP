@@ -20,6 +20,7 @@ const vacancySchema = z.object({
     title_am: z.string().min(1, "Amharic job title is required"),
     description: z.string().optional(),
     qualification: z.string().optional(),
+    more_info: z.string().optional(),
     // Keep as string in the form (like other numeric fields) and convert to number on submit
     number_of_employees: z.string().min(1, "Number of employees is required"),
 })
@@ -43,6 +44,7 @@ export function VacanciesPage() {
             title_am: "",
             description: "",
             qualification: "",
+            more_info: "",
             number_of_employees: "1",
         },
     })
@@ -55,6 +57,7 @@ export function VacanciesPage() {
             title_am: data.title_am,
             description: data.description || undefined,
             qualification: data.qualification || undefined,
+            more_info: data.more_info || undefined,
             number_of_employees: numEmployees,
         }
 
@@ -89,6 +92,7 @@ export function VacanciesPage() {
             title_am: vacancy.title_am,
             description: vacancy.description || "",
             qualification: vacancy.qualification || "",
+            more_info: vacancy.more_info || "",
             number_of_employees: String(vacancy.number_of_employees),
         })
         setIsCreateOpen(true)
@@ -193,6 +197,23 @@ export function VacanciesPage() {
                                 />
                                 <FormField
                                     control={form.control}
+                                    name="more_info"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>More Information (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Additional vacancy information, working conditions, benefits, location, or application instructions..."
+                                                    className="min-h-[90px]"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
                                     name="number_of_employees"
                                     render={({ field }) => (
                                         <FormItem>
@@ -241,6 +262,7 @@ export function VacanciesPage() {
                                     <TableHead>Job Title (AM)</TableHead>
                                     <TableHead>Description / Requirements</TableHead>
                                     <TableHead>Qualification</TableHead>
+                                    <TableHead>More Information</TableHead>
                                     <TableHead># Employees</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Actions</TableHead>
@@ -249,7 +271,7 @@ export function VacanciesPage() {
                             <TableBody>
                                 {vacancies?.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center text-neutral-500 py-8">
+                                        <TableCell colSpan={8} className="text-center text-neutral-500 py-8">
                                             No vacancies found. Add your first vacancy to get started.
                                         </TableCell>
                                     </TableRow>
@@ -263,6 +285,9 @@ export function VacanciesPage() {
                                             </TableCell>
                                             <TableCell className="text-neutral-600 max-w-[200px] truncate" title={vacancy.qualification || undefined}>
                                                 {vacancy.qualification || "—"}
+                                            </TableCell>
+                                            <TableCell className="text-neutral-600 max-w-[220px] truncate" title={vacancy.more_info || undefined}>
+                                                {vacancy.more_info || "—"}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary">{vacancy.number_of_employees}</Badge>

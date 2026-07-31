@@ -7,6 +7,7 @@ export interface JobApplication {
     vacancy_id?: number | null;
     applicant_id: string;
     age: number | null;
+    sex: 'MALE' | 'FEMALE' | null;
     education: string | null;
     experience: string | null;
     jobs?: Job[];
@@ -19,6 +20,7 @@ export interface CreateJobApplicationRequest {
     vacancy_id?: number;
     applicant_id: string;
     age: number;
+    sex: 'MALE' | 'FEMALE';
     education: string;
     experience: string;
     job_ids: number[];

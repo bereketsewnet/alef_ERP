@@ -47,6 +47,11 @@ export const usersApi = {
         return response.data.data
     },
 
+    updateSites: async (id: number, siteIds: number[]): Promise<User> => {
+        const response = await apiClient.put<User>(`/users/${id}/sites`, { site_ids: siteIds })
+        return response.data
+    },
+
     // Delete user
     delete: async (id: number): Promise<void> => {
         await apiClient.delete(`/users/${id}`)

@@ -3,6 +3,7 @@ import type { ApiError } from '@/types/common.types'
 
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4002/api`
 console.log('Backend API URL used by Staff Portal:', API_URL);
+let refreshPromise: Promise<string> | null = null
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -53,28 +54,29 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config
 
         // Handle 401 Unauthorized
-        if (error.response?.status === 401 && originalRequest) {
-            // Try to refresh token
+        if (error.response?.status === 401 && originalRequest && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh')) {
             try {
-                const refreshToken = localStorage.getItem('refresh_token')
-                if (refreshToken) {
-                    const response = await axios.post(`${API_URL}/auth/refresh`, {
-                        refresh_token: refreshToken,
+                const expiredToken = localStorage.getItem('auth_token')
+                if (!expiredToken) throw new Error('No authentication token')
+
+                if (!refreshPromise) {
+                    refreshPromise = axios.post(`${API_URL}/auth/refresh`, null, {
+                        headers: { Authorization: `Bearer ${expiredToken}`, Accept: 'application/json' },
+                    }).then((response) => {
+                        const token = response.data.access_token as string
+                        localStorage.setItem('auth_token', token)
+                        return token
+                    }).finally(() => {
+                        refreshPromise = null
                     })
-
-                    const { token } = response.data
-                    localStorage.setItem('auth_token', token)
-
-                    // Retry the original request with new token
-                    if (originalRequest.headers) {
-                        originalRequest.headers.Authorization = `Bearer ${token}`
-                    }
-                    return apiClient(originalRequest)
                 }
+
+                const token = await refreshPromise
+                if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${token}`
+                return apiClient(originalRequest)
             } catch (refreshError) {
                 // Refresh failed, redirect to login
                 localStorage.removeItem('auth_token')
-                localStorage.removeItem('refresh_token')
                 window.location.href = '/login'
                 return Promise.reject(refreshError)
             }

@@ -103,3 +103,19 @@ export function useDeleteUser() {
         },
     })
 }
+
+export function useUpdateUserSites() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ userId, siteIds }: { userId: number; siteIds: number[] }) => usersApi.updateSites(userId, siteIds),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: userKeys.all })
+            toast({ title: 'Sites updated', description: 'The user site assignments were saved successfully' })
+        },
+        onError: (error: any) => toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.response?.data?.message || error.message || 'Failed to update user sites',
+        }),
+    })
+}

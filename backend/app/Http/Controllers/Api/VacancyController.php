@@ -35,6 +35,7 @@ class VacancyController extends Controller
             'title_am' => 'required|string|max:500',
             'description' => 'nullable|string',
             'qualification' => 'nullable|string',
+            'more_info' => 'nullable|string|max:5000',
             'number_of_employees' => 'required|integer|min:1',
             'is_active' => 'boolean',
         ]);
@@ -66,6 +67,7 @@ class VacancyController extends Controller
             'title_am' => 'sometimes|string|max:500',
             'description' => 'nullable|string',
             'qualification' => 'nullable|string',
+            'more_info' => 'nullable|string|max:5000',
             'number_of_employees' => 'sometimes|integer|min:1',
             'is_active' => 'boolean',
         ]);

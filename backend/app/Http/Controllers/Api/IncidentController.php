@@ -25,7 +25,16 @@ class IncidentController extends Controller
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = OperationalReport::with(['site.client', 'reportedBy']);
+
+        if (in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $user->employee && str_starts_with($user->employee->employee_code, 'FS-')) {
+            if (!$user->supervisedSites()->exists()) {
+                return response()->json(['data' => [], 'current_page' => 1, 'last_page' => 1, 'total' => 0]);
+            }
+            $query->where('reported_by_employee_id', $user->employee_id)
+                ->whereIn('site_id', $user->supervisedSites()->pluck('client_sites.id'));
+        }
 
         if ($request->has('site_id')) {
             $query->where('site_id', $request->site_id);
@@ -69,10 +78,22 @@ class IncidentController extends Controller
             'description' => 'required|string',
             'severity_level' => 'sometimes|string',
             'evidence_media_urls' => 'nullable|array',
+            'evidence' => 'nullable|array|max:10',
+            'evidence.*' => 'file|max:10240|mimes:jpg,jpeg,png,webp,pdf,doc,docx,txt',
             'reported_by_name' => 'nullable|string|max:255',
         ]);
 
         $user = auth()->user();
+        if (in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $user->employee && str_starts_with($user->employee->employee_code, 'FS-')
+            && !$user->supervisedSites()->whereKey($request->site_id)->exists()) {
+            return response()->json(['error' => 'This site is not assigned to you'], 403);
+        }
+
+        $evidenceUrls = $request->input('evidence_media_urls', []);
+        foreach ($request->file('evidence', []) as $file) {
+            $path = $file->store('incidents/' . now()->format('Y/m'), 'public');
+            $evidenceUrls[] = asset('storage/' . $path);
+        }
         // Allow users without employee_id (Admins) to report incidents
         // if (!$user->employee_id) {
         //     return response()->json(['error' => 'User is not an employee'], 403);
@@ -85,6 +106,7 @@ class IncidentController extends Controller
             'report_type' => $request->report_type,
             'description' => $request->description,
             'severity_level' => $request->severity_level ?? 'LOW',
+            'evidence_media_urls' => $evidenceUrls,
         ]);
 
         return response()->json($report, 201);
@@ -117,6 +139,11 @@ class IncidentController extends Controller
         $user = auth()->user();
         $employeeId = $user->employee_id;
 
+        if (in_array($user->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $user->employee && str_starts_with($user->employee->employee_code, 'FS-')
+            && !$user->supervisedSites()->whereKey($request->site_id)->exists()) {
+            return response()->json(['error' => 'This site is not assigned to you'], 403);
+        }
+
         // Allow panic from admins too
         // if (!$employeeId) {
         //     return response()->json(['error' => 'User is not an employee'], 403);
@@ -131,7 +158,7 @@ class IncidentController extends Controller
         ]);
 
         // Send immediate alerts to all super admins and ops managers
-        $admins = \App\Models\User::whereIn('role', ['SUPER_ADMIN', 'OPS_MANAGER'])->get();
+        $admins = \App\Models\User::whereIn('role', ['OWNER', 'GM', 'OPERATIONS'])->get();
         foreach ($admins as $admin) {
             $admin->notify(new \App\Notifications\PanicAlertNotification($report));
         }
@@ -155,6 +182,9 @@ class IncidentController extends Controller
      */
     public function destroy($id)
     {
+        if (!in_array(auth()->user()->role, ['OWNER', 'GM', 'HR', 'OPERATIONS'], true)) {
+            return response()->json(['error' => 'Only management may delete incidents'], 403);
+        }
         $incident = OperationalReport::findOrFail($id);
         $incident->delete();
 

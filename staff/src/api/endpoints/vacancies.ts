@@ -6,6 +6,7 @@ export interface Vacancy {
     title_am: string;
     description: string | null;
     qualification: string | null;
+    more_info: string | null;
     number_of_employees: number;
     is_active: boolean;
     created_at: string;
@@ -17,6 +18,7 @@ export interface CreateVacancyRequest {
     title_am: string;
     description?: string;
     qualification?: string;
+    more_info?: string;
     number_of_employees: number;
     is_active?: boolean;
 }

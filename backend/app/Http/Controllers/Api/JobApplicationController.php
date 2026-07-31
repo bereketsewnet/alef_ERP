@@ -37,6 +37,7 @@ class JobApplicationController extends Controller
             'vacancy_id' => 'nullable|integer|exists:vacancies,id',
             'applicant_id' => 'required|string|max:255',
             'age' => 'required|integer|min:15|max:100',
+            'sex' => 'required|in:MALE,FEMALE',
             'education' => 'required|string|max:500',
             'experience' => 'required|string',
             'job_ids' => 'required|array|min:1',
@@ -47,6 +48,7 @@ class JobApplicationController extends Controller
             'vacancy_id' => $validated['vacancy_id'] ?? null,
             'applicant_id' => $validated['applicant_id'],
             'age' => $validated['age'],
+            'sex' => $validated['sex'],
             'education' => $validated['education'],
             'experience' => $validated['experience'],
         ]);
@@ -80,6 +82,7 @@ class JobApplicationController extends Controller
             'vacancy_id' => 'sometimes|integer|exists:vacancies,id',
             'applicant_id' => 'sometimes|string|max:255',
             'age' => 'sometimes|integer|min:15|max:100',
+            'sex' => 'sometimes|required|in:MALE,FEMALE',
             'education' => 'sometimes|string|max:500',
             'experience' => 'sometimes|string',
             'job_ids' => 'sometimes|array|min:1',

@@ -12,6 +12,7 @@ class ClientSite extends Model
     protected $fillable = [
         'client_id',
         'site_name',
+        'description',
         'latitude',
         'longitude',
         'geo_radius_meters',
@@ -47,6 +48,12 @@ class ClientSite extends Model
     {
         return $this->belongsToMany(Job::class, 'site_jobs', 'site_id', 'job_id')
             ->withPivot('positions_needed')
+            ->withTimestamps();
+    }
+
+    public function supervisors()
+    {
+        return $this->belongsToMany(User::class, 'client_site_supervisors', 'client_site_id', 'user_id')
             ->withTimestamps();
     }
 

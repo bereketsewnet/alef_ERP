@@ -462,6 +462,10 @@ class EmployeeController extends Controller
      */
     public function getSalary($id, Request $request)
     {
+        $viewer = auth()->user();
+        if (in_array($viewer->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $viewer->employee && str_starts_with($viewer->employee->employee_code, 'FS-') && $viewer->supervisedSites()->exists()) {
+            return response()->json(['error' => 'Salary is not available to site controllers'], 403);
+        }
         $employee = Employee::findOrFail($id);
         
         $periodId = $request->get('period_id');
@@ -511,6 +515,10 @@ class EmployeeController extends Controller
      */
     public function getSalaryHistory($id, Request $request)
     {
+        $viewer = auth()->user();
+        if (in_array($viewer->role, ['FIELD_STAFF', 'SUPERVISOR'], true) && $viewer->employee && str_starts_with($viewer->employee->employee_code, 'FS-') && $viewer->supervisedSites()->exists()) {
+            return response()->json(['error' => 'Salary is not available to site controllers'], 403);
+        }
         $employee = Employee::findOrFail($id);
         
         $startDate = $request->get('start_date');

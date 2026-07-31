@@ -19,7 +19,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Search, CheckCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown, Shield, PenLine, Trash2, ClipboardCheck, ClipboardList } from "lucide-react"
+import { Search, CheckCircle, Eye, ChevronLeft, ChevronRight, Download, MapPin, Clock, ChevronDown, Shield, PenLine, Trash2, ClipboardCheck, ClipboardList, FileSpreadsheet } from "lucide-react"
 import {
     useAttendanceLogs,
     useVerifyAttendance,
@@ -40,6 +40,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FieldStaffSchedulerDialog } from '@/components/attendance/FieldStaffSchedulerDialog'
+import { AttendanceImportDialog } from '@/components/attendance/AttendanceImportDialog'
 
 export function AttendanceLogsPage() {
     // ── Attendance mode from settings ────────────────────────────────
@@ -52,7 +54,8 @@ export function AttendanceLogsPage() {
         () => (attendanceMode === 'GPS' ? 'logs' : 'manual'),
         [attendanceMode],
     )
-    const [activeTab, setActiveTab] = useState<'logs' | 'manual'>(defaultTab)
+    const [activeTab, setActiveTab] = useState<'logs' | 'manual' | 'field_staff'>(defaultTab)
+    const [schedulerOpen, setSchedulerOpen] = useState(false)
 
     // Sync tab when mode loads from server (first render)
     useEffect(() => {
@@ -60,7 +63,7 @@ export function AttendanceLogsPage() {
     }, [attendanceMode])
 
     // ── Logs tab state ────────────────────────────────────────────────
-    const [filters, setFilters] = useState<AttendanceFilters>({ page: 1 })
+    const [filters, setFilters] = useState<AttendanceFilters>({ page: 1, exclude_field_staff: true })
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
     const [exportFormat, setExportFormat] = useState<'pdf' | 'csv'>('csv')
@@ -73,6 +76,7 @@ export function AttendanceLogsPage() {
     const [manualSiteId, setManualSiteId] = useState<number | undefined>()
     const [manualShift, setManualShift] = useState<ShiftWithAttendance | null>(null)
     const [manualModalOpen, setManualModalOpen] = useState(false)
+    const [importModalOpen, setImportModalOpen] = useState(false)
 
     const { data, isLoading, error } = useAttendanceLogs(filters)
     const { mutate: verify } = useVerifyAttendance()
@@ -224,13 +228,14 @@ export function AttendanceLogsPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Attendance</h1>
                 <p className="text-neutral-600 mt-1">Record and manage employee attendance</p>
             </div>
+            <FieldStaffSchedulerDialog open={schedulerOpen} onOpenChange={setSchedulerOpen} />
 
             {/* Tab switcher */}
             <div className="flex flex-wrap items-center gap-3">
             <div className="flex gap-1 bg-neutral-100 rounded-lg p-1 w-fit">
                 <button
                     type="button"
-                    onClick={() => setActiveTab('manual')}
+                    onClick={() => { setActiveTab('manual'); setFilters(prev => ({ ...prev, field_staff: undefined, page: 1 })) }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
                         activeTab === 'manual'
                             ? 'bg-white shadow text-neutral-900'
@@ -242,7 +247,12 @@ export function AttendanceLogsPage() {
                 </button>
                 <button
                     type="button"
-                    onClick={() => setActiveTab('logs')}
+                    onClick={() => { setActiveTab('field_staff'); setFilters(prev => ({ ...prev, field_staff: true, exclude_field_staff: undefined, page: 1 })) }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'field_staff' ? 'bg-white shadow text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
+                ><Shield className="h-4 w-4" /> Field Staff</button>
+                <button
+                    type="button"
+                    onClick={() => { setActiveTab('logs'); setFilters(prev => ({ ...prev, field_staff: undefined, exclude_field_staff: true, page: 1 })) }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
                         activeTab === 'logs'
                             ? 'bg-white shadow text-neutral-900'
@@ -253,6 +263,7 @@ export function AttendanceLogsPage() {
                     Logs
                 </button>
             </div>
+            {activeTab === 'field_staff' && <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-blue-50 p-4"><div><b>Field Staff GPS Attendance</b><p className="text-sm text-neutral-600">Monitor assigned site controllers, GPS verification, late arrivals and clock-outs.</p></div><Button onClick={() => setSchedulerOpen(true)}>Schedule Field Staff</Button></div>}
             {/* Current mode badge */}
             <span className={`text-xs font-medium px-2 py-1 rounded-full border ${
                 attendanceMode === 'MANUAL' ? 'bg-violet-50 text-violet-700 border-violet-200' :
@@ -267,6 +278,11 @@ export function AttendanceLogsPage() {
             {/* ══════════════ MANUAL ENTRY TAB ══════════════ */}
             {activeTab === 'manual' && (
                 <div className="space-y-4">
+                    <div className="flex flex-col gap-3 rounded-lg border bg-neutral-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div><div className="font-semibold">Bulk attendance from Excel</div><p className="text-sm text-neutral-600">Import manual, GPS, or mixed attendance with row-level validation and safe updates.</p></div>
+                        <Button type="button" variant="outline" onClick={() => setImportModalOpen(true)} className="shrink-0"><FileSpreadsheet className="mr-2 h-4 w-4" />Excel Import</Button>
+                    </div>
+                    <AttendanceImportDialog open={importModalOpen} onOpenChange={setImportModalOpen} />
                     {/* Filters row */}
                     <div className="flex flex-col sm:flex-row gap-3 items-end">
                         <div>
@@ -312,7 +328,7 @@ export function AttendanceLogsPage() {
                     {/* Pending-shifts summary badges */}
                     {pendingShifts && (
                         <div className="flex gap-3 flex-wrap">
-                            {(['PENDING', 'PRESENT', 'LATE', 'LATE_WITH_PERMISSION', 'ABSENT', 'ABSENT_WITH_PERMISSION'] as const).map((s) => {
+                            {(['PENDING', 'PRESENT', 'LATE', 'LATE_WITH_PERMISSION', 'ABSENT', 'ABSENT_WITH_PERMISSION', 'POLICY_VIOLATION'] as const).map((s) => {
                                 const count = pendingShifts.filter((sh) => sh.attendance_status === s).length
                                 if (count === 0) return null
                                 return (
@@ -368,7 +384,7 @@ export function AttendanceLogsPage() {
                                                 <span className="ml-1 text-neutral-400">({hrs}h)</span>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex flex-wrap items-center gap-1">
                                                     <AttendanceStatusBadge status={shift.attendance_status} />
                                                     {shift.attendance_log?.manual_entry && (
                                                         <Badge variant="outline" className="text-xs border-violet-300 text-violet-700">
@@ -376,6 +392,11 @@ export function AttendanceLogsPage() {
                                                         </Badge>
                                                     )}
                                                 </div>
+                                                {shift.attendance_log?.manual_note && (
+                                                    <div className="mt-1 max-w-xs text-xs text-neutral-600">
+                                                        Reason: {shift.attendance_log.manual_note}
+                                                    </div>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right space-x-1">
                                                 <Button
@@ -385,9 +406,8 @@ export function AttendanceLogsPage() {
                                                         setManualShift(shift)
                                                         setManualModalOpen(true)
                                                     }}
-                                                    disabled={!!(shift.attendance_log && !shift.attendance_log.manual_entry)}
                                                     title={shift.attendance_log && !shift.attendance_log.manual_entry
-                                                        ? 'GPS-recorded entry — cannot edit here'
+                                                        ? 'Review status or reason; GPS evidence will be preserved'
                                                         : shift.attendance_status === 'PENDING' ? 'Record attendance' : 'Edit attendance'}
                                                 >
                                                     <PenLine className="h-3.5 w-3.5 mr-1" />
@@ -414,7 +434,7 @@ export function AttendanceLogsPage() {
             )}
 
             {/* ══════════════ LOGS TAB ══════════════ */}
-            {activeTab === 'logs' && (
+            {(activeTab === 'logs' || activeTab === 'field_staff') && (
             <>
 
             {/* Status Summary */}
@@ -622,9 +642,10 @@ export function AttendanceLogsPage() {
                                                 <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300">Not finished</Badge>
                                             ) : (
                                                 <>
-                                                    {log.flagged_late && <Badge variant="destructive">Late</Badge>}
+                                                    {log.attendance_status === 'POLICY_VIOLATION' && <Badge className="bg-purple-100 text-purple-800">Policy Violation</Badge>}
+                                                    {log.attendance_status !== 'POLICY_VIOLATION' && log.flagged_late && <Badge variant="destructive">Late</Badge>}
                                                     {log.flagged_early_leave && <Badge variant="warning">Early</Badge>}
-                                                    {!log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
+                                                    {log.attendance_status !== 'POLICY_VIOLATION' && !log.flagged_late && !log.flagged_early_leave && <Badge variant="success">Present</Badge>}
                                                 </>
                                             )}
                                         </div>
@@ -752,7 +773,15 @@ export function AttendanceLogsPage() {
                                     <span className={selectedLog.is_verified ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
                                         {selectedLog.is_verified ? 'Verified' : 'Pending Verification'}
                                     </span>
+                                    <span className="text-gray-500">Decision:</span>
+                                    <span className="font-medium">{selectedLog.attendance_status ? selectedLog.attendance_status.replace(/_/g, ' ') : (selectedLog.flagged_late ? 'LATE' : 'PRESENT')}</span>
                                 </div>
+                                {selectedLog.manual_note && (
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+                                        <div className="font-medium text-blue-900">Reason / Note</div>
+                                        <p className="mt-1 whitespace-pre-wrap text-blue-800">{selectedLog.manual_note}</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -767,14 +796,14 @@ export function AttendanceLogsPage() {
                                     <div className="bg-gray-100 p-3 rounded-md text-xs font-mono space-y-1">
                                         <div className="flex justify-between">
                                             <span>Lat:</span>
-                                            <span>{selectedLog.clock_in_latitude}</span>
+                                            <span>{(selectedLog as any).clock_in_lat ?? selectedLog.clock_in_latitude ?? '—'}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Lng:</span>
-                                            <span>{selectedLog.clock_in_longitude}</span>
+                                            <span>{(selectedLog as any).clock_in_long ?? selectedLog.clock_in_longitude ?? '—'}</span>
                                         </div>
                                     </div>
-                                    {selectedLog.clock_out_latitude && (
+                                    {((selectedLog as any).clock_out_lat || selectedLog.clock_out_latitude) && (
                                         <div className="text-xs text-gray-500 mt-2">
                                             Clock out location recorded
                                         </div>
@@ -782,15 +811,13 @@ export function AttendanceLogsPage() {
                                 </div>
                             </div>
 
-                            {(selectedLog as any).selfie_url && (
+                            {selectedLog.verification_method === 'GPS' && (
                                 <div className="col-span-2 space-y-2">
-                                    <h3 className="font-semibold">Selfie Verification</h3>
-                                    <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
-                                        <img
-                                            src={(selectedLog as any).selfie_url}
-                                            alt="Attendance Selfie"
-                                            className="h-full w-full object-contain"
-                                        />
+                                    <h3 className="font-semibold">Verification Images</h3>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {(selectedLog as any).clock_in_photo_url && <div><p className="mb-1 text-xs text-gray-500">Clock-in image</p><a href={(selectedLog as any).clock_in_photo_url} target="_blank" rel="noreferrer"><img src={(selectedLog as any).clock_in_photo_url} alt="Clock-in verification" className="h-48 w-full rounded-lg border bg-gray-100 object-contain" /></a></div>}
+                                        {(selectedLog as any).clock_out_photo_url && <div><p className="mb-1 text-xs text-gray-500">Clock-out image</p><a href={(selectedLog as any).clock_out_photo_url} target="_blank" rel="noreferrer"><img src={(selectedLog as any).clock_out_photo_url} alt="Clock-out verification" className="h-48 w-full rounded-lg border bg-gray-100 object-contain" /></a></div>}
+                                        {!(selectedLog as any).clock_in_photo_url && !(selectedLog as any).clock_out_photo_url && <div className="sm:col-span-2 rounded-lg border border-dashed bg-neutral-50 p-6 text-center text-sm text-neutral-500">No verification image was uploaded for this attendance record. Images are optional for employees and Field Staff.</div>}
                                     </div>
                                 </div>
                             )}

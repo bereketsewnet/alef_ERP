@@ -14,6 +14,7 @@ class Vacancy extends Model
         'title_am',
         'description',
         'qualification',
+        'more_info',
         'number_of_employees',
         'is_active',
     ];

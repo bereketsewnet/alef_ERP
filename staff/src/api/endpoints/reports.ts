@@ -43,6 +43,17 @@ export interface ReportParams {
     end_date?: string
     status?: string
     page?: number
+    client_id?: number
+    site_id?: number
+    payment_status?: string
+}
+
+export interface ClientSiteReportData {
+    summary: { clients:number; sites:number; employees:number; field_staff:number; total_billed:number; paid:number; due:number; overdue:number; verified:number; on_time:number; paid_late:number }
+    payment_status: Array<{name:string;count:number}>
+    staff_by_site: Array<{site_id:number;client_id:number;company:string;site:string;employees:number;field_staff:number;total_staff:number;gps_radius:number}>
+    clients: Array<{client_id:number;company:string;sites:number;contact:string;phone:string;email:string;billing_cycle:string;invoices:number;total_billed:number;paid:number;verified:number;on_time:number;paid_late:number;overdue:number;next_due_date:string|null}>
+    invoices: Array<{id:number;invoice_number:string;company:string;invoice_date:string;due_date:string;payment_date:string|null;amount:number;status:string;verified:boolean;on_time:boolean;paid_late:boolean;overdue:boolean}>
 }
 
 export interface AssetReportData {
@@ -78,6 +89,9 @@ export const reportsApi = {
 
     getAssetReport: (params?: ReportParams) =>
         apiClient.get<AssetReportData>('/reports/assets', { params }),
+
+    getClientSiteReport: (params?: ReportParams) =>
+        apiClient.get<ClientSiteReportData>('/reports/clients-sites', { params }),
 
     exportReport: (type: string, format: 'pdf' | 'excel' | 'csv', params: ReportParams) =>
         apiClient.get(`/reports/export/${type}`, {

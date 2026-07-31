@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -29,12 +30,13 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2, Eye, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
-import { useClients, useCreateClient, useCreateSite, useDeleteClient, useDeleteSite } from "@/services/useClients"
+import { Search, Plus, MapPin, ChevronLeft, ChevronRight, Building2, Eye, ChevronDown, ChevronUp, Trash2, Pencil } from "lucide-react"
+import { useClients, useCreateClient, useCreateSite, useDeleteClient, useDeleteSite, useSiteStaffOptions, useUpdateClient, useUpdateSite } from "@/services/useClients"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { SiteDetailsModal } from "@/components/sites/SiteDetailsModal"
+import { SiteSupervisorsField } from "@/components/sites/SiteSupervisorsField"
 
 const clientSchema = z.object({
     company_name: z.string().min(2, 'Company name is required'),
@@ -42,7 +44,13 @@ const clientSchema = z.object({
     contact_phone: z.string().min(10, 'Valid phone number required'),
     email: z.string().email('Invalid email address').optional().or(z.literal('')),
     billing_cycle: z.string().optional(),
+    payment_due_day: z.string().optional(),
+    payment_grace_days: z.string().optional(),
+    late_penalty_type: z.enum(['', 'FIXED', 'PERCENTAGE']),
+    late_penalty_value: z.string().optional(),
+    late_penalty_recurring: z.boolean(),
     tin_number: z.string().optional(),
+    description: z.string().max(5000, 'Description is too long').optional(),
 })
 
 const siteSchema = z.object({
@@ -52,6 +60,8 @@ const siteSchema = z.object({
     geo_radius_meters: z.string().optional(),
     site_contact_phone: z.string().optional(),
     email: z.string().email('Invalid email address').optional().or(z.literal('')),
+    supervisor_user_ids: z.array(z.number()),
+    description: z.string().max(5000, 'Description is too long').optional(),
 })
 
 export function ClientListPage() {
@@ -66,10 +76,15 @@ export function ClientListPage() {
     const [siteToView, setSiteToView] = useState<any | null>(null)
     const [clientToDelete, setClientToDelete] = useState<{ id: number; name: string } | null>(null)
     const [siteToDelete, setSiteToDelete] = useState<{ id: number; name: string; clientId: number } | null>(null)
+    const [editingClient, setEditingClient] = useState<any | null>(null)
+    const [editingSite, setEditingSite] = useState<any | null>(null)
 
     const { data, isLoading, error } = useClients({ page })
+    const { data: fieldStaffUsers = [] } = useSiteStaffOptions()
     const { mutate: createClient, isPending: isCreating } = useCreateClient()
     const { mutate: createSite, isPending: isCreatingSite } = useCreateSite()
+    const { mutate: updateClient, isPending: isUpdatingClient } = useUpdateClient()
+    const { mutate: updateSite, isPending: isUpdatingSite } = useUpdateSite()
     const { mutate: deleteClient } = useDeleteClient()
     const { mutate: deleteSite } = useDeleteSite()
 
@@ -81,7 +96,13 @@ export function ClientListPage() {
             contact_phone: '',
             email: '',
             billing_cycle: '',
+            payment_due_day: '',
+            payment_grace_days: '0',
+            late_penalty_type: '' as const,
+            late_penalty_value: '',
+            late_penalty_recurring: false,
             tin_number: '',
+            description: '',
         },
     })
 
@@ -94,6 +115,8 @@ export function ClientListPage() {
             geo_radius_meters: '100',
             site_contact_phone: '',
             email: '',
+            supervisor_user_ids: [],
+            description: '',
         },
     })
 
@@ -105,20 +128,29 @@ export function ClientListPage() {
             contact_phone: values.contact_phone,
         }
 
-        if (values.email && values.email.trim()) {
-            cleanedData.email = values.email.trim()
-        }
-        if (values.billing_cycle && values.billing_cycle.trim()) {
-            cleanedData.billing_cycle = values.billing_cycle
-        }
-        if (values.tin_number && values.tin_number.trim()) {
-            cleanedData.tin_number = values.tin_number
-        }
+        cleanedData.email = values.email?.trim() || null
+        cleanedData.billing_cycle = values.billing_cycle?.trim() || null
+        cleanedData.payment_due_day = values.payment_due_day ? Number(values.payment_due_day) : null
+        cleanedData.payment_grace_days = values.payment_grace_days ? Number(values.payment_grace_days) : 0
+        cleanedData.late_penalty_type = values.late_penalty_type || null
+        cleanedData.late_penalty_value = values.late_penalty_value ? Number(values.late_penalty_value) : null
+        cleanedData.late_penalty_recurring = values.late_penalty_recurring
+        cleanedData.tin_number = values.tin_number?.trim() || null
 
+        cleanedData.description = values.description?.trim() || null
+
+        const onSuccess = () => {
+            setClientModalOpen(false)
+            setEditingClient(null)
+            clientForm.reset()
+        }
+        if (editingClient) {
+            updateClient({ id: editingClient.id, data: cleanedData }, { onSuccess })
+            return
+        }
         createClient(cleanedData, {
             onSuccess: () => {
-                setClientModalOpen(false)
-                clientForm.reset()
+                onSuccess()
             },
         })
     }
@@ -126,27 +158,67 @@ export function ClientListPage() {
     const handleCreateSite = (values: z.infer<typeof siteSchema>) => {
         if (!selectedClientId) return
 
+        const siteData: any = {
+            site_name: values.site_name,
+            description: values.description?.trim() || null,
+            latitude: parseFloat(values.latitude),
+            longitude: parseFloat(values.longitude),
+            geo_radius_meters: values.geo_radius_meters ? parseInt(values.geo_radius_meters) : 100,
+            site_contact_phone: values.site_contact_phone,
+            email: values.email?.trim() || null,
+            supervisor_user_ids: values.supervisor_user_ids,
+        }
+        const onSuccess = () => {
+            setSiteModalOpen(false)
+            setEditingSite(null)
+            siteForm.reset()
+            setSelectedClientId(null)
+        }
+        if (editingSite) {
+            updateSite({ clientId: selectedClientId, siteId: editingSite.id, data: siteData }, { onSuccess })
+            return
+        }
         createSite({
             clientId: selectedClientId,
-            data: {
-                site_name: values.site_name,
-                latitude: parseFloat(values.latitude),
-                longitude: parseFloat(values.longitude),
-                geo_radius_meters: values.geo_radius_meters ? parseInt(values.geo_radius_meters) : 100,
-                site_contact_phone: values.site_contact_phone,
-                email: values.email || undefined,
-            },
+            data: siteData,
         }, {
-            onSuccess: () => {
-                setSiteModalOpen(false)
-                siteForm.reset()
-                setSelectedClientId(null)
-            },
+            onSuccess,
         })
     }
 
     const handleAddSite = (clientId: number) => {
+        setEditingSite(null)
+        siteForm.reset()
         setSelectedClientId(clientId)
+        setSiteModalOpen(true)
+    }
+
+    const handleEditClient = (client: any) => {
+        setEditingClient(client)
+        clientForm.reset({
+            company_name: client.company_name || '', contact_person: client.contact_person || '',
+            contact_phone: client.contact_phone || '', email: client.email || '',
+            billing_cycle: client.billing_cycle || '', tin_number: client.tin_number || '',
+            payment_due_day: client.payment_due_day ? String(client.payment_due_day) : '',
+            payment_grace_days: String(client.payment_grace_days ?? 0),
+            late_penalty_type: client.late_penalty_type || '',
+            late_penalty_value: client.late_penalty_value != null ? String(client.late_penalty_value) : '',
+            late_penalty_recurring: Boolean(client.late_penalty_recurring),
+            description: client.description || '',
+        })
+        setClientModalOpen(true)
+    }
+
+    const handleEditSite = (site: any) => {
+        setEditingSite(site)
+        setSelectedClientId(site.client_id)
+        siteForm.reset({
+            site_name: site.site_name || '', description: site.description || '',
+            latitude: String(site.latitude ?? ''), longitude: String(site.longitude ?? ''),
+            geo_radius_meters: String(site.geo_radius_meters ?? 100),
+            site_contact_phone: site.site_contact_phone || '', email: site.email || '',
+            supervisor_user_ids: (site.supervisors || []).map((user: any) => user.id),
+        })
         setSiteModalOpen(true)
     }
 
@@ -232,7 +304,7 @@ export function ClientListPage() {
                         Manage your clients and their site locations
                     </p>
                 </div>
-                <Button onClick={() => setClientModalOpen(true)} className="bg-primary-600 hover:bg-primary-700 shrink-0">
+                <Button onClick={() => { setEditingClient(null); clientForm.reset(); setClientModalOpen(true) }} className="bg-primary-600 hover:bg-primary-700 shrink-0">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Client
                 </Button>
@@ -347,7 +419,10 @@ export function ClientListPage() {
                                             ) : (
                                                 <ChevronDown className="h-4 w-4 text-neutral-500" />
                                             )}
-                                            {client.company_name}
+                                            <div>
+                                                <div>{client.company_name}</div>
+                                                {client.description && <div className="max-w-sm truncate text-xs font-normal text-neutral-500">{client.description}</div>}
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>{client.contact_person}</TableCell>
@@ -363,6 +438,13 @@ export function ClientListPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => { e.stopPropagation(); handleEditClient(client) }}
+                                            >
+                                                <Pencil className="h-4 w-4 mr-1" /> Edit
+                                            </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -389,12 +471,14 @@ export function ClientListPage() {
                                 {expandedClientIds.has(client.id) && client.sites?.map((site: any) => (
                                     <TableRow key={site.id} className="bg-neutral-50">
                                         <TableCell colSpan={4} className="pl-10">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <MapPin className="h-4 w-4 text-green-500" />
                                                 <span className="font-medium">{site.site_name}</span>
                                                 <span className="text-xs text-neutral-500">
                                                     ({Number(site.latitude).toFixed(4)}, {Number(site.longitude).toFixed(4)})
                                                 </span>
+                                                <Badge variant="outline">{site.supervisors?.length || 0} field staff</Badge>
+                                                {site.description && <span className="w-full truncate pl-6 text-xs text-neutral-500">{site.description}</span>}
                                             </div>
                                         </TableCell>
                                         <TableCell></TableCell>
@@ -403,10 +487,17 @@ export function ClientListPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
+                                                    onClick={() => handleEditSite(site)}
+                                                >
+                                                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     onClick={() => setSiteToView(site)}
                                                 >
                                                     <Eye className="h-4 w-4 mr-1" />
-                                                    View Jobs
+                                                    View Site
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -468,10 +559,10 @@ export function ClientListPage() {
             )}
 
             {/* Add Client Modal */}
-            <Dialog open={clientModalOpen} onOpenChange={setClientModalOpen}>
+            <Dialog open={clientModalOpen} onOpenChange={(open) => { setClientModalOpen(open); if (!open) setEditingClient(null) }}>
                 <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add New Client</DialogTitle>
+                        <DialogTitle>{editingClient ? 'Edit Client' : 'Add New Client'}</DialogTitle>
                         <DialogDescription>
                             Enter the client details below
                         </DialogDescription>
@@ -549,6 +640,31 @@ export function ClientListPage() {
                                     </FormItem>
                                 )}
                             />
+                            <div className="rounded-md border p-4 space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-medium">Payment Due & Late Penalty</h3>
+                                    <p className="text-xs text-neutral-500">Set the monthly payment day, grace period, and overdue charge.</p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <FormField control={clientForm.control} name="payment_due_day" render={({ field }) => (
+                                        <FormItem><FormLabel>Payment Day (1–31)</FormLabel><FormControl><Input {...field} type="number" min="1" max="31" placeholder="23" /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={clientForm.control} name="payment_grace_days" render={({ field }) => (
+                                        <FormItem><FormLabel>Grace Days</FormLabel><FormControl><Input {...field} type="number" min="0" placeholder="2" /></FormControl><p className="text-xs text-neutral-500">Days allowed after the due date before penalty starts.</p><FormMessage /></FormItem>
+                                    )} />
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <FormField control={clientForm.control} name="late_penalty_type" render={({ field }) => (
+                                        <FormItem><FormLabel>Late Penalty Type</FormLabel><FormControl><select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">No penalty</option><option value="FIXED">Fixed amount (ETB)</option><option value="PERCENTAGE">Percentage (%)</option></select></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={clientForm.control} name="late_penalty_value" render={({ field }) => (
+                                        <FormItem><FormLabel>{clientForm.watch('late_penalty_type') === 'PERCENTAGE' ? 'Penalty Percentage' : 'Penalty Amount (ETB)'}</FormLabel><FormControl><Input {...field} type="number" min="0" step="0.01" disabled={!clientForm.watch('late_penalty_type')} placeholder={clientForm.watch('late_penalty_type') === 'PERCENTAGE' ? '10' : '500'} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                </div>
+                                <FormField control={clientForm.control} name="late_penalty_recurring" render={({ field }) => (
+                                    <FormItem className="flex items-start gap-3 rounded-md bg-neutral-50 p-3"><FormControl><input type="checkbox" className="mt-1 h-4 w-4" checked={field.value} onChange={field.onChange} disabled={!clientForm.watch('late_penalty_type')} /></FormControl><div><FormLabel>Apply again for every overdue month</FormLabel><p className="text-xs text-neutral-500">Example: 10% becomes 20% after two overdue months. Turn off to charge only once.</p></div></FormItem>
+                                )} />
+                            </div>
                             <FormField
                                 control={clientForm.control}
                                 name="tin_number"
@@ -562,12 +678,23 @@ export function ClientListPage() {
                                     </FormItem>
                                 )}
                             />
+                            <FormField
+                                control={clientForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Description (Optional)</FormLabel>
+                                        <FormControl><Textarea {...field} rows={4} placeholder="Describe this client, their business, services, or important notes..." /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setClientModalOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={isCreating}>
-                                    {isCreating ? 'Creating...' : 'Create Client'}
+                                <Button type="submit" disabled={isCreating || isUpdatingClient}>
+                                    {(isCreating || isUpdatingClient) ? 'Saving...' : (editingClient ? 'Save Changes' : 'Create Client')}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -576,10 +703,10 @@ export function ClientListPage() {
             </Dialog>
 
             {/* Add Site Modal */}
-            <Dialog open={siteModalOpen} onOpenChange={setSiteModalOpen}>
+            <Dialog open={siteModalOpen} onOpenChange={(open) => { setSiteModalOpen(open); if (!open) setEditingSite(null) }}>
                 <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add New Site</DialogTitle>
+                        <DialogTitle>{editingSite ? 'Edit Site' : 'Add New Site'}</DialogTitle>
                         <DialogDescription>
                             Enter the site details and GPS coordinates
                         </DialogDescription>
@@ -667,12 +794,33 @@ export function ClientListPage() {
                                     </FormItem>
                                 )}
                             />
+                            <FormField
+                                control={siteForm.control}
+                                name="supervisor_user_ids"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <SiteSupervisorsField users={fieldStaffUsers} value={field.value || []} onChange={field.onChange} disabled={isCreatingSite || isUpdatingSite} />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={siteForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Description (Optional)</FormLabel>
+                                        <FormControl><Textarea {...field} rows={4} placeholder="Describe this site, access instructions, or important operational notes..." /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setSiteModalOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={isCreatingSite}>
-                                    {isCreatingSite ? 'Creating...' : 'Create Site'}
+                                <Button type="submit" disabled={isCreatingSite || isUpdatingSite}>
+                                    {(isCreatingSite || isUpdatingSite) ? 'Saving...' : (editingSite ? 'Save Changes' : 'Create Site')}
                                 </Button>
                             </DialogFooter>
                         </form>

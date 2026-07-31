@@ -1,12 +1,13 @@
 import apiClient from '../axios'
 
-export type AttendanceStatusRaw = 'PRESENT' | 'LATE' | 'ABSENT'
+export type AttendanceStatusRaw = 'PRESENT' | 'LATE' | 'ABSENT' | 'POLICY_VIOLATION'
 export type AttendanceStatusFull =
     | 'PRESENT'
     | 'LATE'
     | 'LATE_WITH_PERMISSION'
     | 'ABSENT'
     | 'ABSENT_WITH_PERMISSION'
+    | 'POLICY_VIOLATION'
     | 'PENDING'
 
 export interface AttendanceLog {
@@ -21,6 +22,7 @@ export interface AttendanceLog {
     clock_out_longitude: number | null
     clock_in_photo_url: string | null
     clock_out_photo_url: string | null
+    verification_method?: 'GPS' | 'MANUAL' | 'BIOMETRIC' | string
     is_verified: boolean
     flagged_late: boolean
     flagged_early_leave: boolean
@@ -118,10 +120,34 @@ export interface AttendanceFilters {
     end_date?: string
     site_id?: number
     is_verified?: boolean
+    field_staff?: boolean
+    exclude_field_staff?: boolean
     page?: number
 }
 
+export interface AttendanceImportResult {
+    message: string
+    summary: { created: number; updated: number; unchanged: number; errors: number; empty: number }
+    rows: Array<{ row: number; employee_code: string; result: 'CREATED' | 'UPDATED' | 'UNCHANGED' | 'ERROR'; message: string }>
+}
+
 export const attendanceApi = {
+    downloadImportTemplate: async (): Promise<Blob> => {
+        const response = await apiClient.get('/attendance/import/template', { responseType: 'blob' })
+        return response.data
+    },
+
+    downloadImportBundle: async (): Promise<Blob> => {
+        const response = await apiClient.get('/attendance/import/bundle', { responseType: 'blob' })
+        return response.data
+    },
+
+    importSpreadsheet: async (file: File): Promise<AttendanceImportResult> => {
+        const form = new FormData()
+        form.append('file', file)
+        const response = await apiClient.post('/attendance/import', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        return response.data
+    },
     list: async (filters: AttendanceFilters = {}): Promise<AttendanceListResponse> => {
         const params = new URLSearchParams()
         if (filters.search) params.append('search', filters.search)
@@ -130,6 +156,8 @@ export const attendanceApi = {
         if (filters.end_date) params.append('end_date', filters.end_date)
         if (filters.site_id) params.append('site_id', filters.site_id.toString())
         if (filters.is_verified !== undefined) params.append('is_verified', filters.is_verified ? '1' : '0')
+        if (filters.field_staff) params.append('field_staff', '1')
+        if (filters.exclude_field_staff) params.append('exclude_field_staff', '1')
         if (filters.page) params.append('page', filters.page.toString())
 
         const response = await apiClient.get(`/attendance/logs?${params.toString()}`)

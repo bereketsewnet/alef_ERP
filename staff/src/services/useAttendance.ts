@@ -182,6 +182,33 @@ export const useDeleteManualAttendance = () => {
     })
 }
 
+export const useImportAttendance = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (file: File) => attendanceApi.importSpreadsheet(file),
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: ['pending-shifts'] })
+            queryClient.invalidateQueries({ queryKey: ['attendance-logs'] })
+            result.summary.errors > 0
+                ? toast.warning(result.message)
+                : toast.success(result.message)
+        },
+        onError: (error: any) => toast.error(error.response?.data?.message || 'Attendance import failed'),
+    })
+}
+
+export const downloadAttendanceImportTemplate = async () => {
+    const blob = await attendanceApi.downloadImportBundle()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'attendance_import_complete_package.zip'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+}
+
 export const useRemovePermission = () => {
     const queryClient = useQueryClient()
 

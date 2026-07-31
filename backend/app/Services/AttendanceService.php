@@ -31,7 +31,7 @@ class AttendanceService
      * @param array|null $rawInitData Optional Telegram initData for audit
      * @return array ['success' => bool, 'message' => string, 'attendance' => AttendanceLog|null]
      */
-    public function clockIn(int $employeeId, int $scheduleId, float $latitude, float $longitude, ?array $rawInitData = null): array
+    public function clockIn(int $employeeId, int $scheduleId, float $latitude, float $longitude, ?array $rawInitData = null, ?float $accuracy = null, ?string $photoUrl = null): array
     {
         // Find the schedule
         $schedule = ShiftSchedule::with('site')->find($scheduleId);
@@ -75,6 +75,9 @@ class AttendanceService
                     'clock_in_time' => now(),
                     'clock_in_lat' => $latitude,
                     'clock_in_long' => $longitude,
+                    'clock_in_accuracy' => $accuracy,
+                    'clock_in_distance' => $gpsValidation['distanceMeters'],
+                    'clock_in_photo_url' => $photoUrl,
                 ]);
             } else {
                 // Log the attempt for audit purposes (only if no previous unverified attempt)
@@ -84,6 +87,9 @@ class AttendanceService
                     'clock_in_time' => now(),
                     'clock_in_lat' => $latitude,
                     'clock_in_long' => $longitude,
+                    'clock_in_accuracy' => $accuracy,
+                    'clock_in_distance' => $gpsValidation['distanceMeters'],
+                    'clock_in_photo_url' => $photoUrl,
                     'is_verified' => false,
                     'verification_method' => 'GPS',
                     'flagged_late' => false,
@@ -109,6 +115,9 @@ class AttendanceService
                 'clock_in_time' => $now,
                 'clock_in_lat' => $latitude,
                 'clock_in_long' => $longitude,
+                'clock_in_accuracy' => $accuracy,
+                'clock_in_distance' => $gpsValidation['distanceMeters'],
+                'clock_in_photo_url' => $photoUrl,
                 'is_verified' => true,
                 'flagged_late' => $flaggedLate,
             ]);
@@ -133,6 +142,9 @@ class AttendanceService
             'clock_in_time' => $now,
             'clock_in_lat' => $latitude,
             'clock_in_long' => $longitude,
+            'clock_in_accuracy' => $accuracy,
+            'clock_in_distance' => $gpsValidation['distanceMeters'],
+            'clock_in_photo_url' => $photoUrl,
             'is_verified' => true,
             'verification_method' => 'GPS',
             'flagged_late' => $flaggedLate,
@@ -156,7 +168,7 @@ class AttendanceService
      * @param float $longitude
      * @return array ['success' => bool, 'message' => string, 'attendance' => AttendanceLog|null]
      */
-    public function clockOut(int $employeeId, int $scheduleId, float $latitude, float $longitude): array
+    public function clockOut(int $employeeId, int $scheduleId, float $latitude, float $longitude, ?float $accuracy = null, ?string $photoUrl = null): array
     {
         // Find the attendance log
         $attendance = AttendanceLog::where('schedule_id', $scheduleId)
@@ -169,9 +181,25 @@ class AttendanceService
             return ['success' => false, 'message' => 'No active clock-in found for this shift', 'attendance' => null];
         }
 
-        // Update clock-out
+        $schedule = ShiftSchedule::with('site')->find($scheduleId);
+        $gpsValidation = $this->gpsService->isWithinRadius($latitude, $longitude, $schedule->site);
+        if (!$gpsValidation['withinRadius']) {
+            return [
+                'success' => false,
+                'message' => 'Location verification failed. You are ' . round($gpsValidation['distanceMeters']) . ' meters from the site.',
+                'attendance' => $attendance,
+                'distance' => $gpsValidation['distanceMeters'],
+            ];
+        }
+
         $attendance->update([
             'clock_out_time' => now(),
+            'clock_out_lat' => $latitude,
+            'clock_out_long' => $longitude,
+            'clock_out_accuracy' => $accuracy,
+            'clock_out_distance' => $gpsValidation['distanceMeters'],
+            'clock_out_verified' => true,
+            'clock_out_photo_url' => $photoUrl,
         ]);
 
         // Update schedule status
@@ -181,6 +209,7 @@ class AttendanceService
             'success' => true,
             'message' => 'Clocked out successfully',
             'attendance' => $attendance->fresh(),
+            'distance' => $gpsValidation['distanceMeters'],
         ];
     }
 }

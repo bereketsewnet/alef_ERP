@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, MapPin } from 'lucide-react'
 import { useUsers, useDeleteUser } from '@/services/useUsers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,12 +13,14 @@ import {
 } from '@/components/ui/table'
 import { UserFormModal } from '@/components/settings/UserFormModal'
 import type { User } from '@/types/common.types'
+import { UserSitesModal } from '@/components/settings/UserSitesModal'
 
 export function UserManagementPage() {
     const [search, setSearch] = useState('')
     const [page, setPage] = useState(1)
     const [userToEdit, setUserToEdit] = useState<User | null>(null)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [userForSites, setUserForSites] = useState<User | null>(null)
 
     const { data, isLoading } = useUsers({ page, search: search || undefined })
     const { mutate: deleteUser } = useDeleteUser()
@@ -64,6 +66,7 @@ export function UserManagementPage() {
                             <TableHead>Email</TableHead>
                             <TableHead>Phone</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead>Assigned Sites</TableHead>
                             <TableHead>Last Login</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -71,13 +74,13 @@ export function UserManagementPage() {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8">
+                                <TableCell colSpan={7} className="text-center py-8">
                                     Loading...
                                 </TableCell>
                             </TableRow>
                         ) : data?.data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8">
+                                <TableCell colSpan={7} className="text-center py-8">
                                     No users found
                                 </TableCell>
                             </TableRow>
@@ -91,6 +94,14 @@ export function UserManagementPage() {
                                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
                                             {user.role}
                                         </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        {['FIELD_STAFF', 'SUPERVISOR'].includes(user.role) ? (
+                                            <Button variant="outline" size="sm" onClick={() => setUserForSites(user)}>
+                                                <MapPin className="mr-1.5 h-4 w-4" />
+                                                {user.supervised_sites?.length || 0} sites
+                                            </Button>
+                                        ) : <span className="text-neutral-400">—</span>}
                                     </TableCell>
                                     <TableCell>
                                         {user.last_login
@@ -163,6 +174,7 @@ export function UserManagementPage() {
                 }}
                 user={userToEdit}
             />
+            <UserSitesModal user={userForSites} open={!!userForSites} onClose={() => setUserForSites(null)} />
         </div>
     )
 }

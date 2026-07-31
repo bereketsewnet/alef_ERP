@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query"
 import type { AxiosResponse } from "axios"
-import { reportsApi, type ReportParams, type ReportDashboardStats, type AssetReportData } from "@/api/endpoints/reports"
+import { reportsApi, type ReportParams, type ReportDashboardStats, type AssetReportData, type ClientSiteReportData } from "@/api/endpoints/reports"
 
 export function useReportDashboard(params?: ReportParams) {
     return useQuery({
@@ -42,6 +42,13 @@ export function useAssetReport(params?: ReportParams) {
     return useQuery({
         queryKey: ['reports', 'assets', params],
         queryFn: () => reportsApi.getAssetReport(params).then((res: AxiosResponse<AssetReportData>) => res.data),
+    })
+}
+
+export function useClientSiteReport(params?: ReportParams) {
+    return useQuery({
+        queryKey: ['reports', 'clients-sites', params],
+        queryFn: () => reportsApi.getClientSiteReport(params).then((res: AxiosResponse<ClientSiteReportData>) => res.data),
     })
 }
 

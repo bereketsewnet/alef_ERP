@@ -28,6 +28,7 @@ const STATUS_OPTIONS: { value: AttendanceStatusFull; label: string; color: strin
     { value: 'LATE_WITH_PERMISSION',    label: 'Late (With Permission)',     color: 'bg-blue-100 text-blue-800 border-blue-300' },
     { value: 'ABSENT',                  label: 'Absent (No Permission)',     color: 'bg-red-100 text-red-800 border-red-300' },
     { value: 'ABSENT_WITH_PERMISSION',  label: 'Absent (With Permission)',   color: 'bg-orange-100 text-orange-800 border-orange-300' },
+    { value: 'POLICY_VIOLATION',        label: 'Policy Violation / Non-compliant', color: 'bg-purple-100 text-purple-800 border-purple-300' },
 ]
 
 function toLocalDatetimeValue(isoString: string): string {
@@ -39,7 +40,7 @@ function toLocalDatetimeValue(isoString: string): string {
 }
 
 export function ManualAttendanceModal({ open, onClose, shift }: Props) {
-    const isEdit = !!shift?.attendance_log?.manual_entry
+    const isEdit = !!shift?.attendance_log
 
     const [status, setStatus] = useState<AttendanceStatusFull>('PRESENT')
     const [clockIn, setClockIn]   = useState('')
@@ -64,6 +65,7 @@ export function ManualAttendanceModal({ open, onClose, shift }: Props) {
             let fullStatus: AttendanceStatusFull = 'PRESENT'
             if (raw === 'ABSENT') fullStatus = perm ? 'ABSENT_WITH_PERMISSION' : 'ABSENT'
             else if (raw === 'LATE') fullStatus = perm ? 'LATE_WITH_PERMISSION' : 'LATE'
+            else if (raw === 'POLICY_VIOLATION') fullStatus = 'POLICY_VIOLATION'
             setStatus(fullStatus)
             setClockIn(log.clock_in_time  ? toLocalDatetimeValue(log.clock_in_time)  : '')
             setClockOut(log.clock_out_time ? toLocalDatetimeValue(log.clock_out_time) : '')
@@ -95,6 +97,7 @@ export function ManualAttendanceModal({ open, onClose, shift }: Props) {
 
     const handleSubmit = () => {
         if (!shift) return
+        if (status === 'POLICY_VIOLATION' && !note.trim()) return
 
         const payload = {
             attendance_status: status,
@@ -128,7 +131,7 @@ export function ManualAttendanceModal({ open, onClose, shift }: Props) {
                 <DialogHeader>
                     <DialogTitle>{isEdit ? 'Edit Attendance' : 'Record Attendance'}</DialogTitle>
                     <DialogDescription>
-                        Manual attendance entry for the shift below
+                        {shift?.attendance_log?.manual_entry ? 'Manual attendance entry for the shift below' : shift?.attendance_log ? 'Review the GPS attendance decision without changing its GPS evidence' : 'Manual attendance entry for the shift below'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -217,11 +220,11 @@ export function ManualAttendanceModal({ open, onClose, shift }: Props) {
                 <div className="space-y-1">
                     <Label htmlFor="note" className="flex items-center gap-1">
                         <FileText className="h-3.5 w-3.5" />
-                        Note <span className="text-neutral-400 font-normal">(optional)</span>
+                        Reason {status === 'POLICY_VIOLATION' ? <span className="text-red-600">(required)</span> : <span className="text-neutral-400 font-normal">(optional)</span>}
                     </Label>
                     <Textarea
                         id="note"
-                        placeholder="Reason, context, or any relevant information…"
+                        placeholder={status === 'POLICY_VIOLATION' ? 'Describe the rule violation, e.g. uniform not worn…' : 'Reason, context, or any relevant information…'}
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         rows={2}
@@ -232,7 +235,7 @@ export function ManualAttendanceModal({ open, onClose, shift }: Props) {
                     <Button variant="outline" onClick={onClose} disabled={isPending}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isPending}>
+                    <Button onClick={handleSubmit} disabled={isPending || (status === 'POLICY_VIOLATION' && !note.trim())}>
                         {isPending ? 'Saving…' : isEdit ? 'Update Attendance' : 'Record Attendance'}
                     </Button>
                 </div>
@@ -249,6 +252,7 @@ export function AttendanceStatusBadge({ status }: { status: AttendanceStatusFull
         LATE_WITH_PERMISSION:   { label: 'Late (Perm.)',         className: 'bg-blue-100   text-blue-800'   },
         ABSENT:                 { label: 'Absent',               className: 'bg-red-100    text-red-800'    },
         ABSENT_WITH_PERMISSION: { label: 'Absent (Perm.)',       className: 'bg-orange-100 text-orange-800' },
+        POLICY_VIOLATION:       { label: 'Policy Violation',     className: 'bg-purple-100 text-purple-800' },
         PENDING:                { label: 'Pending',              className: 'bg-neutral-100 text-neutral-600' },
     }
     const cfg = map[status] ?? map.PENDING

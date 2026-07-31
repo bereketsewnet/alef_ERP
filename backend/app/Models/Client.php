@@ -11,17 +11,25 @@ class Client extends Model
 
     protected $fillable = [
         'company_name',
+        'description',
         'tin_number',
         'contact_person',
         'contact_phone',
         'email',
         'billing_cycle',
+        'payment_due_day',
+        'payment_grace_days',
+        'late_penalty_type',
+        'late_penalty_value',
+        'late_penalty_recurring',
         'preferred_calendar', // 'EC' = Ethiopian, 'GC' = Gregorian (for Billing & Invoices)
         'address_details',
     ];
 
     protected $casts = [
         'address_details' => 'array',
+        'late_penalty_value' => 'decimal:2',
+        'late_penalty_recurring' => 'boolean',
     ];
 
     public function sites()

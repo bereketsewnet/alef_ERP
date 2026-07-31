@@ -67,4 +67,16 @@ export interface User {
     permissions?: Permission[]
     created_at?: string
     updated_at?: string
+    employee?: {
+        id: number
+        first_name: string
+        last_name: string
+        employee_code?: string
+    } | null
+    supervised_sites?: Array<{
+        id: number
+        client_id: number
+        site_name: string
+        client?: { id: number; company_name: string }
+    }>
 }
