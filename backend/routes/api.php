@@ -36,7 +36,6 @@ Route::prefix('public/recruitment')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/vacancies', [PublicRecruitmentController::class, 'vacancies']);
         Route::get('/vacancies/{id}', [PublicRecruitmentController::class, 'vacancy']);
-        Route::get('/jobs', [PublicRecruitmentController::class, 'jobs']);
     });
     Route::post('/applications', [PublicRecruitmentController::class, 'apply'])->middleware('throttle:5,1');
 });
@@ -188,6 +187,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\Api\JobApplicationController::class, 'destroy']);
+        Route::get('/{id}/cv', [\App\Http\Controllers\Api\JobApplicationController::class, 'downloadCv']);
 
         // Job Application Screenings (pre-employment interviews & exams)
         Route::get('/{jobApplicationId}/screenings', [\App\Http\Controllers\Api\JobApplicationScreeningController::class, 'index']);

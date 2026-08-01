@@ -14,13 +14,27 @@ class JobApplication extends Model
         'applicant_id',
         'age',
         'sex',
+        'phone_number',
+        'email',
+        'cv_path',
+        'cv_original_name',
+        'cv_mime_type',
+        'cv_size_bytes',
         'education',
         'experience',
     ];
 
     protected $casts = [
         'age' => 'integer',
+        'cv_size_bytes' => 'integer',
     ];
+
+    protected $appends = ['cv_download_url'];
+
+    public function getCvDownloadUrlAttribute(): ?string
+    {
+        return $this->cv_path ? url("/api/job-applications/{$this->id}/cv") : null;
+    }
 
     /**
      * Jobs this applicant is applying for

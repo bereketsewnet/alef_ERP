@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\JobApplication;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class JobApplicationController extends Controller
 {
@@ -38,6 +39,8 @@ class JobApplicationController extends Controller
             'applicant_id' => 'required|string|max:255',
             'age' => 'required|integer|min:15|max:100',
             'sex' => 'required|in:MALE,FEMALE',
+            'phone_number' => ['required', 'string', 'max:50', 'regex:/^\+?[0-9][0-9\s\-()]{7,24}$/'],
+            'email' => 'nullable|email|max:255',
             'education' => 'required|string|max:500',
             'experience' => 'required|string',
             'job_ids' => 'required|array|min:1',
@@ -49,6 +52,8 @@ class JobApplicationController extends Controller
             'applicant_id' => $validated['applicant_id'],
             'age' => $validated['age'],
             'sex' => $validated['sex'],
+            'phone_number' => $validated['phone_number'],
+            'email' => $validated['email'] ?? null,
             'education' => $validated['education'],
             'experience' => $validated['experience'],
         ]);
@@ -83,6 +88,8 @@ class JobApplicationController extends Controller
             'applicant_id' => 'sometimes|string|max:255',
             'age' => 'sometimes|integer|min:15|max:100',
             'sex' => 'sometimes|required|in:MALE,FEMALE',
+            'phone_number' => ['sometimes', 'required', 'string', 'max:50', 'regex:/^\+?[0-9][0-9\s\-()]{7,24}$/'],
+            'email' => 'nullable|email|max:255',
             'education' => 'sometimes|string|max:500',
             'experience' => 'sometimes|string',
             'job_ids' => 'sometimes|array|min:1',
@@ -106,9 +113,17 @@ class JobApplicationController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $application = JobApplication::findOrFail($id);
+        if ($application->cv_path) Storage::disk('local')->delete($application->cv_path);
         $application->delete();
 
         return response()->json(['message' => 'Job application deleted successfully']);
+    }
+
+    public function downloadCv(int $id)
+    {
+        $application = JobApplication::findOrFail($id);
+        abort_unless($application->cv_path && Storage::disk('local')->exists($application->cv_path), 404, 'CV file not found.');
+        return Storage::disk('local')->download($application->cv_path, $application->cv_original_name ?: 'applicant-cv');
     }
 }
 

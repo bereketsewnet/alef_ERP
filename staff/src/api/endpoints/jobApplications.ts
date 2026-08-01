@@ -8,8 +8,14 @@ export interface JobApplication {
     applicant_id: string;
     age: number | null;
     sex: 'MALE' | 'FEMALE' | null;
+    phone_number: string | null;
+    email: string | null;
     education: string | null;
     experience: string | null;
+    cv_original_name: string | null;
+    cv_mime_type: string | null;
+    cv_size_bytes: number | null;
+    cv_download_url: string | null;
     jobs?: Job[];
     vacancy?: Vacancy | null;
     created_at: string;
@@ -21,6 +27,8 @@ export interface CreateJobApplicationRequest {
     applicant_id: string;
     age: number;
     sex: 'MALE' | 'FEMALE';
+    phone_number: string;
+    email?: string;
     education: string;
     experience: string;
     job_ids: number[];
@@ -53,5 +61,10 @@ export const updateJobApplication = async (
 
 export const deleteJobApplication = async (id: number): Promise<void> => {
     await api.delete(`/job-applications/${id}`);
+};
+
+export const downloadJobApplicationCv = async (id: number): Promise<Blob> => {
+    const response = await api.get(`/job-applications/${id}/cv`, { responseType: 'blob' });
+    return response.data;
 };
 

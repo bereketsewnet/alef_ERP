@@ -7,14 +7,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, FileText, Edit, Trash2, Loader2, ClipboardCheck, UserPlus } from "lucide-react"
+import { Plus, FileText, Edit, Trash2, Loader2, ClipboardCheck, UserPlus, Download } from "lucide-react"
 import { useJobApplications, useCreateJobApplication, useUpdateJobApplication, useDeleteJobApplication } from "@/services/useJobApplications"
 import { useJobs } from "@/services/useJobs"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import type { JobApplication } from "@/api/endpoints/jobApplications"
+import { downloadJobApplicationCv, type JobApplication } from "@/api/endpoints/jobApplications"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/components/ui/use-toast"
 import { DialogFooter } from "@/components/ui/dialog"
@@ -30,6 +30,8 @@ const applicationSchema = z.object({
     applicant_id: z.string().min(1, "ID is required"),
     age: z.string().min(1, "Age is required"),
     sex: z.enum(['MALE', 'FEMALE'], { message: 'Sex is required' }),
+    phone_number: z.string().min(8, 'A valid phone number is required').max(50, 'Phone number is too long'),
+    email: z.string().email('Enter a valid email address').optional().or(z.literal('')),
     education: z.string().min(1, "Education is required"),
     experience: z.string().min(1, "Experience is required"),
 })
@@ -64,6 +66,8 @@ export function JobApplicationsPage() {
             applicant_id: "",
             age: "",
             sex: undefined,
+            phone_number: "",
+            email: "",
             education: "",
             experience: "",
         },
@@ -83,6 +87,8 @@ export function JobApplicationsPage() {
             applicant_id: data.applicant_id,
             age: Number(data.age),
             sex: data.sex,
+            phone_number: data.phone_number.trim(),
+            email: data.email?.trim() || undefined,
             education: data.education,
             experience: data.experience,
             job_ids: selectedJobIds,
@@ -118,12 +124,34 @@ export function JobApplicationsPage() {
             applicant_id: application.applicant_id,
             age: application.age !== null ? String(application.age) : "",
             sex: application.sex || undefined,
+            phone_number: application.phone_number || "",
+            email: application.email || "",
             education: application.education || "",
             experience: application.experience || "",
         })
         setSelectedJobIds(application.jobs?.map((j) => j.id) || [])
         setIsCreateOpen(true)
         setVacancyId(application.vacancy_id ? String(application.vacancy_id) : "none")
+    }
+
+    const handleDownloadCv = async (application: JobApplication) => {
+        try {
+            const blob = await downloadJobApplicationCv(application.id)
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.href = url
+            link.download = application.cv_original_name || `application-${application.id}-cv`
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            URL.revokeObjectURL(url)
+        } catch {
+            toast({
+                title: "CV download failed",
+                description: "The CV file is unavailable or you do not have permission to download it.",
+                variant: "destructive",
+            })
+        }
     }
 
     const openHireDialog = (application: JobApplication) => {
@@ -137,8 +165,8 @@ export function JobApplicationsPage() {
             setHireFirstName(application.applicant_id)
             setHireLastName("")
         }
-        setHirePhone("")
-        setHireEmail("")
+        setHirePhone(application.phone_number || "")
+        setHireEmail(application.email || "")
         const today = new Date()
         const iso = today.toISOString().split("T")[0]
         setHireDate(iso)
@@ -308,6 +336,30 @@ export function JobApplicationsPage() {
                                         )}
                                     />
                                 </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="phone_number"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Phone Number *</FormLabel>
+                                                <FormControl><Input type="tel" placeholder="+251911234567" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Email (Optional)</FormLabel>
+                                                <FormControl><Input type="email" placeholder="applicant@example.com" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                                 <FormField
                                     control={form.control}
                                     name="education"
@@ -438,17 +490,19 @@ export function JobApplicationsPage() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Age</TableHead>
                                     <TableHead>Sex</TableHead>
+                                    <TableHead>Contact</TableHead>
                                     <TableHead>Education</TableHead>
                                     <TableHead>Experience</TableHead>
                                     <TableHead>Vacancy</TableHead>
                                     <TableHead>Applying For</TableHead>
+                                    <TableHead>CV</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {applications?.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center text-neutral-500 py-8">
+                                        <TableCell colSpan={10} className="text-center text-neutral-500 py-8">
                                             No applications found. Add your first application to get started.
                                         </TableCell>
                                     </TableRow>
@@ -460,6 +514,10 @@ export function JobApplicationsPage() {
                                             </TableCell>
                                             <TableCell>{application.age ?? "—"}</TableCell>
                                             <TableCell>{application.sex === 'MALE' ? 'Male' : application.sex === 'FEMALE' ? 'Female' : '—'}</TableCell>
+                                            <TableCell>
+                                                <div className="whitespace-nowrap">{application.phone_number || '—'}</div>
+                                                {application.email && <div className="max-w-[190px] truncate text-xs text-neutral-500" title={application.email}>{application.email}</div>}
+                                            </TableCell>
                                             <TableCell className="max-w-[180px] truncate" title={application.education || undefined}>
                                                 {application.education || "—"}
                                             </TableCell>
@@ -482,6 +540,22 @@ export function JobApplicationsPage() {
                                                     </div>
                                                 ) : (
                                                     <span className="text-xs text-neutral-400">No jobs linked</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="min-w-[170px]">
+                                                {application.cv_original_name ? (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="max-w-[210px]"
+                                                        title={`Download ${application.cv_original_name}`}
+                                                        onClick={() => handleDownloadCv(application)}
+                                                    >
+                                                        <Download className="mr-2 h-4 w-4 shrink-0" />
+                                                        <span className="truncate">{application.cv_original_name}</span>
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-xs text-neutral-400">No CV uploaded</span>
                                                 )}
                                             </TableCell>
                                             <TableCell>
