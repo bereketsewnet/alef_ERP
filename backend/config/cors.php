@@ -16,11 +16,13 @@ return [
         'http://102.211.186.118:7071',  // Member Portal (VPS IP)
         'https://erp-staff.alefdelta.com',   // Staff Portal (production)
         'https://erp-member.alefdelta.com',  // Member Portal (production)
+        'https://trading.alefdelta.com',     // Public marketing/careers site
     ], $marketingOrigins),
     'allowed_origins_patterns' => [
         '/^http:\/\/localhost:\d+$/',  // Allow any localhost port
         '/^http:\/\/127\.0\.0\.1:\d+$/',  // Allow any 127.0.0.1 port
         '/^https:\/\/erp-(staff|member)\.alefdelta\.com$/',  // Production subdomains
+        '/^https:\/\/trading\.alefdelta\.com$/',  // Public marketing/careers site
     ],
     'allowed_headers' => ['*'],
     'exposed_headers' => ['Authorization'],
