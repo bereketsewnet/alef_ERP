@@ -44,10 +44,10 @@ function MapPreviewComponent({
     }), [safeSiteLat, safeSiteLng])
 
     const siteOptions = useMemo(() => ({
-        strokeColor: '#0B3D91',
+        strokeColor: '#07324A',
         strokeOpacity: 0.8,
         strokeWeight: 2,
-        fillColor: '#0B3D91',
+        fillColor: '#07324A',
         fillOpacity: 0.1,
         clickable: false,
         draggable: false,
@@ -108,7 +108,7 @@ function MapPreviewComponent({
                         icon={{
                             path: google.maps.SymbolPath.CIRCLE,
                             scale: 7,
-                            fillColor: '#0FA3A3',
+                            fillColor: '#DDA822',
                             fillOpacity: 1,
                             strokeColor: 'white',
                             strokeWeight: 2,

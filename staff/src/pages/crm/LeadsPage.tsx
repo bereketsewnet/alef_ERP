@@ -13,6 +13,7 @@ import { Plus, Loader2, PhoneCall, Mail, MessageCircle, CalendarDays, Trash2 } f
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { CrmContractsPanel } from "@/components/crm/CrmContractsPanel"
 
 const leadSchema = z.object({
     company_name: z.string().min(2, "Company name is required"),
@@ -263,9 +264,9 @@ export function LeadsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">CRM Leads</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Customer Relationship Management</h1>
                     <p className="text-neutral-600 mt-1">
-                        Track clients from reach to closing and manage follow-ups.
+                        Manage clients, sites, contracts, documents, expiry reminders, customer issues and prospective leads.
                     </p>
                 </div>
                 <Button className="bg-primary-600 hover:bg-primary-700" onClick={handleOpenNewLead}>
@@ -273,6 +274,10 @@ export function LeadsPage() {
                     New Lead
                 </Button>
             </div>
+
+            <CrmContractsPanel />
+
+            <div className="border-t pt-6"><h2 className="text-2xl font-bold">Prospective Lead Pipeline</h2><p className="text-neutral-500">Track new customers before they become registered clients.</p></div>
 
             <Card>
                 <CardContent className="pt-4 space-y-4">

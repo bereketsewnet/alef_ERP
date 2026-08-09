@@ -22,6 +22,12 @@ apiClient.interceptors.request.use(
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`
         }
+        // Never keep the JSON default for FormData. The browser must generate the
+        // multipart boundary; setting Content-Type manually makes PHP treat real
+        // files as ordinary fields and Laravel reports "must be a file".
+        if (config.data instanceof FormData && config.headers) {
+            config.headers.delete('Content-Type')
+        }
         // Log API requests for debugging
         if (import.meta.env.DEV) {
             console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {

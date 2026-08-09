@@ -10,7 +10,7 @@ import {
 import { useReportDashboard } from "@/services/useReports"
 import { Loader2 } from "lucide-react"
 
-const COLORS = ['#0B3D91', '#0FA3A3', '#F59E0B', '#EF4444', '#10B981', '#8B5CF6', '#EC4899']
+const COLORS = ['#07324A', '#DDA822', '#1C6D9C', '#CA2B2B', '#2C9664', '#1D5372', '#B68816']
 
 export function AssetAvailabilityChart() {
     const { data: dashboardData, isLoading, error } = useReportDashboard()
@@ -124,4 +124,3 @@ export function AssetAvailabilityChart() {
         </Card>
     )
 }
-

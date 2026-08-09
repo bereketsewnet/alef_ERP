@@ -104,13 +104,14 @@ export const useBid = (id: number) => {
 export const useCreateBid = () => {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (data: CreateBidRequest) => crmApi.createBid(data),
+        mutationFn: (data: CreateBidRequest | FormData) => crmApi.createBid(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["crm", "bids"] })
             toast.success("Bid created successfully")
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to create bid")
+            const errors = error.errors || error.response?.data?.errors
+            toast.error(errors ? Object.values(errors).flat().join(" ") : error.message || error.response?.data?.message || "Failed to create bid")
         },
     })
 }
@@ -118,14 +119,15 @@ export const useCreateBid = () => {
 export const useUpdateBid = () => {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: Partial<CreateBidRequest> }) =>
+        mutationFn: ({ id, data }: { id: number; data: Partial<CreateBidRequest> | FormData }) =>
             crmApi.updateBid(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["crm", "bids"] })
             toast.success("Bid updated successfully")
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to update bid")
+            const errors = error.errors || error.response?.data?.errors
+            toast.error(errors ? Object.values(errors).flat().join(" ") : error.message || error.response?.data?.message || "Failed to update bid")
         },
     })
 }

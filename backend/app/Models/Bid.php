@@ -22,5 +22,9 @@ class Bid extends Model
     {
         return $this->belongsTo(User::class, 'responsible_user_id');
     }
+
+    public function category() { return $this->belongsTo(CrmServiceCategory::class, 'category_id'); }
+    public function site() { return $this->belongsTo(ClientSite::class); }
+    public function documents() { return $this->hasMany(BidDocument::class); }
 }
 

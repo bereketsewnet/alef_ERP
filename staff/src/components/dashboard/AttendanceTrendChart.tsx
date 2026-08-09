@@ -62,18 +62,18 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                         <Line
                             type="monotone"
                             dataKey="clockIns"
-                            stroke="#0B3D91"
+                            stroke="#07324A"
                             strokeWidth={2}
                             name="Clock Ins"
-                            dot={{ fill: "#0B3D91" }}
+                            dot={{ fill: "#07324A" }}
                         />
                         <Line
                             type="monotone"
                             dataKey="clockOuts"
-                            stroke="#0FA3A3"
+                            stroke="#DDA822"
                             strokeWidth={2}
                             name="Clock Outs"
-                            dot={{ fill: "#0FA3A3" }}
+                            dot={{ fill: "#DDA822" }}
                         />
                     </LineChart>
                 </ResponsiveContainer>

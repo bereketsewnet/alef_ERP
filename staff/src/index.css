@@ -4,46 +4,58 @@
 @import "tailwindcss";
 
 @theme {
-  /* Custom Brand Colors - Now available as bg-primary-600, text-secondary-500, etc. */
-  --color-primary-50: #e6edf7;
-  --color-primary-100: #ccdcef;
-  --color-primary-200: #99b9df;
-  --color-primary-300: #6695cf;
-  --color-primary-400: #3372bf;
-  --color-primary-500: #0B3D91;
-  --color-primary-600: #0a3580;
-  --color-primary-700: #082d70;
-  --color-primary-800: #072560;
-  --color-primary-900: #051d50;
+  /* ALEF DELTA brand: exact navy and gold anchors used by the marketing site. */
+  --color-primary-50: #EAF1F5;
+  --color-primary-100: #D5E3EA;
+  --color-primary-200: #ABC7D5;
+  --color-primary-300: #78A2B7;
+  --color-primary-400: #1D5372;
+  --color-primary-500: #0B405C;
+  --color-primary-600: #07324A;
+  --color-primary-700: #062B40;
+  --color-primary-800: #052233;
+  --color-primary-900: #031822;
 
-  --color-secondary-50: #e6f7f7;
-  --color-secondary-100: #ccefef;
-  --color-secondary-200: #99dfdf;
-  --color-secondary-300: #66cfcf;
-  --color-secondary-400: #33bfbf;
-  --color-secondary-500: #0FA3A3;
-  --color-secondary-600: #0d8c8c;
-  --color-secondary-700: #0b7575;
-  --color-secondary-800: #095e5e;
-  --color-secondary-900: #074747;
+  --color-secondary-50: #F8FAFB;
+  --color-secondary-100: #F2F5F8;
+  --color-secondary-200: #EAF1F5;
+  --color-secondary-300: #D8E0E9;
+  --color-secondary-400: #ABC7D5;
+  --color-secondary-500: #78A2B7;
+  --color-secondary-600: #1D5372;
+  --color-secondary-700: #16415A;
+  --color-secondary-800: #07324A;
+  --color-secondary-900: #052233;
 
-  --color-accent-50: #fef7e6;
-  --color-accent-100: #fdefcc;
-  --color-accent-200: #fbdf99;
-  --color-accent-300: #f9cf66;
-  --color-accent-400: #f7bf33;
-  --color-accent-500: #FFB020;
-  --color-accent-600: #e69e1d;
-  --color-accent-700: #cc8c1a;
-  --color-accent-800: #b37a17;
-  --color-accent-900: #996814;
+  --color-accent-50: #FCF5E3;
+  --color-accent-100: #FAEBC5;
+  --color-accent-200: #F5D98C;
+  --color-accent-300: #F0C24C;
+  --color-accent-400: #E7B52F;
+  --color-accent-500: #DDA822;
+  --color-accent-600: #CC9A19;
+  --color-accent-700: #B68816;
+  --color-accent-800: #8E6910;
+  --color-accent-900: #654A0B;
+
+  --color-neutral-50: #F5F7FA;
+  --color-neutral-100: #F2F5F7;
+  --color-neutral-200: #D8E0E9;
+  --color-neutral-300: #C3CFD8;
+  --color-neutral-400: #78909C;
+  --color-neutral-500: #4F6672;
+  --color-neutral-600: #40545E;
+  --color-neutral-700: #304049;
+  --color-neutral-800: #233038;
+  --color-neutral-900: #152128;
+  --color-neutral-950: #052233;
 
   --color-success-50: #e6f7f1;
   --color-success-100: #ccefe3;
   --color-success-200: #99dfc7;
   --color-success-300: #66cfab;
   --color-success-400: #33bf8f;
-  --color-success-500: #059669;
+  --color-success-500: #2C9664;
   --color-success-600: #04855e;
   --color-success-700: #047453;
   --color-success-800: #036348;
@@ -54,7 +66,7 @@
   --color-error-200: #efaba3;
   --color-error-300: #e78175;
   --color-error-400: #df5747;
-  --color-error-500: #D92D20;
+  --color-error-500: #CA2B2B;
   --color-error-600: #c3291d;
   --color-error-700: #ad251a;
   --color-error-800: #972117;
@@ -65,7 +77,7 @@
   --color-info-200: #a3c3fb;
   --color-info-300: #75a5f9;
   --color-info-400: #4787f7;
-  --color-info-500: #2563EB;
+  --color-info-500: #1C6D9C;
   --color-info-600: #2159d4;
   --color-info-700: #1d4fbd;
   --color-info-800: #1945a6;
@@ -73,29 +85,59 @@
 }
 
 :root {
-  /* Color tokens - for direct CSS variable usage */
-  --color-primary: #0B3D91;
-  --color-primary-hover: #0A3580;
-  --color-secondary: #0FA3A3;
-  --color-accent: #FFB020;
-  --color-surface-dark: #0F1724;
-  --color-success: #059669;
-  --color-error: #D92D20;
-  --color-warning: #FFB020;
-  --color-info: #2563EB;
+  --primary: 202 82% 16%;
+  --primary-deep: 202 82% 11%;
+  --primary-glow: 202 60% 28%;
+  --primary-soft: 202 35% 94%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 43 73% 50%;
+  --accent-deep: 43 78% 40%;
+  --accent-glow: 43 85% 62%;
+  --accent-soft: 43 80% 94%;
+  --accent-foreground: 202 82% 16%;
+  --ring: 43 73% 50%;
+  --background: 0 0% 100%;
+  --foreground: 202 30% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 202 30% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 202 30% 12%;
+  --muted: 210 25% 96%;
+  --muted-foreground: 202 18% 38%;
+  --border: 210 28% 88%;
+  --input: 210 28% 88%;
+  --color-primary: #07324A;
+  --color-primary-hover: #052233;
+  --color-secondary: #F2F5F8;
+  --color-accent: #DDA822;
+  --color-surface-dark: #052233;
+  --color-success: #2C9664;
+  --color-error: #CA2B2B;
+  --color-warning: #CC9A19;
+  --color-info: #1C6D9C;
+  --sidebar-background: #052233;
+  --sidebar-primary: #DDA822;
+  --sidebar-accent: #16415A;
+  --sidebar-border: #1C4054;
+  --gradient-hero: linear-gradient(135deg, #052233 0%, #07324A 58%, #1D5372 100%);
+  --gradient-gold: linear-gradient(135deg, #B68816 0%, #DDA822 55%, #F0C24C 100%);
+  --gradient-soft: linear-gradient(135deg, #FFFFFF 0%, #EAF1F5 100%);
+  --shadow-card: 0 8px 24px rgba(7, 50, 74, 0.08);
+  --shadow-elegant: 0 18px 48px rgba(5, 34, 51, 0.16);
+  --shadow-gold: 0 10px 28px rgba(221, 168, 34, 0.24);
 
   /* Background */
-  --color-bg: #F8FAFC;
-  --color-bg-secondary: #F1F5F9;
+  --color-bg: #FFFFFF;
+  --color-bg-secondary: #F5F7FA;
 
   /* Text */
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748B;
+  --color-text-primary: #152128;
+  --color-text-secondary: #4F6672;
+  --color-text-muted: #78909C;
 
   /* Border */
-  --color-border: #E2E8F0;
-  --color-border-hover: #CBD5E1;
+  --color-border: #D8E0E9;
+  --color-border-hover: #ABC7D5;
 
   /* Spacing scale */
   --spacing-1: 0.25rem;
@@ -173,6 +215,10 @@
   h6 {
     @apply text-base;
   }
+
+  h1, h2, h3, h4, h5, h6 { color: #07324A; }
+
+  :focus-visible { outline-color: #DDA822; }
 }
 
 @layer components {
@@ -195,10 +241,38 @@
 
 @layer utilities {
 
+  /* Always-visible admin sidebar scrollbar, independent from page content. */
+  .sidebar-nav-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: var(--sidebar-primary) var(--sidebar-background);
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+  }
+
+  .sidebar-nav-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .sidebar-nav-scroll::-webkit-scrollbar-track {
+    background: var(--sidebar-background);
+    border-left: 1px solid var(--sidebar-border);
+  }
+
+  .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+    background: var(--sidebar-primary);
+    border: 2px solid var(--sidebar-background);
+    border-radius: 999px;
+  }
+
+  .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+    background: #F0C24C;
+  }
+
   /* Custom scrollbar */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: #ABC7D5 transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -211,12 +285,12 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #CBD5E1;
+    background-color: #ABC7D5;
     border-radius: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #94A3B8;
+    background-color: #78909C;
   }
 
   /* Text truncate utilities */

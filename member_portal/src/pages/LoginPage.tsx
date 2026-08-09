@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Shield, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { Button } from '@/components/ui/Button'
@@ -60,8 +60,8 @@ export function LoginPage() {
 
                 {/* Logo */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg mb-4">
-                        <Shield className="h-10 w-10 text-primary" />
+                    <div className="w-full rounded-2xl bg-white p-4 shadow-lg mb-4">
+                        <img src="/logo.svg" alt="Alef Delta Trading" className="mx-auto h-auto w-full max-w-[300px]" />
                     </div>
                     <h1 className="text-2xl font-bold text-white">{t('app.name')}</h1>
                     <p className="text-primary-200 mt-1">{t('auth.welcome')}</p>

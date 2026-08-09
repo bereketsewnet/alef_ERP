@@ -320,7 +320,7 @@ export function DashboardPage() {
                 <div className="pt-4">
                     <Button
                         size="xl"
-                        className={`w-full h-20 text-xl font-bold ${isClockedIn ? 'bg-accent hover:bg-accent-600' : 'bg-primary'
+                        className={`w-full h-20 text-xl font-bold ${isClockedIn ? 'bg-accent text-primary-800 hover:bg-accent-600' : 'bg-primary'
                             }`}
                         onClick={handleClockAction}
                         isLoading={isClockingIn || isClockingOut || isGPSLoading}

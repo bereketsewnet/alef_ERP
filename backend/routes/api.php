@@ -281,13 +281,37 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/{leadId}/activities', [CrmLeadController::class, 'addActivity']);
     });
 
+    Route::prefix('crm')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Api\CrmContractController::class, 'dashboard']);
+        Route::get('/contracts', [\App\Http\Controllers\Api\CrmContractController::class, 'index']);
+        Route::post('/contracts', [\App\Http\Controllers\Api\CrmContractController::class, 'store']);
+        Route::post('/contracts/{id}', [\App\Http\Controllers\Api\CrmContractController::class, 'update']);
+        Route::post('/contracts/{id}/terminate', [\App\Http\Controllers\Api\CrmContractController::class, 'terminate']);
+        Route::post('/contracts/{id}/archive', [\App\Http\Controllers\Api\CrmContractController::class, 'archive']);
+        Route::post('/contracts/{id}/restore', [\App\Http\Controllers\Api\CrmContractController::class, 'restore']);
+        Route::get('/contract-documents/{id}/download', [\App\Http\Controllers\Api\CrmContractController::class, 'downloadDocument']);
+        Route::patch('/contract-documents/{id}', [\App\Http\Controllers\Api\CrmContractController::class, 'renameDocument']);
+        Route::delete('/contract-documents/{id}', [\App\Http\Controllers\Api\CrmContractController::class, 'deleteDocument']);
+        Route::get('/service-categories', [\App\Http\Controllers\Api\CrmContractController::class, 'categories']);
+        Route::post('/service-categories', [\App\Http\Controllers\Api\CrmContractController::class, 'storeCategory']);
+        Route::put('/service-categories/{id}', [\App\Http\Controllers\Api\CrmContractController::class, 'updateCategory']);
+        Route::get('/issues', [\App\Http\Controllers\Api\CrmContractController::class, 'issues']);
+        Route::post('/issues', [\App\Http\Controllers\Api\CrmContractController::class, 'storeIssue']);
+        Route::put('/issues/{id}', [\App\Http\Controllers\Api\CrmContractController::class, 'updateIssue']);
+        Route::get('/reports/contracts.csv', [\App\Http\Controllers\Api\CrmContractController::class, 'exportCsv']);
+    });
+
     // Bid Management Routes
     Route::prefix('bids')->group(function () {
         Route::get('/', [BidController::class, 'index']);
         Route::post('/', [BidController::class, 'store']);
         Route::get('/{id}', [BidController::class, 'show']);
         Route::put('/{id}', [BidController::class, 'update']);
+        Route::post('/{id}', [BidController::class, 'update']);
         Route::delete('/{id}', [BidController::class, 'destroy']);
+        Route::get('/documents/{id}/download', [BidController::class, 'downloadDocument']);
+        Route::patch('/documents/{id}', [BidController::class, 'renameDocument']);
+        Route::delete('/documents/{id}', [BidController::class, 'deleteDocument']);
     });
 
     // Report Routes

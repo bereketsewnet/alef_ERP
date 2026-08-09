@@ -75,6 +75,17 @@ export interface CreateActivityRequest {
     completed_at?: string
 }
 
+export interface CrmServiceCategory { id:number; name:string; description?:string; is_active:boolean }
+export interface CrmContractDocument { id:number; name:string; original_name:string; mime_type?:string; size_bytes?:number }
+export interface CrmContract {
+    id:number; client_id:number; site_id?:number; title:string; reference_number?:string; start_date:string; end_date:string;
+    status:'DRAFT'|'ACTIVE'|'EXPIRED'|'TERMINATED'; contract_amount?:number; payment_frequency?:string; payment_due_day?:number;
+    expiry_reminder_days:number; reminder_email?:string; agreement_summary?:string; payment_terms?:string; termination_reason?:string;
+    archived_at?:string; days_remaining:number; expiry_state:'OK'|'WARNING'|'URGENT'|'EXPIRED'|'TERMINATED'; issues_count:number;
+    client?:{id:number;company_name:string}; site?:{id:number;site_name:string}; categories:CrmServiceCategory[]; documents:CrmContractDocument[];
+}
+export interface CrmIssue { id:number; client_id:number; site_id?:number; contract_id?:number; subject:string; description:string; priority:string; status:string; action_taken?:string; client?:{company_name:string}; site?:{site_name:string}; contract?:{title:string} }
+
 // Bids
 export type BidStatus = "POTENTIAL" | "APPLIED" | "WON" | "LOST" | "NOT_ELIGIBLE"
 
@@ -93,6 +104,12 @@ export interface Bid {
     status: BidStatus
     notes?: string | null
     responsible_user_id?: number | null
+    category_id?: number | null
+    site_id?: number | null
+    category?: CrmServiceCategory | null
+    client?: { id:number; company_name:string; sites?:any[] } | null
+    site?: { id:number; site_name:string } | null
+    documents?: {id:number;name:string;original_name:string;size_bytes?:number}[]
     created_at: string
     updated_at: string
 }
@@ -125,6 +142,8 @@ export interface CreateBidRequest {
     notes?: string
     client_id?: number
     lead_id?: number
+    category_id: number
+    site_id?: number
 }
 
 export const crmApi = {
@@ -152,6 +171,22 @@ export const crmApi = {
         const response = await apiClient.post<{ data: CrmActivity }>(`/crm/leads/${leadId}/activities`, data)
         return response.data.data
     },
+    dashboard: async () => (await apiClient.get('/crm/dashboard')).data,
+    listContracts: async (params:any={}) => (await apiClient.get('/crm/contracts',{params})).data,
+    saveContract: async (data:FormData,id?:number) => (await apiClient.post(`/crm/contracts${id?`/${id}`:''}`,data)).data.data as CrmContract,
+    terminateContract: async (id:number,reason:string) => { await apiClient.post(`/crm/contracts/${id}/terminate`,{reason}) },
+    archiveContract: async (id:number) => { await apiClient.post(`/crm/contracts/${id}/archive`) },
+    restoreContract: async (id:number) => { await apiClient.post(`/crm/contracts/${id}/restore`) },
+    categories: async ():Promise<CrmServiceCategory[]> => (await apiClient.get('/crm/service-categories')).data,
+    createCategory: async (name:string) => (await apiClient.post('/crm/service-categories',{name})).data,
+    updateCategory: async (id:number,data:Partial<CrmServiceCategory>) => (await apiClient.put(`/crm/service-categories/${id}`,data)).data,
+    listIssues: async (params:any={}) => (await apiClient.get('/crm/issues',{params})).data,
+    createIssue: async (data:any) => (await apiClient.post('/crm/issues',data)).data.data,
+    updateIssue: async (id:number,data:any) => (await apiClient.put(`/crm/issues/${id}`,data)).data.data,
+    downloadContractDocument: async (id:number) => (await apiClient.get(`/crm/contract-documents/${id}/download`,{responseType:'blob'})).data as Blob,
+    renameContractDocument: async (id:number,name:string) => (await apiClient.patch(`/crm/contract-documents/${id}`,{name})).data.data,
+    deleteContractDocument: async (id:number) => { await apiClient.delete(`/crm/contract-documents/${id}`) },
+    exportContracts: async () => (await apiClient.get('/crm/reports/contracts.csv',{responseType:'blob'})).data as Blob,
 
     // Bids
     listBids: async (params: any = { page: 1 }): Promise<BidListResponse> => {
@@ -162,14 +197,19 @@ export const crmApi = {
         const response = await apiClient.get<{ data: Bid }>(`/bids/${id}`)
         return response.data.data
     },
-    createBid: async (data: CreateBidRequest): Promise<Bid> => {
+    createBid: async (data: CreateBidRequest | FormData): Promise<Bid> => {
         const response = await apiClient.post<{ data: Bid }>("/bids", data)
         return response.data.data
     },
-    updateBid: async (id: number, data: Partial<CreateBidRequest>): Promise<Bid> => {
-        const response = await apiClient.put<{ data: Bid }>(`/bids/${id}`, data)
+    updateBid: async (id: number, data: Partial<CreateBidRequest> | FormData): Promise<Bid> => {
+        const response = data instanceof FormData
+            ? await apiClient.post<{ data: Bid }>(`/bids/${id}`, data)
+            : await apiClient.put<{ data: Bid }>(`/bids/${id}`, data)
         return response.data.data
     },
+    downloadBidDocument: async (id:number):Promise<Blob> => (await apiClient.get(`/bids/documents/${id}/download`,{responseType:'blob'})).data,
+    renameBidDocument: async (id:number,name:string) => (await apiClient.patch(`/bids/documents/${id}`,{name})).data.data,
+    deleteBidDocument: async (id:number) => { await apiClient.delete(`/bids/documents/${id}`) },
     deleteBid: async (id: number): Promise<void> => {
         await apiClient.delete(`/bids/${id}`)
     },

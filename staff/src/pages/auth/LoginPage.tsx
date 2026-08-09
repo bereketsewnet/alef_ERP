@@ -55,12 +55,10 @@ export function LoginPage() {
     }
 
     return (
-        <div className="light min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-secondary-500">
+        <div className="light min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-800 via-primary-600 to-primary-400">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-primary-600 mb-2">
-                        {import.meta.env.VITE_APP_NAME || 'ALEF DELTA ERP'}
-                    </h1>
+                    <img src="/logo.svg" alt="Alef Delta Trading" className="mx-auto mb-4 h-auto w-full max-w-[310px]" />
                     <p className="text-neutral-600">Staff Portal</p>
                 </div>
 

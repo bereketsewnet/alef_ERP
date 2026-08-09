@@ -65,7 +65,7 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
 
     return (
         <div className={cn(
-            "flex flex-col h-screen border-r bg-white",
+            "flex flex-col h-screen border-r border-[var(--sidebar-border)] bg-[var(--sidebar-background)] text-white",
             // Mobile: fixed overlay drawer, slide in/out
             "fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out",
             mobileOpen ? "translate-x-0" : "-translate-x-full",
@@ -75,17 +75,16 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
             className
         )}>
             {/* Header */}
-            <div className="flex h-16 items-center border-b px-4 shrink-0">
+            <div className="flex h-16 items-center border-b border-[var(--sidebar-border)] px-4 shrink-0">
                 {!collapsed && (
-                    <span className="text-lg font-bold text-primary-600 truncate">
-                        ALEF DELTA
-                    </span>
+                    <img src="/logo.svg" alt="Alef Delta" className="h-10 w-auto max-w-[175px] object-contain" />
                 )}
+                {collapsed && <img src="/favicon.svg" alt="Alef Delta" className="hidden h-8 w-8 md:block" />}
                 {/* Close button on mobile */}
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-auto md:hidden"
+                    className="ml-auto text-white hover:bg-[var(--sidebar-accent)] hover:text-accent-500 md:hidden"
                     onClick={() => setMobileOpen(false)}
                 >
                     <X className="h-4 w-4" />
@@ -94,7 +93,7 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
                 <Button
                     variant="ghost"
                     size="icon"
-                    className={cn("hidden md:flex", collapsed ? "mx-auto" : "ml-auto")}
+                    className={cn("hidden text-white hover:bg-[var(--sidebar-accent)] hover:text-accent-500 md:flex", collapsed ? "mx-auto" : "ml-auto")}
                     onClick={() => setCollapsed(!collapsed)}
                 >
                     {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -102,7 +101,7 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
             </div>
 
             {/* Nav items */}
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="sidebar-nav-scroll min-h-0 flex-1 overflow-x-auto overflow-y-scroll py-4">
                 <nav className="grid gap-1 px-2">
                     {navItems.map((item, index) => {
                         const isActive = location.pathname.startsWith(item.href)
@@ -112,8 +111,8 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
                                 to={item.href}
                                 onClick={handleNavClick}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-neutral-100",
-                                    isActive ? "bg-primary-50 text-primary-600" : "text-neutral-500",
+                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--sidebar-accent)] hover:text-white",
+                                    isActive ? "bg-[var(--sidebar-accent)] text-accent-500" : "text-primary-100",
                                     collapsed && "md:justify-center md:px-2"
                                 )}
                                 title={collapsed ? item.title : undefined}
@@ -127,7 +126,7 @@ export function Sidebar({ className, collapsed, setCollapsed, mobileOpen, setMob
             </div>
 
             {/* Logout */}
-            <div className="border-t p-4 shrink-0">
+            <div className="border-t border-[var(--sidebar-border)] p-4 shrink-0">
                 <Button
                     variant="ghost"
                     onClick={() => { logout(); handleNavClick() }}

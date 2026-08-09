@@ -61,7 +61,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             </Button>
 
             {/* Logo text visible on mobile (sidebar is hidden) */}
-            <span className="font-bold text-primary-600 text-sm md:hidden">ALEF DELTA</span>
+            <img src="/logo.svg" alt="Alef Delta" className="h-8 w-auto max-w-[125px] object-contain md:hidden" />
 
             <div className="flex flex-1 items-center gap-4">
                 <form className="hidden sm:block lg:w-96" onSubmit={handleSearchSubmit}>
