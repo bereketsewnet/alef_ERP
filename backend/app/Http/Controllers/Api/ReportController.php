@@ -13,6 +13,10 @@ use App\Models\Asset;
 use App\Models\AssetAssignment;
 use App\Models\Client;
 use App\Models\ClientSite;
+use App\Models\Bid;
+use App\Models\Contract;
+use App\Models\CrmLead;
+use App\Models\CrmCustomerIssue;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel; // We might need a generic export class
@@ -20,6 +24,60 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    private function reportPeriod(Request $request): array
+    {
+        return [
+            $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth(),
+            $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfMonth(),
+        ];
+    }
+
+    private function crmReportData(Request $request): array
+    {
+        [$start,$end]=$this->reportPeriod($request);
+        $leads=CrmLead::with('client:id,company_name')->whereBetween('created_at',[$start,$end])->orderByDesc('created_at')->get();
+        $contracts=Contract::with(['client:id,company_name','site:id,site_name','categories','documents'])->withCount('issues')
+            ->whereDate('start_date','<=',$end)->whereDate('end_date','>=',$start)->orderBy('end_date')->get();
+        $issues=CrmCustomerIssue::with(['client:id,company_name','site:id,site_name','contract:id,title'])
+            ->whereBetween('created_at',[$start,$end])->latest()->get();
+        $asOf=$end->isFuture()?now():$end;
+        $leadStages=$leads->groupBy('stage')->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count(),'value'=>(float)$x->sum('expected_value')])->values();
+        $contractStatuses=$contracts->groupBy(fn($c)=>$c->status==='ACTIVE'&&Carbon::parse($c->end_date)->lt($asOf)?'EXPIRED':$c->status)->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count()])->values();
+        $issueStatuses=$issues->groupBy('status')->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count()])->values();
+        return [
+            'summary'=>[
+                'leads'=>$leads->count(),'pipeline_value'=>round((float)$leads->sum('expected_value'),2),
+                'won_leads'=>$leads->where('stage','CLOSED_WON')->count(),'lost_leads'=>$leads->where('stage','CLOSED_LOST')->count(),
+                'contracts'=>$contracts->count(),'active_contracts'=>$contracts->filter(fn($c)=>$c->status==='ACTIVE'&&Carbon::parse($c->end_date)->gte($asOf))->count(),
+                'contract_value'=>round((float)$contracts->sum('contract_amount'),2),'expiring_30_days'=>$contracts->filter(fn($c)=>$c->status==='ACTIVE'&&Carbon::parse($c->end_date)->between($asOf,$asOf->copy()->addDays(30)))->count(),
+                'issues'=>$issues->count(),'open_issues'=>$issues->whereIn('status',['OPEN','IN_PROGRESS'])->count(),'urgent_issues'=>$issues->where('priority','URGENT')->count(),
+            ],
+            'lead_stages'=>$leadStages,'contract_statuses'=>$contractStatuses,'issue_statuses'=>$issueStatuses,
+            'leads'=>$leads->map(fn($x)=>['id'=>$x->id,'company'=>$x->company_name,'client'=>$x->client?->company_name,'contact'=>$x->contact_person,'stage'=>$x->stage,'expected_value'=>(float)$x->expected_value,'probability'=>$x->probability,'next_action_date'=>$x->next_action_date,'created_at'=>$x->created_at?->toDateString()])->values(),
+            'contracts'=>$contracts->map(fn($x)=>['id'=>$x->id,'client'=>$x->client?->company_name,'site'=>$x->site?->site_name,'title'=>$x->title,'reference'=>$x->reference_number,'categories'=>$x->categories->pluck('name')->join(', '),'start_date'=>$x->start_date?->toDateString(),'end_date'=>$x->end_date?->toDateString(),'status'=>$x->status,'amount'=>(float)$x->contract_amount,'documents'=>$x->documents->count(),'issues'=>$x->issues_count])->values(),
+            'issues'=>$issues->map(fn($x)=>['id'=>$x->id,'client'=>$x->client?->company_name,'site'=>$x->site?->site_name,'contract'=>$x->contract?->title,'subject'=>$x->subject,'priority'=>$x->priority,'status'=>$x->status,'created_at'=>$x->created_at?->toDateString(),'resolved_at'=>$x->resolved_at?->toDateString()])->values(),
+        ];
+    }
+
+    public function getCrmReport(Request $request){$request->validate(['start_date'=>'nullable|date','end_date'=>'nullable|date|after_or_equal:start_date']);return response()->json($this->crmReportData($request));}
+
+    private function bidReportData(Request $request): array
+    {
+        [$start,$end]=$this->reportPeriod($request);
+        $q=Bid::with(['client:id,company_name','site:id,site_name','category:id,name','documents'])->whereBetween('created_at',[$start,$end]);
+        if($request->filled('status'))$q->where('status',$request->status);
+        if($request->filled('category_id'))$q->where('category_id',$request->integer('category_id'));
+        $bids=$q->latest()->get();$decided=$bids->whereIn('status',['WON','LOST']);
+        return [
+            'summary'=>['total'=>$bids->count(),'potential'=>$bids->where('status','POTENTIAL')->count(),'applied'=>$bids->where('status','APPLIED')->count(),'won'=>$bids->where('status','WON')->count(),'lost'=>$bids->where('status','LOST')->count(),'not_eligible'=>$bids->where('status','NOT_ELIGIBLE')->count(),'estimated_value'=>round((float)$bids->sum('estimated_value'),2),'submitted_value'=>round((float)$bids->sum('submitted_value'),2),'won_value'=>round((float)$bids->where('status','WON')->sum(fn($x)=>$x->submitted_value?:$x->estimated_value),2),'win_rate'=>$decided->count()?round($decided->where('status','WON')->count()*100/$decided->count(),1):0],
+            'by_status'=>$bids->groupBy('status')->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count(),'value'=>(float)$x->sum('estimated_value')])->values(),
+            'by_category'=>$bids->groupBy(fn($x)=>$x->category?->name??'Uncategorized')->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count(),'value'=>(float)$x->sum('estimated_value')])->values(),
+            'timeline'=>$bids->groupBy(fn($x)=>$x->created_at->format('Y-m'))->sortKeys()->map(fn($x,$name)=>['name'=>$name,'count'=>$x->count(),'won'=>$x->where('status','WON')->count()])->values(),
+            'bids'=>$bids->map(fn($x)=>['id'=>$x->id,'title'=>$x->title,'reference'=>$x->reference_number,'issuer'=>$x->issuer,'client'=>$x->client?->company_name,'site'=>$x->site?->site_name,'category'=>$x->category?->name,'deadline'=>$x->submission_deadline,'status'=>$x->status,'estimated_value'=>(float)$x->estimated_value,'submitted_value'=>(float)$x->submitted_value,'result_date'=>$x->result_date,'documents'=>$x->documents->count(),'created_at'=>$x->created_at?->toDateString()])->values(),
+        ];
+    }
+
+    public function getBidReport(Request $request){$request->validate(['start_date'=>'nullable|date','end_date'=>'nullable|date|after_or_equal:start_date','status'=>'nullable|in:POTENTIAL,APPLIED,WON,LOST,NOT_ELIGIBLE','category_id'=>'nullable|exists:crm_service_categories,id']);return response()->json($this->bidReportData($request));}
     private function clientSiteReportData(Request $request): array
     {
         $start = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::now()->startOfMonth();
@@ -450,6 +508,24 @@ class ReportController extends Controller
         $title = ucfirst($type) . " Report";
         
         switch ($type) {
+            case 'crm':
+                $report=$this->crmReportData($request);
+                if($format==='pdf')return Pdf::loadView('reports.crm_pdf',['report'=>$report,'startDate'=>$startDate,'endDate'=>$endDate])->setPaper('a4','landscape')->download('crm_report.pdf');
+                $headings=['Type','Company / Client','Title / Subject','Category / Priority','Status','Start / Created','End / Next Action','Value','Documents / Issues'];
+                $rows=collect($report['leads'])->map(fn($x)=>['Lead',$x['company'],$x['contact'],'—',$x['stage'],$x['created_at'],$x['next_action_date'],$x['expected_value'],'—'])
+                    ->concat(collect($report['contracts'])->map(fn($x)=>['Contract',$x['client'],$x['title'],$x['categories'],$x['status'],$x['start_date'],$x['end_date'],$x['amount'],$x['documents'].' docs / '.$x['issues'].' issues']))
+                    ->concat(collect($report['issues'])->map(fn($x)=>['Issue',$x['client'],$x['subject'],$x['priority'],$x['status'],$x['created_at'],$x['resolved_at'],'—',$x['site']]))->all();
+                if($format==='csv')return response()->streamDownload(function()use($headings,$rows){$o=fopen('php://output','w');fputcsv($o,$headings);foreach($rows as $r)fputcsv($o,$r);fclose($o);},'crm_report.csv',['Content-Type'=>'text/csv; charset=UTF-8']);
+                if($format==='excel')return Excel::download(new \App\Exports\ArrayReportExport($rows,$headings),'crm_report.xlsx');
+                abort(422,'Supported formats: PDF, CSV, Excel.');
+            case 'bids':
+                $report=$this->bidReportData($request);
+                if($format==='pdf')return Pdf::loadView('reports.bid_pdf',['report'=>$report,'startDate'=>$startDate,'endDate'=>$endDate])->setPaper('a4','landscape')->download('bids_report.pdf');
+                $headings=['Reference','Title','Issuer','Client','Site','Category','Deadline','Status','Estimated Value','Submitted Value','Result Date','Documents','Created'];
+                $rows=collect($report['bids'])->map(fn($x)=>[$x['reference'],$x['title'],$x['issuer'],$x['client'],$x['site'],$x['category'],$x['deadline'],$x['status'],$x['estimated_value'],$x['submitted_value'],$x['result_date'],$x['documents'],$x['created_at']])->all();
+                if($format==='csv')return response()->streamDownload(function()use($headings,$rows){$o=fopen('php://output','w');fputcsv($o,$headings);foreach($rows as $r)fputcsv($o,$r);fclose($o);},'bids_report.csv',['Content-Type'=>'text/csv; charset=UTF-8']);
+                if($format==='excel')return Excel::download(new \App\Exports\ArrayReportExport($rows,$headings),'bids_report.xlsx');
+                abort(422,'Supported formats: PDF, CSV, Excel.');
             case 'clients-sites':
                 $report = $this->clientSiteReportData($request);
                 if ($format === 'pdf') {

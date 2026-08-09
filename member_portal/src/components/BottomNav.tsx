@@ -19,8 +19,8 @@ export function BottomNav() {
     const visibleItems = user?.is_site_controller
         ? [
             ...navItems.filter(item => item.path !== '/salary' && item.path !== '/pending'),
-            { path: '/site-attendance', icon: ClipboardCheck, labelKey: 'Site' },
-            { path: '/incidents', icon: TriangleAlert, labelKey: 'Incidents' },
+            { path: '/site-attendance', icon: ClipboardCheck, labelKey: 'nav.siteAttendance' },
+            { path: '/incidents', icon: TriangleAlert, labelKey: 'nav.incidents' },
           ]
         : navItems
 
@@ -45,7 +45,7 @@ export function BottomNav() {
                                 <item.icon
                                     className={cn('h-6 w-6', isActive && 'stroke-[2.5]')}
                                 />
-                                <span className="text-[10px] mt-1 font-medium">{item.labelKey.includes('.') ? t(item.labelKey) : item.labelKey}</span>
+                                <span className="text-[10px] mt-1 font-medium">{t(item.labelKey)}</span>
                             </>
                         )}
                     </NavLink>

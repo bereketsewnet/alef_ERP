@@ -38,7 +38,9 @@
         "sync": "Sync",
         "history": "History",
         "salary": "Salary",
-        "profile": "Profile"
+        "profile": "Profile",
+        "siteAttendance": "Site",
+        "incidents": "Incidents"
     },
     "home": {
         "todayShift": "Today's Shift",
@@ -77,7 +79,9 @@
         "verified": "Verified",
         "pending": "Pending",
         "late": "Late",
-        "onTime": "On Time"
+        "onTime": "On Time",
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out"
     },
     "roster": {
         "title": "My Schedule",

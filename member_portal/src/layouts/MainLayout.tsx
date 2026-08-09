@@ -6,7 +6,7 @@ import { Wifi, WifiOff, Cloud } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export function MainLayout() {
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
     const { isOnline, pendingCount } = useOfflineQueue()
 
     return (
@@ -25,10 +25,24 @@ export function MainLayout() {
                         </span>
                     </div>
 
-                    <Link to="/pending" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                        <Cloud className="h-4 w-4" />
-                        <span>{pendingCount > 0 ? `${pendingCount} ${t('home.pendingSync')}` : (t('nav.sync') || 'Sync')}</span>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const language = i18n.language === 'am' ? 'en' : 'am'
+                                localStorage.setItem('language', language)
+                                i18n.changeLanguage(language)
+                            }}
+                            className="rounded-full border border-gray-200 px-2.5 py-1 text-xs font-semibold text-primary"
+                            aria-label="Switch language"
+                        >
+                            {i18n.language === 'am' ? 'English' : 'አማርኛ'}
+                        </button>
+                        <Link to="/pending" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                            <Cloud className="h-4 w-4" />
+                            <span>{pendingCount > 0 ? `${pendingCount} ${t('home.pendingSync')}` : (t('nav.sync') || 'Sync')}</span>
+                        </Link>
+                    </div>
                 </div>
             </div>
 

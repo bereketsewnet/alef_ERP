@@ -38,7 +38,9 @@
         "sync": "ማመሳሰል",
         "history": "ታሪክ",
         "salary": "ደመወዝ",
-        "profile": "መገለጫ"
+        "profile": "መገለጫ",
+        "siteAttendance": "ሳይት",
+        "incidents": "ክስተቶች"
     },
     "home": {
         "todayShift": "የዛሬ ፈረቃ",
@@ -77,7 +79,9 @@
         "verified": "ተረጋግጧል",
         "pending": "በመጠባበቅ ላይ",
         "late": "ዘግይቷል",
-        "onTime": "በሰዓቱ"
+        "onTime": "በሰዓቱ",
+        "clockIn": "መግቢያ",
+        "clockOut": "መውጫ"
     },
     "roster": {
         "title": "የእኔ መርሃ ግብር",

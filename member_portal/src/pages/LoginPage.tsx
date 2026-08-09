@@ -20,7 +20,7 @@ const DEMO_MEMBERS = [
 ]
 
 export function LoginPage() {
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
     const navigate = useNavigate()
     const { login } = useAuth()
     const [error, setError] = useState('')
@@ -56,6 +56,18 @@ export function LoginPage() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary to-primary-700 px-6 py-12">
+            <button
+                type="button"
+                onClick={() => {
+                    const language = i18n.language === 'am' ? 'en' : 'am'
+                    localStorage.setItem('language', language)
+                    i18n.changeLanguage(language)
+                }}
+                className="fixed right-4 top-4 rounded-full border border-white/40 bg-white/15 px-4 py-2 text-sm font-semibold text-white"
+                aria-label="Switch language"
+            >
+                {i18n.language === 'am' ? 'English' : 'አማርኛ'}
+            </button>
             <div className="w-full max-w-sm">
 
                 {/* Logo */}

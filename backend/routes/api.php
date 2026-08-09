@@ -323,6 +323,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/roster', [\App\Http\Controllers\Api\ReportController::class, 'getRosterReport']);
         Route::get('/assets', [\App\Http\Controllers\Api\ReportController::class, 'getAssetReport']);
         Route::get('/clients-sites', [\App\Http\Controllers\Api\ReportController::class, 'getClientSiteReport']);
+        Route::get('/crm', [\App\Http\Controllers\Api\ReportController::class, 'getCrmReport']);
+        Route::get('/bids', [\App\Http\Controllers\Api\ReportController::class, 'getBidReport']);
         Route::get('/export/{type}', [\App\Http\Controllers\Api\ReportController::class, 'exportReport']);
     });
 
