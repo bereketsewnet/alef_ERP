@@ -24,6 +24,7 @@ services:
         condition: service_started
     networks:
       - alef-erp-network
+      - alefdelta-network
 
   backend:
     build:
@@ -217,6 +218,11 @@ networks:
     ipam:
       config:
         - subnet: 172.21.0.0/16
+  # Shared only with the SACCO application services so this single Caddy
+  # instance can serve both stacks without exposing application ports.
+  alefdelta-network:
+    external: true
+    name: alefdelta_network
 
 volumes:
   db_data:
