@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { User } from 'lucide-react'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { Button } from '@/components/ui/Button'
@@ -14,11 +13,6 @@ interface LoginFormData {
     password: string
 }
 
-const DEMO_MEMBERS = [
-    { name: 'John Doe',   role: 'Security Guard', phone: '+251911234567', password: 'password123' },
-    { name: 'Jane Smith', role: 'Cleaner',         phone: '+251922345678', password: 'password123' },
-]
-
 export function LoginPage() {
     const { t, i18n } = useTranslation()
     const navigate = useNavigate()
@@ -26,7 +20,7 @@ export function LoginPage() {
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
-    const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<LoginFormData>({
+    const { control, register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         defaultValues: { phone: '', password: '' },
     })
 
@@ -46,12 +40,6 @@ export function LoginPage() {
         } finally {
             setIsLoading(false)
         }
-    }
-
-    const fillDemo = (phone: string, password: string) => {
-        setValue('phone', phone)
-        setValue('password', password)
-        setError('')
     }
 
     return (
@@ -137,34 +125,6 @@ export function LoginPage() {
                         </Button>
                     </div>
                 </form>
-
-                {/* Demo member accounts */}
-                <div className="mt-5">
-                    <div className="relative flex items-center mb-3">
-                        <div className="flex-grow border-t border-white/30" />
-                        <span className="mx-3 text-xs text-primary-100 whitespace-nowrap">Demo Accounts</span>
-                        <div className="flex-grow border-t border-white/30" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        {DEMO_MEMBERS.map((m) => (
-                            <button
-                                key={m.phone}
-                                type="button"
-                                onClick={() => fillDemo(m.phone, m.password)}
-                                className="flex items-center gap-3 w-full bg-white/15 hover:bg-white/25 border border-white/30 rounded-xl px-4 py-3 text-left transition-colors"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                                    <User className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white text-sm font-medium">{m.name}</p>
-                                    <p className="text-primary-200 text-xs">{m.role} · {m.phone}</p>
-                                </div>
-                                <span className="text-primary-200 text-xs flex-shrink-0">Tap to fill</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
             </div>
         </div>

@@ -113,8 +113,7 @@ class AuthController extends Controller
             return $this->respondWithToken($token, $user);
         } catch (\Exception $e) {
             \Log::error('Login error: ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Unable to sign in at this time.'], 500);
         }
     }
 

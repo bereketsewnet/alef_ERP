@@ -23,16 +23,6 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-const DEMO_ACCOUNTS = [
-    { role: 'Owner', username: 'owner', password: 'owner123' },
-    { role: 'GM', username: 'gm', password: 'gm123' },
-    { role: 'HR', username: 'hr', password: 'hr123' },
-    { role: 'Finance', username: 'finance', password: 'finance123' },
-    { role: 'Operations', username: 'operations', password: 'operations123' },
-    { role: 'Marketing', username: 'marketing', password: 'marketing123' },
-    { role: 'Procurement', username: 'procurement', password: 'procurement123' },
-]
-
 export function LoginPage() {
     const { mutate: login, isPending } = useLogin()
 
@@ -47,11 +37,6 @@ export function LoginPage() {
 
     const onSubmit = (data: any) => {
         login(data)
-    }
-
-    const fillDemo = (username: string, password: string) => {
-        form.setValue('login', username, { shouldValidate: true })
-        form.setValue('password', password, { shouldValidate: true })
     }
 
     return (
@@ -135,26 +120,6 @@ export function LoginPage() {
                         </Button>
                     </form>
                 </Form>
-
-                <div className="mt-6">
-                    <div className="relative flex items-center mb-3">
-                        <div className="flex-grow border-t border-neutral-200" />
-                        <span className="mx-3 text-xs text-neutral-400 whitespace-nowrap">Demo Accounts</span>
-                        <div className="flex-grow border-t border-neutral-200" />
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                        {DEMO_ACCOUNTS.map((acc) => (
-                            <button
-                                key={acc.username}
-                                type="button"
-                                onClick={() => fillDemo(acc.username, acc.password)}
-                                className="px-3 py-1 text-xs rounded-full border border-primary-300 text-primary-700 bg-primary-50 hover:bg-primary-100 hover:border-primary-500 transition-colors cursor-pointer"
-                            >
-                                {acc.role}
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 <div className="mt-5 text-center text-sm text-neutral-600">
                     <p>© 2024 ALEF DELTA. All rights reserved.</p>

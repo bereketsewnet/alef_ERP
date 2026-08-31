@@ -58,7 +58,6 @@ const extraAmharic: Record<string, string> = {
     'Login': 'ግባ', 'Schedule': 'መርሃ ግብር', 'History': 'ታሪክ', 'Salary': 'ደመወዝ',
     'Sync': 'ማመሳሰል', 'Home': 'ዋና', 'Emergency Alert': 'የአደጋ ጊዜ ማንቂያ',
     'Refresh GPS': 'GPS አድስ', 'Selfie': 'የራስ ፎቶ', 'Cached': 'ከመሸጎጫ የተገኘ',
-    'Demo Accounts': 'የሙከራ መለያዎች', 'Tap to fill': 'ለመሙላት ይንኩ',
     'Phone number is required': 'ስልክ ቁጥር ያስፈልጋል', 'Password is required': 'የይለፍ ቃል ያስፈልጋል',
     'Security Guard': 'የጥበቃ ሠራተኛ', 'Cleaner': 'ጽዳት ሠራተኛ',
     'COMPLETED': 'ተጠናቋል', 'IN PROGRESS': 'በሂደት ላይ', 'SCHEDULED': 'የታቀደ',

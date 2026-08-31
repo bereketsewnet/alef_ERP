@@ -24,10 +24,10 @@ use App\Http\Controllers\Api\PublicRecruitmentController;
 
 // Public Auth Routes
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/telegram', [AuthController::class, 'telegramLogin']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+    Route::post('/telegram', [AuthController::class, 'telegramLogin'])->middleware('throttle:10,1');
+    Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
 });
 
 // Public marketing-site recruitment API. No JWT is required. Read traffic and

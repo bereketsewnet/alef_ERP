@@ -504,7 +504,6 @@ Object.assign(amharic, {
   "My Profile": "የእኔ መገለጫ",
   "Profile Information": "የመገለጫ መረጃ",
   "Initial Password": "የመጀመሪያ የይለፍ ቃል",
-  "Demo Accounts": "የሙከራ መለያዎች",
   "Access Denied": "መዳረሻ ተከልክሏል",
   "You don't have the required permissions.": "አስፈላጊው ፈቃድ የለዎትም።",
   Unauthorized: "ፈቃድ የለም",

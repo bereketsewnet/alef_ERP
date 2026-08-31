@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
@@ -15,10 +14,6 @@ return new class extends Migration {
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
-        foreach (['Guard', 'Cleaner', 'Driver', 'Messenger'] as $name) {
-            DB::table('crm_service_categories')->insert(['name' => $name, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
-        }
-
         Schema::table('contracts', function (Blueprint $table) {
             $table->foreignId('site_id')->nullable()->after('client_id')->constrained('client_sites')->nullOnDelete();
             $table->string('title')->nullable()->after('site_id');

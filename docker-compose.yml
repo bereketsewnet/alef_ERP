@@ -27,6 +27,7 @@ services:
       - alefdelta-network
 
   backend:
+    image: aelf_erp-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -41,18 +42,20 @@ services:
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-alef_erp}
       DB_USERNAME: ${DB_USERNAME:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-root}
-      APP_KEY: ${APP_KEY:-}
-      APP_ENV: ${APP_ENV:-local}
-      APP_DEBUG: ${APP_DEBUG:-true}
-      LOG_CHANNEL: ${LOG_CHANNEL:-stderr}
-      JWT_SECRET: ${JWT_SECRET:-}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_KEY: ${APP_KEY:?Set APP_KEY in .env}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       APP_URL: ${APP_URL:-https://erp-api.alefdelta.com}
       FRONTEND_URL: ${FRONTEND_URL:-https://erp-staff.alefdelta.com}
+      PRODUCTION_ADMIN_EMAIL: ${PRODUCTION_ADMIN_EMAIL:?Set PRODUCTION_ADMIN_EMAIL in .env}
+      PRODUCTION_ADMIN_PASSWORD: ${PRODUCTION_ADMIN_PASSWORD:?Set PRODUCTION_ADMIN_PASSWORD in .env}
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend:/var/www/html:cached
       - backend_storage:/var/www/html/storage
-      - ./backend/.env:/var/www/html/.env:ro
     depends_on:
       db:
         condition: service_healthy
@@ -99,11 +102,9 @@ services:
     image: mysql:8.0
     container_name: alef_erp_db
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3309:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-alef_erp}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       # If using root as user, we just set root password.
       # If explicit user needed:
       # MYSQL_USER: ${DB_USERNAME}
@@ -121,9 +122,7 @@ services:
       start_period: 20s
 
   seed:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: aelf_erp-backend:latest
     container_name: alef_erp_seed
     restart: "no"
     entrypoint: ["/bin/bash", "/seed.sh", "--container-if-empty"]
@@ -133,18 +132,20 @@ services:
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-alef_erp}
       DB_USERNAME: ${DB_USERNAME:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-root}
-      APP_KEY: ${APP_KEY:-}
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      JWT_SECRET: ${JWT_SECRET:-}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_KEY: ${APP_KEY:?Set APP_KEY in .env}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       APP_URL: ${APP_URL:-https://erp-api.alefdelta.com}
       FRONTEND_URL: ${FRONTEND_URL:-https://erp-staff.alefdelta.com}
       MARKETING_ALLOWED_ORIGINS: ${MARKETING_ALLOWED_ORIGINS:-}
+      PRODUCTION_ADMIN_EMAIL: ${PRODUCTION_ADMIN_EMAIL:?Set PRODUCTION_ADMIN_EMAIL in .env}
+      PRODUCTION_ADMIN_PASSWORD: ${PRODUCTION_ADMIN_PASSWORD:?Set PRODUCTION_ADMIN_PASSWORD in .env}
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend:/var/www/html:cached
       - backend_storage:/var/www/html/storage
-      - ./backend/.env:/var/www/html/.env:ro
       - ./seed.sh:/seed.sh:ro
     depends_on:
       backend:
@@ -153,9 +154,7 @@ services:
       - alef-erp-network
 
   scheduler:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: aelf_erp-backend:latest
     container_name: alef_erp_scheduler
     restart: unless-stopped
     entrypoint: ["php", "artisan", "schedule:work"]
@@ -165,16 +164,17 @@ services:
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-alef_erp}
       DB_USERNAME: ${DB_USERNAME:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-root}
-      APP_KEY: ${APP_KEY:-}
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      JWT_SECRET: ${JWT_SECRET:-}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_KEY: ${APP_KEY:?Set APP_KEY in .env}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       APP_URL: ${APP_URL:-https://erp-api.alefdelta.com}
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend:/var/www/html:cached
       - backend_storage:/var/www/html/storage
-      - ./backend/.env:/var/www/html/.env:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -184,7 +184,9 @@ services:
   adminer:
     image: adminer
     container_name: alef_erp_adminer
-    restart: always
+    profiles:
+      - tools
+    restart: "no"
     ports:
       - "127.0.0.1:8083:8080"
     environment:

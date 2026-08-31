@@ -9,86 +9,29 @@ use Illuminate\Support\Facades\Hash;
 class AdminSeeder extends Seeder
 {
     /**
-     * Create all admin/office accounts by role.
-     * Roles: Owner (Super Admin), GM, HR, Finance, Operations, Marketing, Procurement.
+     * Create the single production owner account.
      */
     public function run(): void
     {
-        $accounts = [
-            [
-                'username' => 'owner',
-                'email' => 'owner@alefdelta.com',
-                'password' => 'owner123',
-                'role' => 'OWNER',
-            ],
-            [
-                'username' => 'gm',
-                'email' => 'gm@alefdelta.com',
-                'password' => 'gm123',
-                'role' => 'GM',
-            ],
-            [
-                'username' => 'hr',
-                'email' => 'hr@alefdelta.com',
-                'password' => 'hr123',
-                'role' => 'HR',
-            ],
-            [
-                'username' => 'finance',
-                'email' => 'finance@alefdelta.com',
-                'password' => 'finance123',
-                'role' => 'FINANCE',
-            ],
-            [
-                'username' => 'operations',
-                'email' => 'operations@alefdelta.com',
-                'password' => 'operations123',
-                'role' => 'OPERATIONS',
-            ],
-            [
-                'username' => 'marketing',
-                'email' => 'marketing@alefdelta.com',
-                'password' => 'marketing123',
-                'role' => 'MARKETING',
-            ],
-            [
-                'username' => 'procurement',
-                'email' => 'procurement@alefdelta.com',
-                'password' => 'procurement123',
-                'role' => 'PROCUREMENT',
-            ],
-        ];
+        $email = env('PRODUCTION_ADMIN_EMAIL');
+        $password = env('PRODUCTION_ADMIN_PASSWORD');
 
-        foreach ($accounts as $acc) {
-            $user = User::firstOrCreate(
-                ['email' => $acc['email']],
-                [
-                    'username' => $acc['username'],
-                    'password' => Hash::make($acc['password']),
-                    'role' => $acc['role'],
-                    'is_active' => true,
-                ]
-            );
-            if (!$user->wasRecentlyCreated) {
-                $user->update([
-                    'username' => $acc['username'],
-                    'password' => Hash::make($acc['password']),
-                    'role' => $acc['role'],
-                    'is_active' => true,
-                ]);
-            }
+        if (!$email || !$password) {
+            throw new \RuntimeException('PRODUCTION_ADMIN_EMAIL and PRODUCTION_ADMIN_PASSWORD must be configured.');
         }
 
-        // If old admin@alefdelta.com exists (from previous seeder), make it OWNER and keep password in sync
-        $legacy = User::where('email', 'admin@alefdelta.com')->first();
-        if ($legacy) {
-            $legacy->update([
+        User::updateOrCreate(
+            ['email' => $email],
+            [
+                'username' => 'trading',
+                'password' => Hash::make($password),
                 'role' => 'OWNER',
-                'password' => Hash::make('owner123'),
                 'is_active' => true,
-            ]);
-        }
+                'employee_id' => null,
+                'phone_number' => null,
+            ]
+        );
 
-        echo "Created/updated admin accounts: Owner, GM, HR, Finance, Operations, Marketing, Procurement.\n";
+        echo "Created/updated the production OWNER account.\n";
     }
 }

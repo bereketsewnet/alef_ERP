@@ -29,6 +29,10 @@ for initial certificate validation and redirects.
 1. Review `.env` and set strong, persistent values for `DB_PASSWORD`,
    `APP_KEY`, and `JWT_SECRET`. Set `APP_ENV=production`,
    `APP_DEBUG=false`, and optionally set `ACME_EMAIL`.
+   Copy `.env.example` to `.env`; never commit `.env` or `backend/.env`.
+   Set `PRODUCTION_ADMIN_EMAIL` and `PRODUCTION_ADMIN_PASSWORD` before
+   running the production seed. The default seeder creates authorization
+   metadata and one OWNER account only; it does not create demo business data.
 2. Make the seed script executable: `chmod +x seed.sh`.
 3. Build and start everything:
 
