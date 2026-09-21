@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\EmployeeNameSearch;
+use App\Support\EthiopianPhoneNumber;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,14 +11,20 @@ class Employee extends Model
 {
     use HasFactory;
 
+    protected $hidden = [
+        'name_search_alias',
+    ];
+
     protected $fillable = [
         'employee_code',
         'first_name',
         'last_name',
+        'name_search_alias',
         'email',
         'phone_number',
         'role',
         'job_role_id',
+        'job_category_id',
         'status',
         'hire_date',
         'termination_date',
@@ -40,10 +48,35 @@ class Employee extends Model
         'hourly_rate' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Employee $employee) {
+            if ($employee->isDirty('phone_number')) {
+                $employee->phone_number = EthiopianPhoneNumber::normalize($employee->phone_number);
+            }
+
+            if ($employee->isDirty(['first_name', 'last_name']) || blank($employee->name_search_alias)) {
+                $employee->name_search_alias = EmployeeNameSearch::aliases(
+                    $employee->first_name,
+                    $employee->last_name
+                );
+            }
+        });
+    }
+
     // Relationships
     public function jobRole()
     {
         return $this->belongsTo(JobRole::class);
+    }
+
+    /**
+     * The employee's explicitly selected workforce category. This remains
+     * nullable so new employees can start as "None" until they are classified.
+     */
+    public function jobCategory()
+    {
+        return $this->belongsTo(JobCategory::class, 'job_category_id');
     }
 
     public function user()

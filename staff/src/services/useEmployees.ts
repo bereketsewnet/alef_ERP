@@ -19,6 +19,8 @@ export function useEmployees(params?: {
     status?: string
     role?: string
     site_id?: number
+    category_id?: number | 'none'
+    job_id?: number
 }) {
     return useQuery({
         queryKey: employeeKeys.list(params),

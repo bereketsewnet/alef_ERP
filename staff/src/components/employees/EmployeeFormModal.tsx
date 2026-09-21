@@ -3,6 +3,7 @@ import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateEmployee, useUpdateEmployee } from '@/services/useEmployees'
+import { useJobCategories } from '@/services/useJobs'
 import { employeeDocumentsApi } from '@/api/endpoints/employeeDocuments'
 import type { Employee } from '@/api/endpoints/employees'
 import { EmployeeCredentialsModal } from './EmployeeCredentialsModal'
@@ -47,6 +48,7 @@ const employeeSchema = z.object({
     phone_number: z.string().min(10, 'Phone number must be at least 10 digits'),
     status: z.enum(['active', 'probation', 'inactive', 'terminated']),
     hire_date: z.string().min(1, 'Hire date is required'),
+    job_category_id: z.string(),
 })
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>
@@ -57,11 +59,13 @@ interface EmployeeFormModalProps {
     employee?: Employee | null
 }
 
-function EmployeeFormFields({ form, isSubmitting, employee, onClose, children }: {
+function EmployeeFormFields({ form, isSubmitting, employee, onClose, categories, categoriesLoading, children }: {
     form: UseFormReturn<EmployeeFormValues>,
     isSubmitting: boolean,
     employee?: Employee | null,
     onClose: () => void,
+    categories: Array<{ id: number; name: string; code: string }>,
+    categoriesLoading: boolean,
     children?: ReactNode
 }) {
     return (
@@ -153,6 +157,37 @@ function EmployeeFormFields({ form, isSubmitting, employee, onClose, children }:
 
             <FormField
                 control={form.control}
+                name="job_category_id"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Employee Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="none">None (default)</SelectItem>
+                                {categories.map((category) => (
+                                    <SelectItem key={category.id} value={String(category.id)}>
+                                        {category.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-neutral-500">
+                            {categoriesLoading
+                                ? 'Loading categories...'
+                                : 'Categories come from Jobs → Manage Categories.'}
+                        </p>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
                 name="hire_date"
                 render={({ field }) => (
                     <FormItem>
@@ -191,6 +226,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
     const [attachments, setAttachments] = useState<NamedFileItem[]>([])
     const [attachmentError, setAttachmentError] = useState<string>()
     const [isUploadingDocuments, setIsUploadingDocuments] = useState(false)
+    const { data: categories = [], isLoading: categoriesLoading } = useJobCategories(true)
 
     const form = useForm<EmployeeFormValues>({
         resolver: zodResolver(employeeSchema),
@@ -201,6 +237,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
             phone_number: '',
             status: 'active',
             hire_date: '',
+            job_category_id: 'none',
         },
     })
 
@@ -213,6 +250,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                 phone_number: employee.phone_number || '',
                 status: employee.status || 'active',
                 hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : '',
+                job_category_id: employee.job_category_id ? String(employee.job_category_id) : 'none',
             })
         } else {
             form.reset({
@@ -222,6 +260,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                 phone_number: '',
                 status: 'active',
                 hire_date: '',
+                job_category_id: 'none',
             })
             setAttachments([])
             setAttachmentError(undefined)
@@ -239,9 +278,14 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
     }
 
     const onSubmit = async (data: EmployeeFormValues) => {
+        const payload = {
+            ...data,
+            job_category_id: data.job_category_id === 'none' ? null : Number(data.job_category_id),
+        }
+
         if (employee) {
             updateEmployee(
-                { id: employee.id, data },
+                { id: employee.id, data: payload },
                 {
                     onSuccess: () => {
                         onClose()
@@ -257,7 +301,7 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
         if (validationError) return
 
         try {
-            const response = await createEmployee(data)
+            const response = await createEmployee(payload)
             const employeeId = response.data.id
 
             if (attachments.length > 0) {
@@ -336,6 +380,8 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                                         isSubmitting={isUpdating}
                                         employee={employee}
                                         onClose={onClose}
+                                        categories={categories}
+                                        categoriesLoading={categoriesLoading}
                                     />
                                 </form>
                             </Form>
@@ -360,6 +406,8 @@ export function EmployeeFormModal({ open, onClose, employee }: EmployeeFormModal
                                 isSubmitting={isCreating || isUploadingDocuments}
                                 employee={undefined}
                                 onClose={onClose}
+                                categories={categories}
+                                categoriesLoading={categoriesLoading}
                             >
                                 <NamedFileUploader
                                     value={attachments}

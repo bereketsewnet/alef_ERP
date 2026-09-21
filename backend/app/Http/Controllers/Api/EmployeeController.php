@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\User;
+use App\Support\EmployeeNameSearch;
+use App\Support\EthiopianPhoneNumber;
 use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
@@ -25,24 +28,87 @@ class EmployeeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Employee::with(['jobRole.department']);
+        $request->validate([
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:10|max:100',
+            'search' => 'sometimes|nullable|string|max:255',
+            'status' => 'sometimes|nullable|in:active,probation,inactive,terminated',
+            'category_id' => 'sometimes|nullable|string|max:20',
+            'job_id' => 'sometimes|nullable|integer|exists:jobs,id',
+        ]);
 
-        if ($request->has('status')) {
+        $query = Employee::query()->with([
+            'jobRole.department',
+            'jobCategory:id,name,code',
+            'jobs' => fn ($jobs) => $jobs
+                ->select('jobs.id', 'jobs.category_id', 'jobs.job_name', 'jobs.job_code')
+                ->with('category:id,name,code'),
+        ]);
+
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('search')) {
-            $searchTerm = strtolower($request->search);
-            $query->where(function($q) use ($searchTerm) {
+        if ($request->filled('search')) {
+            $searchTerm = strtolower(trim($request->search));
+            $phoneticTokens = array_values(array_filter(explode(' ', EmployeeNameSearch::normalize($searchTerm))));
+            $compactSearch = preg_replace('/[\s\-()]+/', '', $searchTerm) ?? $searchTerm;
+            $canonicalPhoneSearch = preg_match('/^09\d*$/', $compactSearch) === 1
+                ? '+251' . substr($compactSearch, 1)
+                : null;
+
+            $query->where(function($q) use ($searchTerm, $phoneticTokens, $canonicalPhoneSearch) {
                 $q->whereRaw('LOWER(first_name) like ?', ['%' . $searchTerm . '%'])
                   ->orWhereRaw('LOWER(last_name) like ?', ['%' . $searchTerm . '%'])
                   ->orWhereRaw('LOWER(email) like ?', ['%' . $searchTerm . '%'])
                   ->orWhereRaw('LOWER(phone_number) like ?', ['%' . $searchTerm . '%'])
                   ->orWhereRaw('LOWER(employee_code) like ?', ['%' . $searchTerm . '%']);
+
+                if ($canonicalPhoneSearch !== null) {
+                    $q->orWhere('phone_number', 'like', '%' . $canonicalPhoneSearch . '%');
+                }
+
+                if ($phoneticTokens !== []) {
+                    $q->orWhere(function ($phoneticQuery) use ($phoneticTokens) {
+                        foreach ($phoneticTokens as $token) {
+                            $phoneticQuery->where('name_search_alias', 'like', '%' . $token . '%');
+                        }
+                    });
+                }
             });
         }
 
-        return response()->json($query->paginate(50));
+        if ($request->filled('category_id')) {
+            $categoryId = (string) $request->category_id;
+
+            if ($categoryId === 'none') {
+                // "None" means there is no explicit category and no assigned
+                // job from which a category can be derived.
+                $query->whereNull('job_category_id')->whereDoesntHave('jobs');
+            } elseif (ctype_digit($categoryId)) {
+                $categoryId = (int) $categoryId;
+                $query->where(function ($categoryQuery) use ($categoryId) {
+                    $categoryQuery->where('job_category_id', $categoryId)
+                        ->orWhereHas('jobs', fn ($jobs) => $jobs->where('jobs.category_id', $categoryId));
+                });
+            } else {
+                return response()->json([
+                    'message' => 'The selected employee category is invalid.',
+                    'errors' => ['category_id' => ['Select a valid category, All, or None.']],
+                ], 422);
+            }
+        }
+
+        if ($request->filled('job_id')) {
+            $jobId = (int) $request->job_id;
+            $query->whereHas('jobs', fn ($jobs) => $jobs->where('jobs.id', $jobId));
+        }
+
+        $perPage = (int) $request->input('per_page', 25);
+
+        return response()->json(
+            $query->orderBy('first_name')->orderBy('last_name')->orderBy('id')->paginate($perPage)
+        );
     }
 
     /**
@@ -69,6 +135,12 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
+
         $request->validate([
             'first_name' => 'required|string',
             'last_name' => 'required|string',
@@ -76,6 +148,7 @@ class EmployeeController extends Controller
             'phone_number' => 'required|string|unique:employees,phone_number',
             'status' => 'nullable|in:active,probation,inactive,terminated',
             'hire_date' => 'required|date',
+            'job_category_id' => 'nullable|integer|exists:job_categories,id',
         ]);
 
         // Generate unique employee code
@@ -95,6 +168,7 @@ class EmployeeController extends Controller
                 'status' => $request->status ?? 'active',
                 'hire_date' => $request->hire_date,
                 'job_role_id' => null,
+                'job_category_id' => $request->job_category_id,
             ]);
 
             // Create associated User account for login
@@ -140,7 +214,7 @@ class EmployeeController extends Controller
 
             // Return employee data with login credentials
             $responseData = [
-                'data' => $employee->load(['user', 'jobRole']),
+                'data' => $employee->load(['user', 'jobRole', 'jobCategory', 'jobs.category']),
             ];
             
             // Include login credentials if new user was created
@@ -175,7 +249,7 @@ class EmployeeController extends Controller
      */
     public function show($id)
     {
-        $employee = Employee::with(['jobRole.department', 'user', 'assetAssignments.asset'])->findOrFail($id);
+        $employee = Employee::with(['jobRole.department', 'jobCategory', 'jobs.category', 'user', 'assetAssignments.asset'])->findOrFail($id);
         return response()->json($employee);
     }
 
@@ -204,25 +278,49 @@ class EmployeeController extends Controller
     {
         $employee = Employee::findOrFail($id);
 
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
+
+        $linkedUser = $employee->user;
+        $phoneRules = [
+            'sometimes',
+            'string',
+            Rule::unique('employees', 'phone_number')->ignore($employee->id),
+        ];
+        if ($linkedUser) {
+            $phoneRules[] = Rule::unique('users', 'phone_number')->ignore($linkedUser->id);
+        }
+
         $request->validate([
             'first_name' => 'sometimes|string',
             'last_name' => 'sometimes|string',
             'email' => 'nullable|sometimes|email',
-            'phone_number' => 'sometimes|string',
+            'phone_number' => $phoneRules,
             'status' => 'sometimes|in:active,probation,inactive,terminated',
             'hire_date' => 'sometimes|date',
+            'job_category_id' => 'nullable|integer|exists:job_categories,id',
         ]);
 
-        $employee->update($request->only([
-            'first_name',
-            'last_name',
-            'email',
-            'phone_number',
-            'status',
-            'hire_date',
-        ]));
+        DB::transaction(function () use ($employee, $linkedUser, $request) {
+            $employee->update($request->only([
+                'first_name',
+                'last_name',
+                'email',
+                'phone_number',
+                'status',
+                'hire_date',
+                'job_category_id',
+            ]));
 
-        return response()->json(['data' => $employee]);
+            if ($linkedUser && $request->has('phone_number')) {
+                $linkedUser->update(['phone_number' => $request->input('phone_number')]);
+            }
+        });
+
+        return response()->json(['data' => $employee->load(['jobCategory', 'jobs.category'])]);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\EthiopianPhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -68,6 +69,12 @@ class UserController extends Controller
     {
         $this->authorizeAdmin();
 
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
+
         $request->validate([
             'username' => 'required|string|unique:users',
             'email' => 'required|string|email|unique:users',
@@ -131,6 +138,12 @@ class UserController extends Controller
         $this->authorizeAdmin();
 
         $user = User::findOrFail($id);
+
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
 
         $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $id,

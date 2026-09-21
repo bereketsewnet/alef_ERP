@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\EthiopianPhoneNumber;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -36,6 +37,15 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            if ($user->isDirty('phone_number')) {
+                $user->phone_number = EthiopianPhoneNumber::normalize($user->phone_number);
+            }
+        });
     }
 
     // JWT Methods

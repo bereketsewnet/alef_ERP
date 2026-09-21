@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\TelegramAuthService;
 use App\Models\User;
+use App\Support\EthiopianPhoneNumber;
 use OpenApi\Annotations as OA;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -64,12 +65,13 @@ class AuthController extends Controller
             // Check if it's a phone number (contains digits and possibly +, spaces, dashes)
             elseif (preg_match('/^[\+]?[\d\s\-\(\)]+$/', $login) && strlen(preg_replace('/\D/', '', $login)) >= 7) {
                 $loginType = 'phone_number';
+                $canonicalPhone = EthiopianPhoneNumber::normalize($login);
                 // Normalize phone number: remove spaces, dashes, parentheses for comparison
                 $normalizedPhone = preg_replace('/\D/', '', $login);
                 
                 // Try to find user with matching phone number
                 // First try exact match
-                $user = User::where('phone_number', $login)->first();
+                $user = User::where('phone_number', $canonicalPhone)->first();
                 
                 // If not found, try normalized match
                 if (!$user) {
@@ -138,6 +140,12 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
+
         $request->validate([
             'username' => 'required|string|unique:users',
             'email' => 'required|string|email|unique:users',
@@ -178,6 +186,12 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
+
+        if ($request->has('phone_number')) {
+            $request->merge([
+                'phone_number' => EthiopianPhoneNumber::normalize($request->input('phone_number')),
+            ]);
+        }
 
         $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
