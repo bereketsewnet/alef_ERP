@@ -14,6 +14,35 @@ interface EmployeeJob {
     job_code: string
     category?: EmployeeCategory | null
     pivot?: { is_primary: boolean }
+    skills?: Array<{
+        id: number
+        skill_name: string
+        is_required: boolean
+    }>
+}
+
+export interface EmployeeAssignmentOption {
+    id: number
+    employee_code: string
+    first_name: string
+    last_name: string
+    email?: string | null
+    phone_number?: string | null
+    status: string
+    job_category?: EmployeeCategory | null
+    jobs: Array<{
+        id: number
+        job_code: string
+        job_name: string
+        is_primary: boolean
+        category?: EmployeeCategory | null
+        skills: Array<{
+            id: number
+            skill_name: string
+            is_required: boolean
+        }>
+    }>
+    search_text: string
 }
 
 export interface Employee {
@@ -74,7 +103,47 @@ export interface UpdateEmployeeRequest {
     job_category_id?: number | null
 }
 
+export interface EmployeeImportResult {
+    message: string
+    summary: { created: number; updated: number; unchanged: number; errors: number; empty: number }
+    rows: Array<{
+        row: number
+        name: string
+        phone_number: string
+        employee_code?: string | null
+        result: 'CREATED' | 'UPDATED' | 'UNCHANGED' | 'ERROR'
+        message: string
+        column?: string
+        value?: unknown
+        changes?: Array<{ column: string; old: unknown; new: unknown }>
+        errors?: Array<{ column: string; value: unknown; message: string }>
+    }>
+}
+
 export const employeesApi = {
+    assignmentOptions: async (): Promise<{ data: EmployeeAssignmentOption[]; total: number }> => {
+        const response = await apiClient.get('/employees/assignment-options')
+        return response.data
+    },
+
+    downloadImportBundle: async (): Promise<Blob> => {
+        const response = await apiClient.get('/employees/import/bundle', { responseType: 'blob' })
+        return response.data
+    },
+
+    importSpreadsheet: async (
+        file: File,
+        defaultCategoryId: number | null,
+        defaultCalendar: 'EC' | 'GC'
+    ): Promise<EmployeeImportResult> => {
+        const form = new FormData()
+        form.append('file', file)
+        form.append('default_calendar', defaultCalendar)
+        if (defaultCategoryId) form.append('default_category_id', String(defaultCategoryId))
+        const response = await apiClient.post('/employees/import', form, { timeout: 10 * 60 * 1000 })
+        return response.data
+    },
+
     // List employees with pagination and filters
     list: async (params?: {
         page?: number

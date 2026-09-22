@@ -144,16 +144,28 @@ class RosterController extends Controller
             ], 422);
         }
         
-        // Validate each employee has the required job
+        // An employee can qualify either through an explicit job assignment or
+        // their workforce category. Category-qualified staff are linked to the
+        // selected job in the same transaction so payroll and later roster
+        // operations see a complete employee-job configuration.
         $invalidEmployees = [];
+        $employees = \App\Models\Employee::with('jobs:id,category_id')
+            ->whereIn('id', $validated['employee_ids'])
+            ->get()
+            ->keyBy('id');
+        $autoLinkEmployeeIds = [];
         foreach ($validated['employee_ids'] as $employeeId) {
-            $employee = \App\Models\Employee::find($employeeId);
-            if (!$employee->hasJob($validated['job_id'])) {
+            $employee = $employees->get($employeeId);
+            $hasSelectedJob = $employee && $employee->jobs->contains('id', $job->id);
+            $hasMatchingCategory = $employee && (int) $employee->job_category_id === (int) $job->category_id;
+            if (!$hasSelectedJob && !$hasMatchingCategory) {
                 $invalidEmployees[] = [
                     'id' => $employeeId,
                     'name' => $employee->first_name . ' ' . $employee->last_name,
                     'assigned_jobs' => $employee->jobs()->pluck('job_name')->toArray()
                 ];
+            } elseif (!$hasSelectedJob) {
+                $autoLinkEmployeeIds[] = $employeeId;
             }
         }
         
@@ -170,17 +182,30 @@ class RosterController extends Controller
             ], 422);
         }
 
-        $result = $this->rosterService->bulkAssignShifts(
-            $validated['site_id'],
-            $validated['job_id'],
-            $validated['employee_ids'],
-            $validated['start_date'],
-            $validated['end_date'],
-            $validated['start_time'],
-            $validated['end_time'],
-            auth()->id(),
-            $validated['working_days_schedule'] ?? null
-        );
+        $result = DB::transaction(function () use ($autoLinkEmployeeIds, $employees, $job, $validated) {
+            foreach ($autoLinkEmployeeIds as $employeeId) {
+                $employee = $employees->get($employeeId);
+                $employee->jobs()->syncWithoutDetaching([
+                    $job->id => ['is_primary' => $employee->jobs->isEmpty()],
+                ]);
+            }
+
+            return $this->rosterService->bulkAssignShifts(
+                $validated['site_id'],
+                $validated['job_id'],
+                $validated['employee_ids'],
+                $validated['start_date'],
+                $validated['end_date'],
+                $validated['start_time'],
+                $validated['end_time'],
+                auth()->id(),
+                $validated['working_days_schedule'] ?? null
+            );
+        });
+        $result['employee_jobs_linked'] = count($autoLinkEmployeeIds);
+        if ($autoLinkEmployeeIds !== []) {
+            $result['message'] .= '; ' . count($autoLinkEmployeeIds) . ' employee job assignment(s) added from matching category';
+        }
 
         return response()->json($result);
     }

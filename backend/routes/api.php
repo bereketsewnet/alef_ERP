@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AttendanceImportController;
 use App\Http\Controllers\Api\RosterController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\EmployeeImportController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\FinanceController;
@@ -105,6 +106,10 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('employees')->group(function () {
         Route::get('/', [EmployeeController::class, 'index']);
         Route::post('/', [EmployeeController::class, 'store']);
+        Route::get('/assignment-options', [EmployeeController::class, 'assignmentOptions']);
+        Route::get('/import/template', [EmployeeImportController::class, 'template']);
+        Route::get('/import/bundle', [EmployeeImportController::class, 'bundle']);
+        Route::post('/import', [EmployeeImportController::class, 'import']);
         Route::get('/{id}', [EmployeeController::class, 'show']);
         Route::put('/{id}', [EmployeeController::class, 'update']);
         Route::delete('/{id}', [EmployeeController::class, 'destroy']);

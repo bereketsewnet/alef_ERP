@@ -35,15 +35,16 @@ import {
 } from "@/components/ui/select"
 import { Calendar, Users, Clock, ChevronLeft, ChevronRight, Eye, Trash2 } from "lucide-react"
 import { useRoster, useBulkAssignShifts, useDeleteShift, useDeleteShiftsByEmployee } from "@/services/useRoster"
-import { useEmployees } from "@/services/useEmployees"
+import { useEmployeeAssignmentOptions } from "@/services/useEmployees"
 import { useClients } from "@/services/useClients"
-import { useJobs } from "@/services/useJobs"
+import { useJobCategories, useJobs } from "@/services/useJobs"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import type { ShiftSchedule } from "@/api/endpoints/roster"
 import { WorkingDaysSelector } from "@/components/roster/WorkingDaysSelector"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { EmployeeAssignmentPicker } from "@/components/roster/EmployeeAssignmentPicker"
 
 const bulkAssignSchema = z.object({
     site_id: z.string().min(1, 'Site is required'),
@@ -77,12 +78,13 @@ export function RosterPage() {
     const [deleteAllEmployeeId, setDeleteAllEmployeeId] = useState<number | null>(null)
 
     const { data: rosterData, isLoading } = useRoster({ page, site_id: siteFilter, date: dateFilter })
-    const { data: employeesData } = useEmployees({ per_page: 1000 })
+    const { data: assignmentOptions, isLoading: isLoadingAssignmentOptions } = useEmployeeAssignmentOptions(bulkAssignOpen)
     const { data: clientsData } = useClients({ page: 1 })
     const { mutate: bulkAssign, isPending: isAssigning } = useBulkAssignShifts()
     const { mutate: deleteShift, isPending: isDeletingShift } = useDeleteShift()
     const { mutate: deleteShiftsByEmployee, isPending: isDeletingAll } = useDeleteShiftsByEmployee()
     const { data: jobs } = useJobs({ active_only: true })
+    const { data: jobCategories = [] } = useJobCategories(true)
 
     const form = useForm({
         resolver: zodResolver(bulkAssignSchema),
@@ -558,7 +560,7 @@ export function RosterPage() {
 
             {/* Bulk Assign Modal */}
             <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[96vw] max-w-6xl max-h-[94vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Bulk Assign Shifts</DialogTitle>
                         <DialogDescription>
@@ -567,87 +569,86 @@ export function RosterPage() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleBulkAssign)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="site_id"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Site</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a site" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {allSites.map(site => (
-                                                    <SelectItem key={site.id} value={site.id.toString()}>
-                                                        {site.client_name} - {site.site_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <FormField
+                                    control={form.control}
+                                    name="site_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Site</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a site" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {allSites.map(site => (
+                                                        <SelectItem key={site.id} value={site.id.toString()}>
+                                                            {site.client_name} - {site.site_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
-                            <FormField
-                                control={form.control}
-                                name="job_id"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Job Type</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select job type" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {jobs?.map(job => (
-                                                    <SelectItem key={job.id} value={job.id.toString()}>
-                                                        {job.job_code} - {job.job_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-neutral-500">Pay rates will be determined by job settings</p>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                <FormField
+                                    control={form.control}
+                                    name="job_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Job Type</FormLabel>
+                                            <Select
+                                                onValueChange={(jobId) => {
+                                                    field.onChange(jobId)
+                                                    form.setValue('employee_ids', [], { shouldValidate: true })
+                                                }}
+                                                value={field.value}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select job type" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {jobs?.map(job => (
+                                                        <SelectItem key={job.id} value={job.id.toString()}>
+                                                            {job.job_code} - {job.job_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-neutral-500">Pay rates use job settings. Only employees assigned to this job can be selected.</p>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             <FormField
                                 control={form.control}
                                 name="employee_ids"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Employees</FormLabel>
-                                        <FormControl>
-                                            <select
-                                                multiple
-                                                value={field.value}
-                                                onChange={(e) => {
-                                                    const selected = Array.from(e.target.selectedOptions).map(option => option.value)
-                                                    field.onChange(selected)
-                                                }}
-                                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                            >
-                                                {employeesData?.data.map(emp => (
-                                                    <option key={emp.id} value={emp.id.toString()}>
-                                                        {emp.first_name} {emp.last_name} ({emp.employee_id || emp.id})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </FormControl>
-                                        <p className="text-xs text-neutral-500">Hold Ctrl/Cmd to select multiple employees</p>
+                                        <FormLabel className="sr-only">Employees</FormLabel>
+                                        <EmployeeAssignmentPicker
+                                            employees={assignmentOptions?.data || []}
+                                            categories={jobCategories}
+                                            jobs={jobs || []}
+                                            assignmentJobId={form.watch('job_id')}
+                                            value={field.value || []}
+                                            onChange={field.onChange}
+                                            isLoading={isLoadingAssignmentOptions}
+                                        />
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="start_date"
@@ -676,7 +677,7 @@ export function RosterPage() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="start_time"

@@ -9,6 +9,16 @@ export const employeeKeys = {
     list: (filters?: any) => [...employeeKeys.lists(), filters] as const,
     details: () => [...employeeKeys.all, 'detail'] as const,
     detail: (id: number) => [...employeeKeys.details(), id] as const,
+    assignmentOptions: () => [...employeeKeys.all, 'assignment-options'] as const,
+}
+
+export function useEmployeeAssignmentOptions(enabled = true) {
+    return useQuery({
+        queryKey: employeeKeys.assignmentOptions(),
+        queryFn: employeesApi.assignmentOptions,
+        enabled,
+        staleTime: 60_000,
+    })
 }
 
 // Get employees list with pagination
@@ -110,4 +120,36 @@ export function useDeleteEmployee() {
             })
         },
     })
+}
+
+export function useImportEmployees() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: ({ file, defaultCategoryId, defaultCalendar }: {
+            file: File
+            defaultCategoryId: number | null
+            defaultCalendar: 'EC' | 'GC'
+        }) => employeesApi.importSpreadsheet(file, defaultCategoryId, defaultCalendar),
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
+            toast({
+                title: result.summary.errors ? 'Employee import completed with errors' : 'Employee import completed',
+                description: result.message,
+                variant: result.summary.errors ? 'destructive' : 'default',
+            })
+        },
+    })
+}
+
+export async function downloadEmployeeImportBundle() {
+    const blob = await employeesApi.downloadImportBundle()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'employee_import_complete_package.zip'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
 }

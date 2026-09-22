@@ -112,6 +112,83 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Lightweight, non-paginated data for roster employee selection.
+     * Skills are inherited from each employee's assigned jobs because the
+     * current data model stores skills against jobs rather than employees.
+     */
+    public function assignmentOptions()
+    {
+        $employees = Employee::query()
+            ->select([
+                'id', 'employee_code', 'first_name', 'last_name', 'email',
+                'phone_number', 'status', 'job_category_id', 'name_search_alias',
+            ])
+            ->where('status', 'active')
+            ->with([
+                'jobCategory:id,name,code',
+                'jobs' => fn ($jobs) => $jobs
+                    ->select('jobs.id', 'jobs.category_id', 'jobs.job_name', 'jobs.job_code')
+                    ->with([
+                        'category:id,name,code',
+                        'skills:id,job_id,skill_name,is_required',
+                    ]),
+            ])
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'data' => $employees->map(function (Employee $employee) {
+                $jobs = $employee->jobs->map(fn ($job) => [
+                    'id' => $job->id,
+                    'job_code' => $job->job_code,
+                    'job_name' => $job->job_name,
+                    'is_primary' => (bool) ($job->pivot?->is_primary ?? false),
+                    'category' => $job->category ? [
+                        'id' => $job->category->id,
+                        'name' => $job->category->name,
+                        'code' => $job->category->code,
+                    ] : null,
+                    'skills' => $job->skills->map(fn ($skill) => [
+                        'id' => $skill->id,
+                        'skill_name' => $skill->skill_name,
+                        'is_required' => (bool) $skill->is_required,
+                    ])->values(),
+                ])->values();
+
+                return [
+                    'id' => $employee->id,
+                    'employee_code' => $employee->employee_code,
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
+                    'email' => $employee->email,
+                    'phone_number' => $employee->phone_number,
+                    'status' => $employee->status,
+                    'job_category' => $employee->jobCategory ? [
+                        'id' => $employee->jobCategory->id,
+                        'name' => $employee->jobCategory->name,
+                        'code' => $employee->jobCategory->code,
+                    ] : null,
+                    'jobs' => $jobs,
+                    'search_text' => mb_strtolower(implode(' ', array_filter([
+                        $employee->employee_code,
+                        $employee->first_name,
+                        $employee->last_name,
+                        $employee->email,
+                        $employee->phone_number,
+                        $employee->name_search_alias,
+                        $employee->jobCategory?->name,
+                        $jobs->pluck('job_name')->implode(' '),
+                        $jobs->flatMap(fn ($job) => collect($job['skills'])->pluck('skill_name'))->implode(' '),
+                    ]))),
+                ];
+            })->values(),
+            'total' => $employees->count(),
+        ]);
+    }
+
+    /**
      * @OA\Post(
      *     path="/employees",
      *     summary="Create a new employee",

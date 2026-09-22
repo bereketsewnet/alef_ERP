@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Employee;
+use App\Models\Client;
+use App\Models\ClientSite;
 use App\Models\Job;
 use App\Models\JobCategory;
 use App\Models\User;
@@ -119,6 +121,74 @@ class EmployeeFilteringTest extends TestCase
             $ids = collect($response->json('data'))->pluck('id')->all();
             $this->assertContains($employee->id, $ids, "Failed to match employee using search: {$search}");
         }
+    }
+
+    public function test_assignment_options_return_all_active_employees_with_jobs_categories_and_skills(): void
+    {
+        $assigned = $this->createEmployee('Assigned Employee', 401, $this->securityCategory->id);
+        $inactive = $this->createEmployee('Inactive Employee', 402, $this->securityCategory->id);
+        $inactive->update(['status' => 'inactive']);
+        $assigned->jobs()->attach($this->securityJob->id, ['is_primary' => true]);
+        $this->securityJob->skills()->create([
+            'skill_name' => 'Radio operation',
+            'is_required' => true,
+        ]);
+
+        $response = $this->getJson('/api/employees/assignment-options');
+
+        $response->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.id', $assigned->id)
+            ->assertJsonPath('data.0.job_category.name', 'Security')
+            ->assertJsonPath('data.0.jobs.0.id', $this->securityJob->id)
+            ->assertJsonPath('data.0.jobs.0.is_primary', true)
+            ->assertJsonPath('data.0.jobs.0.skills.0.skill_name', 'Radio operation');
+
+        $this->assertStringContainsString('assigned employee', $response->json('data.0.search_text'));
+        $this->assertStringContainsString('radio operation', $response->json('data.0.search_text'));
+        $this->assertNotSame($inactive->id, $response->json('data.0.id'));
+    }
+
+    public function test_bulk_roster_assignment_links_a_matching_category_to_the_selected_job(): void
+    {
+        $employee = $this->createEmployee('Category Qualified', 501, $this->securityCategory->id);
+        $client = Client::create([
+            'company_name' => 'Roster Test Client',
+            'contact_person' => 'Test Contact',
+            'contact_phone' => '+251911000001',
+            'billing_cycle' => 'MONTHLY',
+        ]);
+        $site = ClientSite::create([
+            'client_id' => $client->id,
+            'site_name' => 'Roster Test Site',
+            'latitude' => 9.03,
+            'longitude' => 38.75,
+            'geo_radius_meters' => 100,
+        ]);
+
+        $response = $this->postJson('/api/roster/bulk-assign', [
+            'site_id' => $site->id,
+            'job_id' => $this->securityJob->id,
+            'employee_ids' => [$employee->id],
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-01',
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('shifts_created', 1)
+            ->assertJsonPath('employee_jobs_linked', 1);
+        $this->assertDatabaseHas('employee_jobs', [
+            'employee_id' => $employee->id,
+            'job_id' => $this->securityJob->id,
+            'is_primary' => 1,
+        ]);
+        $this->assertDatabaseHas('shift_schedules', [
+            'employee_id' => $employee->id,
+            'site_id' => $site->id,
+            'job_id' => $this->securityJob->id,
+        ]);
     }
 
     private function createEmployee(

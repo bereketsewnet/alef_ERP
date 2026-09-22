@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Eye, DollarSign, X } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Eye, DollarSign, X, FileSpreadsheet } from 'lucide-react'
 import { useEmployees, useDeleteEmployee } from '@/services/useEmployees'
 import { useJobCategories, useJobs } from '@/services/useJobs'
 import type { Employee } from '@/api/endpoints/employees'
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table'
 import { EmployeeFormModal } from '@/components/employees/EmployeeFormModal'
 import { EmployeeDetailsModal } from '@/components/employees/EmployeeDetailsModal'
+import { EmployeeImportDialog } from '@/components/employees/EmployeeImportDialog'
 import { useSearchParams } from 'react-router-dom'
 
 export function EmployeeListPage() {
@@ -38,6 +39,7 @@ export function EmployeeListPage() {
     const [employeeToView, setEmployeeToView] = useState<Employee | null>(null)
     const [viewTab, setViewTab] = useState<'info' | 'jobs' | 'salary'>('info')
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
     useEffect(() => {
         const timeout = window.setTimeout(() => {
@@ -129,13 +131,16 @@ export function EmployeeListPage() {
                         Manage your workforce and employee information
                     </p>
                 </div>
-                <Button
-                    className="bg-primary-600 hover:bg-primary-700 shrink-0"
-                    onClick={() => setIsCreateModalOpen(true)}
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Employee
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button type="button" variant="outline" className="shrink-0" onClick={() => setIsImportModalOpen(true)}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Import Excel
+                    </Button>
+                    <Button className="bg-primary-600 hover:bg-primary-700 shrink-0" onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Employee
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_220px_260px_auto]">
@@ -374,6 +379,8 @@ export function EmployeeListPage() {
                 }}
                 employee={employeeToEdit}
             />
+
+            <EmployeeImportDialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
 
             <EmployeeDetailsModal
                 open={!!employeeToView}
